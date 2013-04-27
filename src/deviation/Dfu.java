@@ -29,6 +29,9 @@ public class Dfu
                                           intf.bAlternateSetting(),
                                           intf.bInterfaceClass(),
                                           intf.bInterfaceSubClass());
+                        if (intf.bInterfaceClass() ==0xfe && intf.bInterfaceSubClass() == 1) {
+                           return device;
+                        }
                     }
                 }
             //if (desc.idVendor() == vendorId && desc.idProduct() == productId) return device;
