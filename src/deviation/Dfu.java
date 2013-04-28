@@ -1,9 +1,10 @@
 import java.io.*;
 import java.util.*;
-import javax.usb.*;
-import javax.usb.util.*;
+import java.nio.ByteBuffer;
 
-public class Dfu
+import de.ailis.usb4java.libusb.*;
+
+public final class Dfu
 {
     public static final byte DFU_DETACH    = 0;
     public static final byte DFU_DNLOAD    = 1;
@@ -13,79 +14,63 @@ public class Dfu
     public static final byte DFU_GETSTATE  = 5;
     public static final byte DFU_ABORT     = 6;
 
+    public static byte dfu_timeout   = 0;
+
     private static short wTransaction = 0;
 
-    public static class DfuDevice
-    {
-        private UsbDevice dev;
-        private UsbInterface intf;
-        public DfuDevice(UsbDevice _device, UsbInterface _intf) {
-            dev = _device;
-            intf = _intf;
-        }
-        public UsbDevice device() { return dev; }
-        public UsbInterface Interface() { return intf; }
-        public byte bInterfaceNumber() { return intf.getUsbInterfaceDescriptor().bInterfaceNumber();}
-        public byte bAlternateSetting() { return intf.getUsbInterfaceDescriptor().bAlternateSetting();}
-        public byte iInterface() { return intf.getUsbInterfaceDescriptor().iInterface();}
-        public byte bConfigurationValue() { return intf.getUsbConfiguration().getUsbConfigurationDescriptor().bConfigurationValue();}
-        public int idVendor() { return 0xffff & (int)dev.getUsbDeviceDescriptor().idVendor(); }
-        public int idProduct() { return 0xffff & (int)dev.getUsbDeviceDescriptor().idProduct(); }
-        public boolean DFU_IFF_DFU() { return intf.getUsbInterfaceDescriptor().bInterfaceProtocol() == 2;}
-    };
-
-    public static List<DfuDevice> dfu_find_devices(UsbHub hub)
+    public static List<DfuDevice> findInterfaces(Device device)
     {
         List<DfuDevice> devices= new ArrayList<DfuDevice>();
-        for (UsbDevice device : (List<UsbDevice>) hub.getAttachedUsbDevices())
-        {
-            if (device.isUsbHub())
-            {
-                devices.addAll(dfu_find_devices((UsbHub)device));
+        DeviceDescriptor desc = new DeviceDescriptor();
+        if (LibUsb.getDeviceDescriptor(device, desc) != 0) {
+            return devices;
+        }
+        for (int cfg_idx = 0; cfg_idx < desc.bNumConfigurations(); cfg_idx++) {
+            ConfigDescriptor cfg = new ConfigDescriptor();
+            int rc = LibUsb.getConfigDescriptor(device, cfg_idx, cfg);
+            if (rc != 0) {
                 continue;
             }
-            UsbDeviceDescriptor desc = device.getUsbDeviceDescriptor();
-            for (UsbConfiguration cfg : (List<UsbConfiguration>)device.getUsbConfigurations()) {
-                UsbConfigurationDescriptor cfg_desc = cfg.getUsbConfigurationDescriptor();
-                for (UsbInterface uif : (List<UsbInterface>) cfg.getUsbInterfaces()) {
-                    for (UsbInterface uif2 : (List<UsbInterface>) uif.getSettings()) {
-                        UsbInterfaceDescriptor intf = uif2.getUsbInterfaceDescriptor();
-                        System.out.format("%04x:%04x -> %02x/%02x %02x/%02x%n",
-                                          desc.idVendor() & 0xffff,
-                                          desc.idProduct() & 0xffff,
-                                          intf.bInterfaceNumber(),
-                                          intf.bAlternateSetting(),
-                                          intf.bInterfaceClass(),
-                                          intf.bInterfaceSubClass());
-                        if (intf.bInterfaceClass() == (byte)0xfe && intf.bInterfaceSubClass() == 0x01) {
-                           devices.add(new DfuDevice(device, uif2));
-                        }
+            for (Interface uif : cfg.iface()) {
+                for (InterfaceDescriptor intf : uif.altsetting()) {
+                    System.out.format("%04x:%04x -> %02x/%02x %02x/%02x%n",
+                                      desc.idVendor() & 0xffff,
+                                      desc.idProduct() & 0xffff,
+                                      intf.bInterfaceNumber(),
+                                      intf.bAlternateSetting(),
+                                      intf.bInterfaceClass(),
+                                      intf.bInterfaceSubClass());
+                    if (intf.bInterfaceClass() == (byte)0xfe && intf.bInterfaceSubClass() == 0x01) {
+                       devices.add(new DfuDevice(device, intf, cfg));
                     }
                 }
-            //if (desc.idVendor() == vendorId && desc.idProduct() == productId) return device;
             }
+            LibUsb.freeConfigDescriptor(cfg);
+            //if (desc.idVendor() == vendorId && desc.idProduct() == productId) return device;
         }
         return devices;
     }
 
-    public static void dfu_detach(DfuDevice dev, short wTimeout) {
-        UsbDevice device = dev.device();
-        short wInterface = dev.bInterfaceNumber();
-        UsbControlIrp irp = device.createUsbControlIrp(
-                            (byte)(UsbConst.ENDPOINT_DIRECTION_OUT
-                                 | UsbConst.REQUESTTYPE_TYPE_CLASS
-                                 | UsbConst.REQUESTTYPE_RECIPIENT_INTERFACE),
-                            DFU_DETACH,
-                            wTimeout,
-                            wInterface);
-        irp.setData(null, 0, 0);
-        try {
-            device.syncSubmit(irp);
-        } catch (UsbException ex) {
-            System.out.format("Failed to detach%n");
+    public static List<DfuDevice> findDevices(DeviceList usb_devices)
+    {
+        List<DfuDevice> devices= new ArrayList<DfuDevice>();
+        for (Device device : usb_devices)
+        {
+            devices.addAll(findInterfaces(device));
         }
+        return devices;
     }
 
+    public static int dfu_detach(DfuDevice dev, short timeout) {
+        return LibUsb.controlTransfer( dev.Handle(),
+            /* bmRequestType */ (LibUsb.ENDPOINT_OUT | LibUsb.REQUEST_TYPE_CLASS | LibUsb.RECIPIENT_INTERFACE),
+            /* bRequest      */ DFU_DETACH,
+            /* wValue        */ timeout,
+            /* wIndex        */ dev.bInterfaceNumber(),
+            /* Data          */ null,
+                                dfu_timeout );
+    }
+/*
     public static int dfu_download(DfuDevice dev, int length, byte data[])
     {
         UsbDevice device = dev.device();
@@ -128,122 +113,113 @@ public class Dfu
         }
         return irp.getData();
     }
+*/
+    public static DfuStatus getStatus(DfuDevice dev) {
+        ByteBuffer buffer = ByteBuffer.allocateDirect(6);
+        int result = LibUsb.controlTransfer( dev.Handle(),
+          /* bmRequestType */ LibUsb.ENDPOINT_IN | LibUsb.REQUEST_TYPE_CLASS | LibUsb.RECIPIENT_INTERFACE,
+          /* bRequest      */ DFU_GETSTATUS,
+          /* wValue        */ 0,
+          /* wIndex        */ dev.bInterfaceNumber(),
+          /* Data          */ buffer,
+                              dfu_timeout );
 
-    public static DfuStatus dfu_get_status(DfuDevice dev) {
-        UsbDevice device = dev.device();
-        short wInterface = dev.bInterfaceNumber();
-        UsbControlIrp irp = device.createUsbControlIrp(
-                            (byte)(UsbConst.ENDPOINT_DIRECTION_IN
-                                 | UsbConst.REQUESTTYPE_TYPE_CLASS
-                                 | UsbConst.REQUESTTYPE_RECIPIENT_INTERFACE),
-                            DFU_GETSTATUS,
-                            (short)0,
-                            wInterface);
-        irp.setLength(6);
-        try {
-            device.syncSubmit(irp);
-            if (irp.getActualLength() == 6) {
-                return new DfuStatus(irp.getData());
-            }
-        } catch (UsbException ex) {
-            System.out.format("Failed to detach%n");
+        if( 6 == result ) {
+            return new DfuStatus(buffer);
         }
+
         return new DfuStatus(null);
     }
+    public static int clearStatus(DfuDevice dev) {
+        ByteBuffer buffer = ByteBuffer.allocateDirect(0);
+        return LibUsb.controlTransfer( dev.Handle(),
+        /* bmRequestType */ LibUsb.ENDPOINT_OUT| LibUsb.REQUEST_TYPE_CLASS | LibUsb.RECIPIENT_INTERFACE,
+        /* bRequest      */ DFU_CLRSTATUS,
+        /* wValue        */ 0,
+        /* wIndex        */ dev.bInterfaceNumber(),
+        /* Data          */ buffer,
+                            dfu_timeout );
 
-    public static void dfu_clear_status(DfuDevice dev) {
-        UsbDevice device = dev.device();
-        short wInterface = dev.bInterfaceNumber();
-        UsbControlIrp irp = device.createUsbControlIrp(
-                            (byte)(UsbConst.ENDPOINT_DIRECTION_OUT
-                                 | UsbConst.REQUESTTYPE_TYPE_CLASS
-                                 | UsbConst.REQUESTTYPE_RECIPIENT_INTERFACE),
-                            DFU_CLRSTATUS,
-                            (short)0,
-                            wInterface);
-        irp.setData(null, 0, 0);
-        try {
-            device.syncSubmit(irp);
-        } catch (UsbException ex) {
-            System.out.format("Failed to clear status%n");
-        }
     }
 
-    public static int dfu_get_state(DfuDevice dev) {
-        UsbDevice device = dev.device();
-        short wInterface = dev.bInterfaceNumber();
-        UsbControlIrp irp = device.createUsbControlIrp(
-                            (byte)(UsbConst.ENDPOINT_DIRECTION_IN
-                                 | UsbConst.REQUESTTYPE_TYPE_CLASS
-                                 | UsbConst.REQUESTTYPE_RECIPIENT_INTERFACE),
-                            DFU_GETSTATE,
-                            (short)0,
-                            wInterface);
-        irp.setLength(1);
-        try {
-            device.syncSubmit(irp);
-            if (irp.getActualLength() == 1) {
-                return irp.getData()[0];
-            }
-        } catch (UsbException ex) {
-            System.out.format("Failed to get state%n");
+    public static int getState(DfuDevice dev) {
+        ByteBuffer buffer = ByteBuffer.allocateDirect(1);
+        int result = LibUsb.controlTransfer( dev.Handle(),
+          /* bmRequestType */ LibUsb.ENDPOINT_IN | LibUsb.REQUEST_TYPE_CLASS | LibUsb.RECIPIENT_INTERFACE,
+          /* bRequest      */ DFU_GETSTATE,
+          /* wValue        */ 0,
+          /* wIndex        */ dev.bInterfaceNumber(),
+          /* Data          */ buffer,
+                              dfu_timeout );
+
+        /* Return the error if there is one. */
+        if( result < 1 ) {
+            return result;
         }
-        return -1;
+
+        /* Return the state. */
+        byte[] data = new byte[buffer.remaining()];
+        buffer.get(data);
+        return data[0];
     }
 
-    public static void dfu_abort(DfuDevice dev) {
-        UsbDevice device = dev.device();
-        short wInterface = dev.bInterfaceNumber();
-        UsbControlIrp irp = device.createUsbControlIrp(
-                            (byte)(UsbConst.ENDPOINT_DIRECTION_OUT
-                                 | UsbConst.REQUESTTYPE_TYPE_CLASS
-                                 | UsbConst.REQUESTTYPE_RECIPIENT_INTERFACE),
-                            DFU_ABORT,
-                            (short)0,
-                            wInterface);
-        irp.setData(null, 0, 0);
-        try {
-            device.syncSubmit(irp);
-        } catch (UsbException ex) {
-            System.out.format("Failed to abort%n");
-        }
+    public static int abort(DfuDevice dev) {
+        ByteBuffer buffer = ByteBuffer.allocateDirect(0);
+        return LibUsb.controlTransfer( dev.Handle(),
+        /* bmRequestType */ LibUsb.ENDPOINT_OUT | LibUsb.REQUEST_TYPE_CLASS | LibUsb.RECIPIENT_INTERFACE,
+        /* bRequest      */ DFU_ABORT,
+        /* wValue        */ 0,
+        /* wIndex        */ dev.bInterfaceNumber(),
+        /* Data          */ buffer,
+                            dfu_timeout );
     }
 
-    public static void main(String[] args) throws UsbException
+    public static int setIdle(DfuDevice dev)
     {
-        UsbServices services = UsbHostManager.getUsbServices();
-        UsbHub rootHub = services.getRootUsbHub();
-        List<DfuDevice> devs = dfu_find_devices(rootHub);
-        for(DfuDevice dev : devs) {
-            String str;
-            String str1;
-            try {
-                System.out.format("iInterface: %d%n", dev.iInterface());
-                str = dev.device().getString(dev.iInterface());
-            } catch (UsbException e) {
-                str = "USB Exception: " + e;
-            } catch (UsbDisconnectedException e) {
-                str = "USB Disconnect: " + e;
-            } catch (java.io.UnsupportedEncodingException e) {
-                str = "Bad encoding: " + e;
+        boolean done = false;
+        DfuStatus status = new DfuStatus(null);
+        while (! done) {
+            status = getStatus(dev);
+            System.out.format("Determining device status: statue=%s status=%d%n",
+                          status.stateToString(), status.bStatus);
+
+            switch (status.bState) {
+                case DfuStatus.STATE_APP_IDLE:
+                case DfuStatus.STATE_APP_DETACH:
+                    System.out.println("Device still in Runtime Mode!");
+                    return -1;
+                case DfuStatus.STATE_DFU_ERROR:
+                    System.out.println("dfuERROR, clearing status");
+                    if (clearStatus(dev) < 0) {
+                        System.out.println("error clear_status");
+                        return -1;
+                    }
+                    break;
+                case DfuStatus.STATE_DFU_DOWNLOAD_IDLE:
+                case DfuStatus.STATE_DFU_UPLOAD_IDLE:
+                    System.out.println("aborting previous incomplete transfer");
+                    if (abort(dev) < 0) {
+                        System.out.println("can't send DFU_ABORT");
+                        return -1;
+                    }
+                    break;
+                case DfuStatus.STATE_DFU_IDLE:
+                    System.out.println("dfuIDLE, continuing");
+                    done = true;
+                    break;
             }
-            try {
-                str1 = dev.Interface().getUsbConfiguration().getConfigurationString();
-            } catch (UsbException e) {
-                str1 = "USB Exception: " + e;
-            } catch (UsbDisconnectedException e) {
-                str1 = "USB Disconnect: " + e;
-            } catch (java.io.UnsupportedEncodingException e) {
-                str1 = "Bad encoding: " + e;
-            }
-            System.out.format("Found: %s [%04x:%04x] cfg=%d, intf=%d, alt=%d, name='%s' '%d/%d'%n",
-                dev.DFU_IFF_DFU() ? "DFU" : "Runtime",
-                dev.idVendor(),
-                dev.idProduct(),
-                dev.bConfigurationValue(),
-                dev.bInterfaceNumber(),
-                dev.bAlternateSetting(),
-                str, dev.Interface().getUsbConfiguration().getUsbConfigurationDescriptor().wTotalLength(), dev.Interface().getUsbConfiguration().getUsbConfigurationDescriptor().bLength());
         }
+        if (DfuStatus.DFU_STATUS_OK != status.bStatus ) {
+            System.out.format("WARNING: DFU Status: '%s'%n",
+                    status.statusToString());
+            // Clear our status & try again.
+            clearStatus(dev);
+            getStatus(dev);
+            if (DfuStatus.DFU_STATUS_OK != status.bStatus) {
+                System.out.format("Error: %d\n", status.bStatus);
+                return -1;
+            }
+        }
+        return 0;
     }
 }

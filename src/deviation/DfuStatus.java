@@ -1,3 +1,6 @@
+
+import java.nio.ByteBuffer;
+
 class DfuStatus {
     public static final byte  DFU_STATUS_OK = 0;
     public static final byte  DFU_STATUS_errTARGET = 1;
@@ -17,20 +20,33 @@ class DfuStatus {
     public static final byte  DFU_STATUS_ERROR_UNKNOWN = 14;
     public static final byte  DFU_STATUS_errSTALLEDPKT = 15;
 
+    public static final byte  STATE_APP_IDLE = 0x00;
+    public static final byte  STATE_APP_DETACH = 0x01;
+    public static final byte  STATE_DFU_IDLE = 0x02;
+    public static final byte  STATE_DFU_DOWNLOAD_SYNC = 0x03;
+    public static final byte  STATE_DFU_DOWNLOAD_BUSY = 0x04;
+    public static final byte  STATE_DFU_DOWNLOAD_IDLE = 0x05;
+    public static final byte  STATE_DFU_MANIFEST_SYNC = 0x06;
+    public static final byte  STATE_DFU_MANIFEST = 0x07;
+    public static final byte  STATE_DFU_MANIFEST_WAIT_RESET = 0x08;
+    public static final byte  STATE_DFU_UPLOAD_IDLE = 0x09;
     public static final byte  STATE_DFU_ERROR = 0x0a;
+
 
     public byte bStatus;
     public int bwPollTimeout;
     public byte bState;
     public int  iString;
 
-    public DfuStatus(byte data[]) {
-        if (data == null) {
+    public DfuStatus(ByteBuffer buffer) {
+        if (buffer == null) {
             bStatus       = DFU_STATUS_ERROR_UNKNOWN;
             bwPollTimeout = 0;
             bState        = STATE_DFU_ERROR;
             iString       = 0;
         } else {
+            byte[] data = new byte[buffer.remaining()];
+            buffer.get(data);
             bStatus       = data[0];
             bwPollTimeout = ((0xff & data[3]) << 16) |
                                 ((0xff & data[2]) << 8)  |
@@ -39,9 +55,9 @@ class DfuStatus {
             iString       = data[5];
         }
     }
-    public static String StatusToString(int status)
+    public String statusToString()
     {
-        switch(status) {
+        switch(bStatus) {
             case DFU_STATUS_OK:        return "No error condition is present";
 	    case DFU_STATUS_errTARGET: return "File is not targeted for use by this device";
 	    case DFU_STATUS_errFILE:   return "File is for this device but fails some vendor-specific test";
@@ -60,5 +76,22 @@ class DfuStatus {
 	    case DFU_STATUS_errSTALLEDPKT: return "Device stalled an unexpected request";
         }
         return "Unknown Status";
+    }
+    public String stateToString()
+    {
+        switch( bState ) {
+            case STATE_APP_IDLE: return"appIDLE";
+            case STATE_APP_DETACH: return "appDETACH";
+            case STATE_DFU_IDLE: return "dfuIDLE";
+            case STATE_DFU_DOWNLOAD_SYNC: return "dfuDNLOAD-SYNC";
+            case STATE_DFU_DOWNLOAD_BUSY: return "dfuDNBUSY";
+            case STATE_DFU_DOWNLOAD_IDLE: return "dfuDNLOAD-IDLE";
+            case STATE_DFU_MANIFEST_SYNC: return "dfuMANIFEST-SYNC";
+            case STATE_DFU_MANIFEST: return "dfuMANIFEST";
+            case STATE_DFU_MANIFEST_WAIT_RESET: return "dfuMANIFEST-WAIT-RESET";
+            case STATE_DFU_UPLOAD_IDLE: return "dfuUPLOAD-IDLE";
+            case STATE_DFU_ERROR: return "dfuERROR";
+        }
+        return "Unknown State";
     }
 }
