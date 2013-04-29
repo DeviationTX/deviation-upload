@@ -125,7 +125,7 @@ public final class Dfu
         status = getStatus(dev);
         if (status.bStatus != DfuStatus.DFU_STATUS_OK) {
             System.out.format("Error during second get_status%n"
-                   + "state(%u) = %s, status(%u) = %s%n",
+                   + "state(%d) = %s, status(%d) = %s%n",
                    status.bState, status.stateToString(),
                    status.bStatus, status.statusToString());
             return -1;
@@ -155,8 +155,7 @@ public final class Dfu
     public static int dfuseUpload(DfuDevice dev, byte [] data, int transaction)
     {
         ByteBuffer buffer = ByteBuffer.allocateDirect(data.length);
-        buffer.put(data);
-        int status = LibUsb.controlTransfer(dev.Handle(),
+        int bytes_received = LibUsb.controlTransfer(dev.Handle(),
                  /* bmRequestType */     LibUsb.ENDPOINT_IN |
                                          LibUsb.REQUEST_TYPE_CLASS |
                                          LibUsb.RECIPIENT_INTERFACE,
@@ -165,16 +164,19 @@ public final class Dfu
                  /* wIndex        */     dev.bInterfaceNumber(),
                  /* Data          */     buffer,
                                          DFU_TIMEOUT);
-        if (status < 0) {
-            System.out.format("dfuseUpload: libusb_control_msg returned %d\n", status);
+        buffer.get(data);
+        if (bytes_received < 0) {
+            System.out.format("dfuseUpload: libusb_control_msg returned %d\n", bytes_received);
         }               
-        return status;  
+        return bytes_received;
     }
+
     public static int dfuseDownload(DfuDevice dev, byte [] data, int transaction)
     {
         ByteBuffer buffer = ByteBuffer.allocateDirect(data.length);
+        buffer.put(data);
 
-        int status = LibUsb.controlTransfer(dev.Handle(),
+        int bytes_sent = LibUsb.controlTransfer(dev.Handle(),
                  /* bmRequestType */     LibUsb.ENDPOINT_OUT |
                                          LibUsb.REQUEST_TYPE_CLASS |
                                          LibUsb.RECIPIENT_INTERFACE,
@@ -183,59 +185,39 @@ public final class Dfu
                  /* wIndex        */     dev.bInterfaceNumber(),
                  /* Data          */     buffer,
                                          DFU_TIMEOUT);
-        buffer.get(data);
-        if (status < 0) {
-            System.out.format("dfuseDownload: libusb_control_msg returned %d\n", status);
+        if (bytes_sent < 0) {
+            System.out.format("dfuseDownload: libusb_control_msg returned %d\n", bytes_sent);
+            return bytes_sent;
         }
-        return status;
-}
-
-               
-
-/*
-    public static int dfu_download(DfuDevice dev, int length, byte data[])
-    {
-        UsbDevice device = dev.device();
-        short wInterface = dev.bInterfaceNumber();
-        UsbControlIrp irp = device.createUsbControlIrp(
-                            (byte)(UsbConst.ENDPOINT_DIRECTION_OUT
-                                 | UsbConst.REQUESTTYPE_TYPE_CLASS
-                                 | UsbConst.REQUESTTYPE_RECIPIENT_INTERFACE),
-                            DFU_DNLOAD,
-                            wTransaction,
-                            wInterface);
-        irp.setData(data, 0, length);
-        wTransaction++;
-        try {
-            device.syncSubmit(irp);
-        } catch (UsbException ex) {
-            System.out.format("Failed to download%n");
-            return 0;
-        }
-        return 1;
+        return bytes_sent;
     }
-    public static byte[] dfu_upload(DfuDevice dev, int length)
+    public static int dfuseDownloadChunk(DfuDevice dev, byte [] data, int transaction)
     {
-        UsbDevice device = dev.device();
-        short wInterface = dev.bInterfaceNumber();
-        UsbControlIrp irp = device.createUsbControlIrp(
-                            (byte)(UsbConst.ENDPOINT_DIRECTION_IN
-                                 | UsbConst.REQUESTTYPE_TYPE_CLASS
-                                 | UsbConst.REQUESTTYPE_RECIPIENT_INTERFACE),
-                            DFU_UPLOAD,
-                            wTransaction,
-                            wInterface);
-        irp.setLength(length);
-        wTransaction++;
-        try {
-            device.syncSubmit(irp);
-        } catch (UsbException ex) {
-            System.out.format("Failed to upload%n");
-            return null;
+        int bytes_sent = dfuseDownload(dev, data, transaction);
+        DfuStatus status;
+        do {
+                status = getStatus(dev);
+                try {
+                    Thread.sleep(status.bwPollTimeout);
+                } catch (InterruptedException e) {} //Don't care if we're interrupted
+        } while (status.bState != DfuStatus.STATE_DFU_DOWNLOAD_IDLE &&
+                 status.bState != DfuStatus.STATE_DFU_ERROR &&
+                 status.bState != DfuStatus.STATE_DFU_MANIFEST);
+
+        if (status.bState == DfuStatus.STATE_DFU_MANIFEST) {
+            System.out.println("Transitioning to dfuMANIFEST state");
         }
-        return irp.getData();
+
+        if (status.bStatus != DfuStatus.DFU_STATUS_OK) {
+                System.out.format("Error: state(%d) = %s, status(%d) = %s%n",
+                    status.bState, status.stateToString(),
+                    status.bStatus, status.statusToString());
+                return -1;
+        }
+
+        return bytes_sent;
     }
-*/
+
     public static DfuStatus getStatus(DfuDevice dev) {
         ByteBuffer buffer = ByteBuffer.allocateDirect(6);
         int result = LibUsb.controlTransfer( dev.Handle(),
@@ -383,5 +365,74 @@ public final class Dfu
                 }
         }
         return data.toByteArray();
+    }
+    public int sendToDevice(DfuDevice dev, int address, byte[] data)
+    {
+        int ret;
+        int xfer_size = 1024;
+        // ensure the entire data rangeis writeable
+        int sector_address = address;
+        while (true) {
+            Sector sector = dev.Memory().find(sector_address);
+            if (sector == null || ! sector.writable()) {
+                System.out.format("Error: No sector found that can be written at address %d%n", sector_address);
+                return -1;
+            }
+            if (sector.end() >= address + data.length) {
+                break;
+            }
+            sector_address = sector.end() + 1;
+        }
+
+        // erase and write
+        sector_address = address;
+        int transaction = 2;
+        if (dfuseSpecialCommand(dev, sector_address, DFUSE_SET_ADDRESS) != 0) {
+            System.out.format("Error: Write failed to set address: 0x%x%n", sector_address);
+            return -1;
+        }
+        while (true) {
+            Sector sector = dev.Memory().find(sector_address);
+            for (int i = 0; i < sector.count(); i++) {
+                if (sector.erasable()) {
+                    if (dfuseSpecialCommand(dev, sector_address, DFUSE_ERASE_PAGE) != 0) {
+                        System.out.format("Error: Write failed to erase address: 0x%x%n", sector_address);
+                        return -1;
+                    }
+                }
+                int sector_size = sector.size();
+                if (address + data.length - sector_address < sector_size) {
+                    //Remaining data is less than the sector size
+                    sector_size = address + data.length - sector_address;
+                }
+                int xfer = xfer_size;
+                while (sector_address < sector.start() + sector_size) {
+                    if (xfer_size > sector.start() + sector_size - sector_address) {
+                        //Need to transfer less than the xfer_size
+                        xfer  = sector.start() + sector_size - sector_address;
+                        if (dfuseSpecialCommand(dev, sector_address, DFUSE_SET_ADDRESS) != 0) {
+                            System.out.format("Error: Write failed to set address: 0x%x%n", sector_address);
+                            return -1;
+                        }
+                        transaction = 2;
+                    }
+                    byte []buf = Arrays.copyOfRange(data, sector_address, xfer);
+                    //address will be ((wBlockNum – 2) × wTransferSize) + Addres_Pointer
+                    if (dfuseDownloadChunk(dev, buf, transaction) != 0) {
+                        System.out.format("Error: Write failed to write address : 0x%x%n", sector_address);
+                    }
+                    sector_address += xfer;
+                    transaction++;
+                }
+                if (sector_address >= address + data.length) {
+                    return 0;
+                }
+                if (xfer != xfer_size) {
+                    System.out.format("Error: xfer_size %d is not a multiple of the sector size: %d%n",
+                                      xfer_size, sector.size());
+                    return -1;
+                }
+            }
+        }
     }
 }

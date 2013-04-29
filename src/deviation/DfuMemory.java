@@ -25,8 +25,8 @@ public class DfuMemory {
                         size = size * 1024 * 1024;
                     }
                     boolean readable = false;
-                    boolean  erasable = false;
-                    boolean writeable = false;
+                    boolean erasable = false;
+                    boolean writable = false;
                     if (m.group(4) == "a" || m.group(4) == "c" || m.group(4) == "e" || m.group(4) == "g") {
                         readable = true;
                     }
@@ -34,10 +34,10 @@ public class DfuMemory {
                         erasable = true;
                     }
                     if (m.group(4) == "d" || m.group(4) == "e" || m.group(4) == "f" || m.group(4) == "g") {
-                        writeable = true;
+                        writable = true;
                     }
                     if (size * count > 0) {
-                        sectors.add(new Sector(address, address + size * count, size, count, readable, erasable, writeable));
+                        sectors.add(new Sector(address, address + size * count - 1, size, count, readable, erasable, writable));
                         address += size * count;
                     }
                 }
