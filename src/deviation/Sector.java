@@ -7,8 +7,8 @@ public class Sector {
         private int flags;
         private boolean readable;
         private boolean erasable;
-        private boolean writeable;
-        public Sector(int start, int end, int size, int count, boolean readable, boolean erasable, boolean writeable) {
+        private boolean writable;
+        public Sector(int start, int end, int size, int count, boolean readable, boolean erasable, boolean writable) {
             this.start = start;
             this.end   = end;
             this.size  = size;
@@ -16,7 +16,7 @@ public class Sector {
             this.flags = flags;
             this.readable = readable;
             this.erasable = erasable;
-            this.writeable = writeable;
+            this.writable = writable;
         }
         public int start() { return start; }
         public int end()   { return end; }
@@ -24,4 +24,5 @@ public class Sector {
         public int count()  { return count; }
         public int flags()  { return flags; }
         public boolean erasable() { return erasable; }
+        public boolean writable() { return writable; }
 };
