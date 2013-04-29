@@ -1,0 +1,2 @@
+Instructions for updating jar files:
+mvn install:install-file -Dfile=usb4java-1.0.0-SNAPSHOT.jar -DgroupId=usb4java -DartifactId=usb4java -Dversion=1.0.0-SNAPSHOT -Dpackaging=jar -DlocalRepositoryPath=libs -DcreateChecksum=true

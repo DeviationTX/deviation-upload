@@ -7,61 +7,7 @@ import de.ailis.usb4java.libusb.*;
 public class DeviationUploader
 {
     public static final int MAX_DESC_STR_LEN = 253;
-
-    public static class DfuFuncDescriptor
-    {
-        public static final byte USB_DT_DFU =  0x21;
-        public DfuFuncDescriptor(DfuDevice dev)
-        {
-            ConfigDescriptor cfg = new ConfigDescriptor();
-            if(LibUsb.getConfigDescriptorByValue(dev.Device(), (byte)dev.bConfigurationValue(), cfg) != 0) {
-                return;
-            }
-
-            /* Extra descriptors can be shared between alternate settings but
-             * libusb may attach them to one setting. Therefore go through all.
-             * Note that desc_index is per alternate setting, hits will not be
-             * counted from one to another */
-            for (InterfaceDescriptor desc : cfg.iface()[dev.bInterfaceNumber()].altsetting()) {
-                //byte extra[] = new byte[desc.extraLength()];
-                //desc.extra().get(extra, 0, desc.extraLength());
-                byte extra[] = new byte[desc.extra().remaining()];
-                desc.extra().get(extra, 0, desc.extra().remaining());
-                //byte resbuf[] = Dfu.find_descriptor(extra, USB_DT_DFU, 0);
-                if(extra != null) {
-                    for (int i = 0; i < extra.length; i++) {
-                        System.out.format("%02x ", extra[i]);
-                    }
-                    System.out.format("%n");
-                }
-            }
-            LibUsb.freeConfigDescriptor(cfg);
-        }
-    };
-    public static byte [] find_descriptor(byte [] desc_list, int desc_type, int desc_index)
-    {
-        int p = 0;
-        int hit = 0;
-
-        while (p + 1 < desc_list.length) {
-            int desclen;
-
-            desclen = 0xff & (int)desc_list[p];
-            if (desclen == 0) {
-                        System.out.println("Error: Invalid descriptor list\n");
-                        return null;
-                }
-                if (desc_list[p + 1] == desc_type && hit++ == desc_index) {
-                        if (p + desclen > desc_list.length)
-                                desclen = desc_list.length - p;
-                        byte result[] = Arrays.copyOfRange(desc_list, p, p + desclen);
-                        return result;
-                }
-                p += (int) desc_list[p];
-        }
-        return null;
-    }
-
+/*
     public static String get_alt_name(DfuDevice dev)
     {
         int alt_name_str_idx;
@@ -85,6 +31,7 @@ public class DeviationUploader
         LibUsb.freeConfigDescriptor(cfg);
         return name.toString();
     }
+*/
 
     public static void main(String[] args)
     {
@@ -100,14 +47,33 @@ public class DeviationUploader
                 dev.bConfigurationValue(),
                 dev.bInterfaceNumber(),
                 dev.bAlternateSetting(),
-                get_alt_name(dev));
-            DfuFuncDescriptor desc = new DfuFuncDescriptor(dev);
+                dev.Memory().name());
+            //DfuFuncDescriptor desc = new DfuFuncDescriptor(dev);
         }
-        DfuDevice dev = devs.get(0);
-        dev.open();
-        dev.claim_and_set();
-        Dfu.setIdle(dev);
-        dev.close();
+        int idx = 0;
+        for (DfuDevice dev : devs) {
+            dev.open();
+            dev.claim_and_set();
+            Dfu.setIdle(dev);
+            byte [] data = Dfu.FetchFromDevice(dev, 0x08000400, 0x40);
+
+            try{
+                File file = new File("output" + Integer.toString(idx) + ".txt");
+                FileOutputStream fop = new FileOutputStream(file);
+                // if file doesnt exists, then create it
+                if (!file.exists()) {
+                    file.createNewFile();
+                }
+                fop.write(data);
+                fop.flush();
+                fop.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            dev.close();
+            idx++;
+        }
         LibUsb.freeDeviceList(devices, true);
         LibUsb.exit(null);
     }

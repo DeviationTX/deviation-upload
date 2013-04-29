@@ -14,7 +14,13 @@ public final class Dfu
     public static final byte DFU_GETSTATE  = 5;
     public static final byte DFU_ABORT     = 6;
 
+    public static final byte DFUSE_SET_ADDRESS    = 0;
+    public static final byte DFUSE_ERASE_PAGE     = 1;
+    public static final byte DFUSE_MASS_ERASE     = 2;
+    public static final byte DFUSE_READ_UNPROTECT = 3;
+
     public static byte dfu_timeout   = 0;
+    public static final int DFU_TIMEOUT = 5000;
 
     private static short wTransaction = 0;
 
@@ -61,15 +67,131 @@ public final class Dfu
         return devices;
     }
 
-    public static int dfu_detach(DfuDevice dev, short timeout) {
+    public static int detach(DfuDevice dev, short timeout) {
+        ByteBuffer buffer = ByteBuffer.allocateDirect(6);
         return LibUsb.controlTransfer( dev.Handle(),
             /* bmRequestType */ (LibUsb.ENDPOINT_OUT | LibUsb.REQUEST_TYPE_CLASS | LibUsb.RECIPIENT_INTERFACE),
             /* bRequest      */ DFU_DETACH,
             /* wValue        */ timeout,
             /* wIndex        */ dev.bInterfaceNumber(),
-            /* Data          */ null,
+            /* Data          */ buffer,
                                 dfu_timeout );
     }
+
+    public static int dfuseSpecialCommand(DfuDevice dev, int address, int command) {
+        byte [] buf = new byte[5];
+        int ret;
+        DfuStatus status;
+
+        if (command == DFUSE_ERASE_PAGE) {
+            Sector sector = dev.Memory().find(address);
+            if (sector == null || ! sector.erasable()) {
+                System.out.format("Error: Page at 0x%08x can not be erased%n", address);
+                return -1;
+            }
+            System.out.format("Erasing page size %i at address 0x%08x, page "
+                           + "starting at 0x%08x%n", sector.size(), address,
+                           address & ~(sector.size() - 1));
+            buf[0] = 0x41;  // Erase command
+        } else if (command == DFUSE_SET_ADDRESS) {
+            System.out.format("  Setting address pointer to 0x%08x%n", address);
+                buf[0] = 0x21;  /* Set Address Pointer command */
+        } else {
+            System.out.format("Error: Non-supported special command %d%n", command);
+            return -1;
+        }
+        buf[1] = (byte)(address & 0xff);
+        buf[2] = (byte)((address >> 8) & 0xff);
+        buf[3] = (byte)((address >> 16) & 0xff);
+        buf[4] = (byte)((address >> 24) & 0xff);
+
+        ret = dfuseDownload(dev, buf, 0);
+        if (ret < 0) {
+            System.out.println("Error during special command download");
+            return -1;
+        }
+        // 1st getStatus
+        status = getStatus(dev);
+        if (status.bState != DfuStatus.STATE_DFU_DOWNLOAD_BUSY) {
+            System.out.println("Error: Wrong state after command download");
+            return -1;
+        }
+        // wait while command is executed
+        System.out.format("   Poll timeout %i ms%n", status.bwPollTimeout);
+        try {
+            Thread.sleep(status.bwPollTimeout);
+        } catch (InterruptedException e) {} //Don't care if we're interrupted
+        // 2nd getStatus
+        status = getStatus(dev);
+        if (status.bStatus != DfuStatus.DFU_STATUS_OK) {
+            System.out.format("Error during second get_status%n"
+                   + "state(%u) = %s, status(%u) = %s%n",
+                   status.bState, status.stateToString(),
+                   status.bStatus, status.statusToString());
+            return -1;
+        }
+        try {
+            Thread.sleep(status.bwPollTimeout);
+        } catch (InterruptedException e) {} //Don't care if we're interrupted
+
+        ret = abort(dev);
+        if (ret < 0) {
+            System.out.println("Error sending dfu abort request");
+            return -1;
+        }
+
+        // 3rd getStatus
+        status =getStatus(dev);
+        if (status.bState != DfuStatus.STATE_DFU_IDLE) {
+                System.out.println("Error: Failed to enter idle state on abort%n");
+                return -1;
+        }
+        try {
+            Thread.sleep(status.bwPollTimeout);
+        } catch (InterruptedException e) {} //Don't care if we're interrupted
+        return 0;
+    }
+
+    public static int dfuseUpload(DfuDevice dev, byte [] data, int transaction)
+    {
+        ByteBuffer buffer = ByteBuffer.allocateDirect(data.length);
+        buffer.put(data);
+        int status = LibUsb.controlTransfer(dev.Handle(),
+                 /* bmRequestType */     LibUsb.ENDPOINT_IN |
+                                         LibUsb.REQUEST_TYPE_CLASS |
+                                         LibUsb.RECIPIENT_INTERFACE,
+                 /* bRequest      */     DFU_UPLOAD,
+                 /* wValue        */     transaction,
+                 /* wIndex        */     dev.bInterfaceNumber(),
+                 /* Data          */     buffer,
+                                         DFU_TIMEOUT);
+        if (status < 0) {
+            System.out.format("dfuseUpload: libusb_control_msg returned %d\n", status);
+        }               
+        return status;  
+    }
+    public static int dfuseDownload(DfuDevice dev, byte [] data, int transaction)
+    {
+        ByteBuffer buffer = ByteBuffer.allocateDirect(data.length);
+
+        int status = LibUsb.controlTransfer(dev.Handle(),
+                 /* bmRequestType */     LibUsb.ENDPOINT_OUT |
+                                         LibUsb.REQUEST_TYPE_CLASS |
+                                         LibUsb.RECIPIENT_INTERFACE,
+                 /* bRequest      */     DFU_DNLOAD,
+                 /* wValue        */     transaction,
+                 /* wIndex        */     dev.bInterfaceNumber(),
+                 /* Data          */     buffer,
+                                         DFU_TIMEOUT);
+        buffer.get(data);
+        if (status < 0) {
+            System.out.format("dfuseDownload: libusb_control_msg returned %d\n", status);
+        }
+        return status;
+}
+
+               
+
 /*
     public static int dfu_download(DfuDevice dev, int length, byte data[])
     {
@@ -221,5 +343,45 @@ public final class Dfu
             }
         }
         return 0;
+    }
+    public static byte [] FetchFromDevice(DfuDevice dev, int address, int requested_length)
+    {
+        int xfer_size = 1024;
+        int total_bytes = 0;
+        int transaction = 2;
+        int ret;
+
+        if (dfuseSpecialCommand(dev, address, DFUSE_SET_ADDRESS) != 0) {
+            return null;
+        }
+        /* Boot loader decides the start address, unknown to us */
+        /* Use a short length to lower risk of running out of bounds */
+
+        System.out.format("bytes_per_hash=%d\n", xfer_size);
+        System.out.println("Starting upload");
+
+        ByteArrayOutputStream data = new ByteArrayOutputStream();
+        while (true) {
+                int rc, write_rc;
+
+                /* last chunk can be smaller than original xfer_size */
+                if (requested_length - total_bytes < xfer_size)
+                        xfer_size = requested_length - total_bytes;
+
+                byte [] buf = new byte[xfer_size];
+                rc = dfuseUpload(dev, buf, transaction++);
+                total_bytes += rc;
+                data.write(buf, 0, rc);
+                if (rc < 0) {
+                        ret = rc;
+                        break;
+                }
+                if (rc < xfer_size || total_bytes >= requested_length) {
+                        /* last block, return successfully */
+                        ret = total_bytes;
+                        break;
+                }
+        }
+        return data.toByteArray();
     }
 }
