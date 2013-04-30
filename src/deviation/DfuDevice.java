@@ -25,9 +25,9 @@ public class DfuDevice
                 StringBuffer name = new StringBuffer();
                 LibUsb.getStringDescriptorAscii(handle, intf.iInterface(), name, MAX_DESC_STR_LEN);
                 LibUsb.close(handle);
-                if(name.toString() != null) {
-                    memory = new DfuMemory(name.toString());
-                }
+                memory = new DfuMemory(name.toString());
+            } else {
+                memory = new DfuMemory(null);
             }
         }
         public Device Device() { return dev; }
