@@ -6,35 +6,16 @@ import de.ailis.usb4java.libusb.*;
 
 public class DeviationUploader
 {
-    public static final int MAX_DESC_STR_LEN = 253;
-/*
-    public static String get_alt_name(DfuDevice dev)
-    {
-        int alt_name_str_idx;
-        int ret;
-        StringBuffer name = new StringBuffer();
-        ConfigDescriptor cfg = new ConfigDescriptor();
-
-        if(LibUsb.getConfigDescriptorByValue(dev.Device(), (byte)dev.bConfigurationValue(), cfg) != 0) {
-            return null;
-        }
-        alt_name_str_idx = cfg.iface()[dev.bInterfaceNumber()].altsetting()[dev.bAlternateSetting()].iInterface();
-        ret = -1;
-        if (alt_name_str_idx != 0) {
-            DeviceHandle handle = new DeviceHandle();
-            if(LibUsb.open(dev.Device(), handle) != 0) {
-                return null;
-            }
-            LibUsb.getStringDescriptorAscii(handle, alt_name_str_idx, name, MAX_DESC_STR_LEN);
-            LibUsb.close(handle);
-        }
-        LibUsb.freeConfigDescriptor(cfg);
-        return name.toString();
-    }
-*/
-
     public static void main(String[] args)
     {
+        try {
+            byte[] data = IOUtil.readFile("devo8.dfu");
+            DfuFile f = new DfuFile(data);
+            return;
+        } catch (IOException e) {
+            System.err.println("Caught IOException: " + e.getMessage());
+            //throw new RuntimeException(e);
+        }
         DeviceList devices = new DeviceList();
         LibUsb.init(null);
         LibUsb.getDeviceList(null, devices);
@@ -52,11 +33,16 @@ public class DeviationUploader
         }
         int idx = 0;
         for (DfuDevice dev : devs) {
-            dev.open();
+            if (dev.open() != 0) {
+                System.out.println("Error: Unable to open device");
+                break;
+            }
             dev.claim_and_set();
             Dfu.setIdle(dev);
             byte [] data = Dfu.FetchFromDevice(dev, 0x08000400, 0x40);
-
+            DeviationInfo info = new DeviationInfo(data);
+            System.out.format("%s : %x %x %x%n", info.model(), info.id1(), info.id2(), info.id3());
+/*
             try{
                 File file = new File("output" + Integer.toString(idx) + ".txt");
                 FileOutputStream fop = new FileOutputStream(file);
@@ -70,9 +56,10 @@ public class DeviationUploader
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
+*/
             dev.close();
             idx++;
+            break;
         }
         LibUsb.freeDeviceList(devices, true);
         LibUsb.exit(null);

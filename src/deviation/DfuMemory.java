@@ -12,7 +12,8 @@ public class DfuMemory {
 
         public SegmentParser(String addressStr, String sectorStr) {
             sectors = new ArrayList<Sector>();
-            int address = Integer.parseInt(addressStr, 16); //Note:  because 'int' is signed, you can't address more than 0x7FFFFFFF
+            
+            int address = (int)Long.decode(addressStr).longValue(); //Note:  because 'int' is signed, you can't address more than 0x7FFFFFFF
             int index = 0;
             for (String sector : sectorStr.split(",")) {
                 Matcher m = Pattern.compile("(\\d+)\\*(\\d+)([BKM])([abcdefg])").matcher(sector);
@@ -50,9 +51,13 @@ public class DfuMemory {
     String name;
     public DfuMemory(String str) {
         segments = new ArrayList<SegmentParser>();
-
+        if (str == null || str.length() == 0) {
+            name = "Unknown";
+            return;
+        }
         String[] segmentStrings = str.split("/");
         if (segmentStrings.length < 3) {
+            System.out.format("Unexpected string: %s%n", str);
             throw new IllegalArgumentException("String not in correct format");
         }
         name = segmentStrings[0];

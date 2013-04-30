@@ -39,6 +39,7 @@ public final class Dfu
             }
             for (Interface uif : cfg.iface()) {
                 for (InterfaceDescriptor intf : uif.altsetting()) {
+                    /*
                     System.out.format("%04x:%04x -> %02x/%02x %02x/%02x%n",
                                       desc.idVendor() & 0xffff,
                                       desc.idProduct() & 0xffff,
@@ -46,6 +47,7 @@ public final class Dfu
                                       intf.bAlternateSetting(),
                                       intf.bInterfaceClass(),
                                       intf.bInterfaceSubClass());
+                    */
                     if (intf.bInterfaceClass() == (byte)0xfe && intf.bInterfaceSubClass() == 0x01) {
                        devices.add(new DfuDevice(device, intf, cfg));
                     }
@@ -89,13 +91,13 @@ public final class Dfu
                 System.out.format("Error: Page at 0x%08x can not be erased%n", address);
                 return -1;
             }
-            System.out.format("Erasing page size %i at address 0x%08x, page "
+            System.out.format("Erasing page size %d at address 0x%08x, page "
                            + "starting at 0x%08x%n", sector.size(), address,
                            address & ~(sector.size() - 1));
             buf[0] = 0x41;  // Erase command
         } else if (command == DFUSE_SET_ADDRESS) {
-            System.out.format("  Setting address pointer to 0x%08x%n", address);
-                buf[0] = 0x21;  /* Set Address Pointer command */
+            System.out.format("  Setting address pointer to 0x%x%n", address);
+            buf[0] = 0x21;  /* Set Address Pointer command */
         } else {
             System.out.format("Error: Non-supported special command %d%n", command);
             return -1;
@@ -117,7 +119,7 @@ public final class Dfu
             return -1;
         }
         // wait while command is executed
-        System.out.format("   Poll timeout %i ms%n", status.bwPollTimeout);
+        System.out.format("   Poll timeout %d ms%n", status.bwPollTimeout);
         try {
             Thread.sleep(status.bwPollTimeout);
         } catch (InterruptedException e) {} //Don't care if we're interrupted
@@ -416,7 +418,7 @@ public final class Dfu
                         }
                         transaction = 2;
                     }
-                    byte []buf = Arrays.copyOfRange(data, sector_address, xfer);
+                    byte []buf = Arrays.copyOfRange(data, sector_address, sector_address + xfer);
                     //address will be ((wBlockNum – 2) × wTransferSize) + Addres_Pointer
                     if (dfuseDownloadChunk(dev, buf, transaction) != 0) {
                         System.out.format("Error: Write failed to write address : 0x%x%n", sector_address);
