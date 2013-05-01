@@ -34,10 +34,13 @@ public class DfuMemory {
                     if (m.group(4).matches("[bcfg]")) {
                         erasable = true;
                     }
-                    if (m.group(4).matches("defg")) {
+                    if (m.group(4).matches("[defg]")) {
                         writable = true;
                     }
                     if (size * count > 0) {
+                        //System.out.format("Sector start: 0x%x end: 0x%x size:%d count:%d %s%s%s%n",
+                        //                  address, address + size * count - 1, size, count,
+                        //                  readable ? "r" : "", erasable ? "e" : "", writable ? "w" : "");
                         sectors.add(new Sector(address, address + size * count - 1, size, count, readable, erasable, writable));
                         address += size * count;
                     }
