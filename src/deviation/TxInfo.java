@@ -7,7 +7,7 @@ public class TxInfo {
     private long id1;
     private long id2;
     private long id3;
-    private enum TxType {DEVO_UNKNOWN, DEVO6, DEVO7e, DEVO8, DEVO10, DEVO12};
+    public enum TxType {DEVO_UNKNOWN, DEVO6, DEVO7e, DEVO8, DEVO10, DEVO12};
     private TxType type;
     public TxInfo(byte [] data)
     {
@@ -34,6 +34,7 @@ public class TxInfo {
     public long id1() { return id1;}
     public long id2() { return id2;}
     public long id3() { return id3;}
+    public TxType type() { return type;}
     private byte[] convertToByteArray(long[] data, int offset) {
         byte []buf = new byte[16];
         int i = 0;
@@ -94,6 +95,42 @@ public class TxInfo {
             case DEVO10: return encode_10();
             case DEVO12: return encode_12();
             default:     return null;
+        }
+    }
+    public boolean matchType(TxType t)
+    {
+        if (type == TxType.DEVO_UNKNOWN || type != t) {
+            return false;
+        }
+        return true;
+    }
+    public static TxType getTypeFromString(String str) {
+        if(str.matches("DEVO-12") || str.matches("devo12")) {
+            return TxType.DEVO12;
+        }
+        if(str.matches("DEVO-10") || str.matches("devo10")) {
+            return TxType.DEVO10;
+        }
+        if(str.matches("DEVO-8") || str.matches("devo8")) {
+            return TxType.DEVO8;
+        }
+        if(str.matches("DEVO-7E") || str.matches("devo7e")) {
+            return TxType.DEVO7e;
+        }
+        if(str.matches("DEVO-6") || str.matches("devo6")) {
+            return TxType.DEVO6;
+        }
+        return TxType.DEVO_UNKNOWN;
+    }
+    public static String typeToString(TxType type)
+    {
+        switch (type) {
+            case DEVO6:  return "Devo 6";
+            case DEVO7e: return "Devo 7e";
+            case DEVO8:  return "Devo 8";
+            case DEVO10: return "Devo 10";
+            case DEVO12: return "Devo 12";
+            default:     return "Unknown";
         }
     }
 }
