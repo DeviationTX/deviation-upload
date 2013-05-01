@@ -3,10 +3,10 @@ import java.util.*;
 import java.nio.ByteBuffer;
 
 import de.ailis.usb4java.libusb.*;
-
+import org.apache.commons.cli.*;
 public class DeviationUploader
 {
-    public static byte[] applyEncryption(DfuFile.ImageElement elem, DeviationInfo info)
+    public static byte[] applyEncryption(DfuFile.ImageElement elem, TxInfo info)
     {
         long address = elem.address();
         byte[] data = elem.data();
@@ -58,7 +58,7 @@ public class DeviationUploader
             dev.claim_and_set();
             Dfu.setIdle(dev);
             byte [] txInfo = Dfu.fetchFromDevice(dev, 0x08000400, 0x40);
-            DeviationInfo info = new DeviationInfo(txInfo);
+            TxInfo info = new TxInfo(txInfo);
             byte [] data = applyEncryption(elem, info);
             //Write data
             dev.close();
@@ -87,7 +87,7 @@ public class DeviationUploader
         dev.claim_and_set();
         Dfu.setIdle(dev);
         byte [] txInfo = Dfu.fetchFromDevice(dev, 0x08000400, 0x40);
-        DeviationInfo info = new DeviationInfo(txInfo);
+        TxInfo info = new TxInfo(txInfo);
         DfuFile.ImageElement elem = new DfuFile.ImageElement("Binary", dev.bAlternateSetting(), address, data);
         data = applyEncryption(elem, info);
         Dfu.sendToDevice(dev, address, data);
@@ -130,8 +130,153 @@ public class DeviationUploader
         }
     }
 
+    public static CommandLine handleCmdline(String[] args)
+    {
+        DeviationVersion ver = new DeviationVersion();
+        Options optionsHelp = new Options();
+        Options options = new Options();
+        OptionGroup groupCmd = new OptionGroup();
+        OptionGroup groupFile = new OptionGroup();
+        optionsHelp.addOption(OptionBuilder.withLongOpt("help")
+                                           .withDescription("Show help message")
+                                           .create("h"));
+        optionsHelp.addOption(OptionBuilder.withLongOpt("version")
+                                           .withDescription("Show help message")
+                                           .create("V"));
+
+        groupCmd.addOption(OptionBuilder.withLongOpt("send")
+                                        .withDescription("send file to transmitter")
+                                        .create("s"));
+        groupCmd.addOption(OptionBuilder.withLongOpt("fetch")
+                                        .withDescription("fetch file from transmitter")
+                                        .create("f"));
+        groupCmd.addOption(OptionBuilder.withLongOpt("list")
+                                        .withDescription("list transmitter interfaces")
+                                        .create("l"));
+        groupCmd.setRequired(true);
+        options.addOptionGroup(groupCmd);
+        groupFile.addOption(OptionBuilder.withLongOpt("dfu")
+                                .withArgName( "file" )
+                                .hasArg()
+                                .withDescription(  "specify Dfu file to send" )
+                                .create( "d" ));
+        groupFile.addOption(OptionBuilder.withLongOpt("bin")
+                                .withArgName( "file" )
+                                .hasArg()
+                                .withDescription(  "specify bin file to send/receive" )
+                                .create( "b" ));
+        options.addOptionGroup(groupFile);
+        options.addOption(OptionBuilder.withLongOpt("address")
+                                .withArgName( "address" )
+                                .hasArg()
+                                .withDescription(  "specify address to send/receive from" )
+                                .create( "a" ));
+        options.addOption(OptionBuilder.withLongOpt("overwrite")
+                                .withDescription(  "overwrite local files (only relevant with -fetch")
+                                .create());
+        options.addOption(OptionBuilder.withLongOpt("length")
+                                .withArgName( "bytes" )
+                                .hasArg()
+                                .withDescription(  "specify number of bytes to transfer" )
+                                .create());
+        options.addOption(OptionBuilder.withLongOpt("txid")
+                                .withArgName( "id" )
+                                .hasArg()
+                                .withDescription(  "specify the tx id as vendorid:productid" )
+                                .create());
+        options.addOption(OptionBuilder.withLongOpt("alt-setting")
+                                .withArgName( "id" )
+                                .hasArg()
+                                .withDescription(  "specify the alt-setting for this transfer" )
+                                .create());
+        options.addOption(OptionBuilder.withLongOpt("force-txtype")
+                                .withArgName( "txType" )
+                                .hasArg()
+                                .withDescription(  "force the encryption to be to a specific transmitter type (very risky)" )
+                                .create());
+        options.addOption(OptionBuilder.withLongOpt("ignore-dfu-check")
+                                .withDescription(  "ignore Tx model checks")
+                                .create());
+        options.addOption(OptionBuilder.withLongOpt("help")
+                                       .withDescription("Show help message")
+                                       .create("h"));
+        options.addOption(OptionBuilder.withLongOpt("version")
+                                       .withDescription("Show help message")
+                                       .create("V"));
+
+        try {
+            //Handle help and version info here
+            CommandLine cl = new DefaultParser().parse(optionsHelp, args, true);
+            if (cl.getOptions().length != 0) {
+                if (cl.hasOption("help")) {
+                    HelpFormatter formatter = new HelpFormatter();
+                    formatter.printHelp( ver.name(), options );
+                }
+                if (cl.hasOption("version")) {
+                    System.out.println(ver.name() + ": " + ver.version());
+                }
+                System.exit(0);
+            }
+            //No handle all other options
+            cl = new DefaultParser().parse(options, args);
+            String file = null;
+            if (cl.hasOption("dfu")) {
+                file = cl.getOptionValue("dfu");
+            } else if (cl.hasOption("bin")) {
+                file = cl.getOptionValue("bin");
+            }
+            if (file != null) {
+                if (cl.hasOption("fetch") && ! cl.hasOption("overwrite") && new File(file).isFile()) {
+                    System.err.println("File '" + file + "' already exists.");
+                    System.exit(1);
+                }
+                if (cl.hasOption("send") && ! new File(file).isFile()) {
+                    System.err.println("File '" + file + "' does not exist.");
+                    System.exit(1);
+                }
+                if (! cl.hasOption("address")) {
+                    if ((cl.hasOption("send") && cl.hasOption("bin")) || cl.hasOption("fetch")) {
+                        System.err.println("Must specify -address");
+                        System.exit(1);
+                    }
+                }
+            } else if(cl.hasOption("send") || cl.hasOption("fetch")) {
+                System.err.println("No file specified");
+                System.exit(1);
+            }
+            for (String opt : new String[] {"address", "length"}) {
+                if (cl.hasOption(opt)) {
+                    try {
+                        Long.decode(cl.getOptionValue(opt));
+                    } catch (NumberFormatException ex) {
+                        System.err.println("Must specify a valid numerical value to -" + opt);
+                        System.exit(1);
+                    }
+                }
+            }
+       
+            return cl;
+        } catch (ParseException ex) {
+            System.err.println(ex.getMessage());
+            System.exit(1);
+        }
+        return null;
+    }
     public static void main(String[] args)
     {
+        CommandLine cl = handleCmdline(args);
+        Integer vendorId = null;
+        Integer productId = null;
+        Integer altSetting = null;
+        if (cl.hasOption("txid")) {
+            String[] id = cl.getOptionValue("txid").split(":");
+            vendorId = Integer.parseInt(id[0], 16);
+            productId = Integer.parseInt(id[1], 16);
+        }
+        if (cl.hasOption("alt-setting")) {
+            altSetting = Integer.parseInt(cl.getOptionValue("alt-setting"));
+        }
+
         DeviceList devices = new DeviceList();
         LibUsb.init(null);
         LibUsb.getDeviceList(null, devices);
@@ -147,9 +292,19 @@ public class DeviationUploader
                 dev.Memory().name());
             //DfuFuncDescriptor desc = new DfuFuncDescriptor(dev);
         }
-        //sendDfuToDevice(devs, "devo8.dfu");
-        sendBinToDevice(devs, "file.toTx", 0x2000, null, null, null);
-        readBinFromDevice(devs, "file.fromTx", 0x2000, 0x1000, null, null, null);
+        if (cl.hasOption("send")) {
+            if (cl.hasOption("dfu")) {
+                sendDfuToDevice(devs, cl.getOptionValue("dfu"));
+            } else {
+                int address = Long.decode(cl.getOptionValue("address")).intValue();
+                sendBinToDevice(devs, cl.getOptionValue("bin"), address, vendorId, productId, altSetting);
+            }
+        }
+        if (cl.hasOption("fetch")) {
+            int address = Long.decode(cl.getOptionValue("address")).intValue();
+            int length = Integer.decode(cl.getOptionValue("length"));
+            readBinFromDevice(devs, cl.getOptionValue("bin"), address, length, vendorId, productId, altSetting);
+        }
         LibUsb.freeDeviceList(devices, true);
         LibUsb.exit(null);
     }
