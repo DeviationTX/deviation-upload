@@ -88,11 +88,11 @@ public final class Dfu
         if (command == DFUSE_ERASE_PAGE) {
             Sector sector = dev.Memory().find(address);
             if (sector == null || ! sector.erasable()) {
-                System.out.format("Error: Page at 0x%08x can not be erased%n", address);
+                System.out.format("Error: Page at 0x%x can not be erased%n", address);
                 return -1;
             }
-            System.out.format("Erasing page size %d at address 0x%08x, page "
-                           + "starting at 0x%08x%n", sector.size(), address,
+            System.out.format("Erasing page size %d at address 0x%x, page "
+                           + "starting at 0x%x%n", sector.size(), address,
                            address & ~(sector.size() - 1));
             buf[0] = 0x41;  // Erase command
         } else if (command == DFUSE_SET_ADDRESS) {
@@ -335,6 +335,7 @@ public final class Dfu
         int transaction = 2;
         int ret;
 
+        setIdle(dev);
         if (dfuseSpecialCommand(dev, address, DFUSE_SET_ADDRESS) != 0) {
             return null;
         }
@@ -374,6 +375,7 @@ public final class Dfu
         int xfer_size = 1024;
         // ensure the entire data rangeis writeable
         int sector_address = address;
+        setIdle(dev);
         while (true) {
             Sector sector = dev.Memory().find(sector_address);
             if (sector == null || ! sector.writable()) {
@@ -397,6 +399,7 @@ public final class Dfu
             Sector sector = dev.Memory().find(sector_address);
             for (int i = 0; i < sector.count(); i++) {
                 if (sector.erasable()) {
+                    System.out.format("Erasing page: 0x%x%n", sector_address);
                     if (dfuseSpecialCommand(dev, sector_address, DFUSE_ERASE_PAGE) != 0) {
                         System.out.format("Error: Write failed to erase address: 0x%x%n", sector_address);
                         return -1;
@@ -418,10 +421,13 @@ public final class Dfu
                         }
                         transaction = 2;
                     }
-                    byte []buf = Arrays.copyOfRange(data, sector_address, sector_address + xfer);
+                    int offset = sector_address - address;
+                    //System.out.format("Copying array from %d to %d (length: %d)%n", sector_address, sector_address + xfer, data.length);
+                    byte[] buf = Arrays.copyOfRange(data, offset, offset + xfer);
                     //address will be ((wBlockNum – 2) × wTransferSize) + Addres_Pointer
-                    if (dfuseDownloadChunk(dev, buf, transaction) != 0) {
+                    if (dfuseDownloadChunk(dev, buf, transaction) <= 0) {
                         System.out.format("Error: Write failed to write address : 0x%x%n", sector_address);
+                        return -1;
                     }
                     sector_address += xfer;
                     transaction++;

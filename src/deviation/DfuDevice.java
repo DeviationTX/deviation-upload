@@ -57,6 +57,7 @@ public class DfuDevice
         public void close() {
             if (handle != null) {
                 LibUsb.close(handle);
+                handle = null;
             }
         }
         public int claim_and_set()  {

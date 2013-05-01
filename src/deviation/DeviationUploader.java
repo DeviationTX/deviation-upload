@@ -90,7 +90,6 @@ public class DeviationUploader
         DeviationInfo info = new DeviationInfo(txInfo);
         DfuFile.ImageElement elem = new DfuFile.ImageElement("Binary", dev.bAlternateSetting(), address, data);
         data = applyEncryption(elem, info);
-        //Write data
         Dfu.sendToDevice(dev, address, data);
         dev.close();
     }
@@ -150,7 +149,7 @@ public class DeviationUploader
         }
         //sendDfuToDevice(devs, "devo8.dfu");
         sendBinToDevice(devs, "file.toTx", 0x2000, null, null, null);
-        //readBinFromDevice(devs, "file.fromTx", 0x2000, 0x1000, null, null, null);
+        readBinFromDevice(devs, "file.fromTx", 0x2000, 0x1000, null, null, null);
         LibUsb.freeDeviceList(devices, true);
         LibUsb.exit(null);
     }
