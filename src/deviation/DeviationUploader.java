@@ -57,7 +57,7 @@ public class DeviationUploader
             }
             dev.claim_and_set();
             Dfu.setIdle(dev);
-            byte [] txInfo = Dfu.FetchFromDevice(dev, 0x08000400, 0x40);
+            byte [] txInfo = Dfu.fetchFromDevice(dev, 0x08000400, 0x40);
             DeviationInfo info = new DeviationInfo(txInfo);
             byte [] data = applyEncryption(elem, info);
             //Write data
@@ -86,11 +86,12 @@ public class DeviationUploader
         }
         dev.claim_and_set();
         Dfu.setIdle(dev);
-        byte [] txInfo = Dfu.FetchFromDevice(dev, 0x08000400, 0x40);
+        byte [] txInfo = Dfu.fetchFromDevice(dev, 0x08000400, 0x40);
         DeviationInfo info = new DeviationInfo(txInfo);
         DfuFile.ImageElement elem = new DfuFile.ImageElement("Binary", dev.bAlternateSetting(), address, data);
         data = applyEncryption(elem, info);
         //Write data
+        Dfu.sendToDevice(dev, address, data);
         dev.close();
     }
 
@@ -112,7 +113,7 @@ public class DeviationUploader
         dev.claim_and_set();
         Dfu.setIdle(dev);
         
-        byte [] data = Dfu.FetchFromDevice(dev, address, length);
+        byte [] data = Dfu.fetchFromDevice(dev, address, length);
         dev.close();
 
         try{
@@ -147,9 +148,9 @@ public class DeviationUploader
                 dev.Memory().name());
             //DfuFuncDescriptor desc = new DfuFuncDescriptor(dev);
         }
-        sendDfuToDevice(devs, "devo8.dfu");
-        sendBinToDevice(devs, "file.bin", 0x2000, null, null, null);
-        readBinFromDevice(devs, "file.bin", 0x2000, null, null, null, null);
+        //sendDfuToDevice(devs, "devo8.dfu");
+        sendBinToDevice(devs, "file.toTx", 0x2000, null, null, null);
+        //readBinFromDevice(devs, "file.fromTx", 0x2000, 0x1000, null, null, null);
         LibUsb.freeDeviceList(devices, true);
         LibUsb.exit(null);
     }

@@ -328,7 +328,7 @@ public final class Dfu
         }
         return 0;
     }
-    public static byte [] FetchFromDevice(DfuDevice dev, int address, int requested_length)
+    public static byte [] fetchFromDevice(DfuDevice dev, int address, int requested_length)
     {
         int xfer_size = 1024;
         int total_bytes = 0;
@@ -368,7 +368,7 @@ public final class Dfu
         }
         return data.toByteArray();
     }
-    public int sendToDevice(DfuDevice dev, int address, byte[] data)
+    public static int sendToDevice(DfuDevice dev, int address, byte[] data)
     {
         int ret;
         int xfer_size = 1024;
