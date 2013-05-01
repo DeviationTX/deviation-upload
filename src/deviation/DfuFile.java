@@ -16,6 +16,7 @@ public class DfuFile {
         public long address() { return address; }
         public byte[] data() { return data; }
         public int altSetting() { return altSetting; }
+        public String name() { return name; }
     }
     private int fwVersion;
     private int idProduct;

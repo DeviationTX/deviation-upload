@@ -13,6 +13,7 @@ public class DeviationUploader
         if (address < 0x08005000L && address + data.length > 0x08005000L) {
             int offset = (int)(0x08005000L - address);
             byte[] txcode = info.encodeId();
+            System.out.println("Encrypting txid for " + TxInfo.typeToString(info.type()));
             for (byte b : txcode) {
                 data[offset++] = b;
             }
@@ -59,6 +60,12 @@ public class DeviationUploader
             Dfu.setIdle(dev);
             byte [] txInfo = Dfu.fetchFromDevice(dev, 0x08000400, 0x40);
             TxInfo info = new TxInfo(txInfo);
+            if (! info.matchType(TxInfo.getTypeFromString(elem.name()))) {
+                System.out.format("Error: Dfu Tx type '%s' does not match transmitter type '%s'%n",
+                                  TxInfo.typeToString(info.type()),
+                                  TxInfo.typeToString(TxInfo.getTypeFromString(elem.name())));
+                break;
+            }
             byte [] data = applyEncryption(elem, info);
             //Write data
             dev.close();
