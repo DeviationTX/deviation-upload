@@ -2,14 +2,14 @@ import java.io.*;
 import java.util.*;
 
 
-public class DeviationInfo {
+public class TxInfo {
     private String model;
     private long id1;
     private long id2;
     private long id3;
     private enum TxType {DEVO_UNKNOWN, DEVO6, DEVO7e, DEVO8, DEVO10, DEVO12};
     private TxType type;
-    public DeviationInfo(byte [] data)
+    public TxInfo(byte [] data)
     {
         model = new String(Arrays.copyOfRange(data, 0, 32));
         type = TxType.DEVO_UNKNOWN;
