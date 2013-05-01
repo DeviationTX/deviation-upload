@@ -20,21 +20,21 @@ public class DfuMemory {
                 if (m.matches()) {
                     int count = Integer.parseInt(m.group(1));
                     int size  = Integer.parseInt(m.group(2));
-                    if (m.group(3) == "K") {
+                    if (m.group(3).equals("K")) {
                         size = size * 1024;
-                    } else if (m.group(3) == "M") {
+                    } else if (m.group(3).equals("M")) {
                         size = size * 1024 * 1024;
                     }
                     boolean readable = false;
                     boolean erasable = false;
                     boolean writable = false;
-                    if (m.group(4) == "a" || m.group(4) == "c" || m.group(4) == "e" || m.group(4) == "g") {
+                    if (m.group(4).matches("[aceg]")) {
                         readable = true;
                     }
-                    if (m.group(4) == "b" || m.group(4) == "c" || m.group(4) == "f" || m.group(4) == "g") {
+                    if (m.group(4).matches("[bcfg]")) {
                         erasable = true;
                     }
-                    if (m.group(4) == "d" || m.group(4) == "e" || m.group(4) == "f" || m.group(4) == "g") {
+                    if (m.group(4).matches("defg")) {
                         writable = true;
                     }
                     if (size * count > 0) {
