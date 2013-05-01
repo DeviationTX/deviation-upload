@@ -13,6 +13,9 @@ public class DfuFile {
             this.address = address;
             this.data = data;
         }
+        public long address() { return address; }
+        public byte[] data() { return data; }
+        public int altSetting() { return altSetting; }
     }
     private int fwVersion;
     private int idProduct;
