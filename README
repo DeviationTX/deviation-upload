@@ -1,2 +1,12 @@
+This code is to a large extent a direct port of the 'dfu-util' code to java.
+
+This would have been a much bigger ordeal without the work those folks have
+spent developing dfu and dfuse support.
+
+Note that this code only supports the DFuSe protocol, and onlythe Walkera
+flavor of that.  It is not intended to be a generalized dfu upload/download
+tool, but instead is targetted only at communicating with Walkera transmitters.
+
+
 Instructions for updating jar files:
 mvn install:install-file -Dfile=usb4java-1.0.0-SNAPSHOT.jar -DgroupId=usb4java -DartifactId=usb4java -Dversion=1.0.0-SNAPSHOT -Dpackaging=jar -DlocalRepositoryPath=libs -DcreateChecksum=true
