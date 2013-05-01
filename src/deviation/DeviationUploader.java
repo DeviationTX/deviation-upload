@@ -19,14 +19,115 @@ public class DeviationUploader
         }
         return data;
     }
-    public static DfuDevice find_device(List<DfuDevice> devs, int vid, int pid, int alt)
+    public static DfuDevice findDeviceByAddress(List<DfuDevice> devs, int address, Integer vid, Integer pid, Integer alt)
     {
         for (DfuDevice dev : devs) {
-            if (vid == dev.idVendor() && pid == dev.idProduct() && alt == dev.bAlternateSetting()) {
-                return dev;
+            if ((vid == null || vid == dev.idVendor())
+                && (pid == null || pid == dev.idProduct())
+                && (alt == null || alt == dev.bAlternateSetting()))
+            {
+                if (dev.Memory().find(address) != null) {
+                    return dev;
+                }
             }
         }
         return null;
+    }
+
+    public static void sendDfuToDevice(List<DfuDevice> devs, String fname)
+    {
+        DfuFile file;
+        try {
+            byte[] fdata = IOUtil.readFile(fname);
+            file = new DfuFile(fdata);
+        } catch (IOException e) {
+            System.err.println("Caught IOException: " + e.getMessage());
+            throw new RuntimeException(e);
+        }
+        for (DfuFile.ImageElement elem : file.imageElements()) {
+            DfuDevice dev = findDeviceByAddress(devs, (int)elem.address(), file.idVendor(), file.idProduct(), elem.altSetting());
+            if (dev == null) {
+                System.out.format("Error: Did not find matching device for VID:0x%x PID:0x%x alt:%d%n",
+                    file.idVendor(), file.idProduct(), elem.altSetting());
+                continue;
+            }
+            if (dev.open() != 0) {
+                System.out.println("Error: Unable to open device");
+                break;
+            }
+            dev.claim_and_set();
+            Dfu.setIdle(dev);
+            byte [] txInfo = Dfu.FetchFromDevice(dev, 0x08000400, 0x40);
+            DeviationInfo info = new DeviationInfo(txInfo);
+            byte [] data = applyEncryption(elem, info);
+            //Write data
+            dev.close();
+        }
+    }
+
+    public static void sendBinToDevice(List<DfuDevice> devs, String fname, int address, Integer vid, Integer pid, Integer alt)
+    {
+        byte[] data;
+        try {
+            data = IOUtil.readFile(fname);
+        } catch (IOException e) {
+            System.err.println("Caught IOException: " + e.getMessage());
+            throw new RuntimeException(e);
+        }
+        DfuDevice dev = findDeviceByAddress(devs, address, vid, pid, alt);
+        if (dev == null) {
+            System.out.format("Error: Did not find matching device for VID:0x%x PID:0x%x alt:%d%n",
+                    vid, pid, alt);
+            return;
+        }
+        if (dev.open() != 0) {
+            System.out.println("Error: Unable to open device");
+            return;
+        }
+        dev.claim_and_set();
+        Dfu.setIdle(dev);
+        byte [] txInfo = Dfu.FetchFromDevice(dev, 0x08000400, 0x40);
+        DeviationInfo info = new DeviationInfo(txInfo);
+        DfuFile.ImageElement elem = new DfuFile.ImageElement("Binary", dev.bAlternateSetting(), address, data);
+        data = applyEncryption(elem, info);
+        //Write data
+        dev.close();
+    }
+
+    public static void readBinFromDevice(List<DfuDevice> devs, String fname, int address, Integer length, Integer vid, Integer pid, Integer alt)
+    {
+        DfuDevice dev = findDeviceByAddress(devs, address, vid, pid, alt);
+        if (dev == null) {
+            System.out.format("Error: Did not find matching device for VID:0x%x PID:0x%x alt:%d%n",
+                    vid, pid, alt);
+            return;
+        }
+        if (length == null) {
+            length = dev.Memory().contiguousSize(address);
+        }
+        if (dev.open() != 0) {
+            System.out.println("Error: Unable to open device");
+            return;
+        }
+        dev.claim_and_set();
+        Dfu.setIdle(dev);
+        
+        byte [] data = Dfu.FetchFromDevice(dev, address, length);
+        dev.close();
+
+        try{
+            File f = new File(fname);
+            FileOutputStream fop = new FileOutputStream(f);
+            // if file doesnt exists, then create it
+            if (!f.exists()) {
+                f.createNewFile();
+            }
+            fop.write(data);
+            fop.flush();
+            fop.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public static void main(String[] args)
@@ -46,48 +147,9 @@ public class DeviationUploader
                 dev.Memory().name());
             //DfuFuncDescriptor desc = new DfuFuncDescriptor(dev);
         }
-
-        DfuFile file;
-        try {
-            byte[] fname = IOUtil.readFile("devo8.dfu");
-            file = new DfuFile(fname);
-        } catch (IOException e) {
-            System.err.println("Caught IOException: " + e.getMessage());
-            throw new RuntimeException(e);
-        }
-        for (DfuFile.ImageElement elem : file.imageElements()) {
-            DfuDevice dev = find_device(devs, file.idVendor(), file.idProduct(), elem.altSetting());
-            if (dev == null) {
-                System.out.format("Error: Did not find matching device for VID:0x%x PID:0x%x alt:%d%n",
-                    file.idVendor(), file.idProduct(), elem.altSetting());
-                continue;
-            }
-            if (dev.open() != 0) {
-                System.out.println("Error: Unable to open device");
-                break;
-            }
-            dev.claim_and_set();
-            Dfu.setIdle(dev);
-            byte [] txInfo = Dfu.FetchFromDevice(dev, 0x08000400, 0x40);
-            DeviationInfo info = new DeviationInfo(txInfo);
-            byte [] data = applyEncryption(elem, info);
-            dev.close();
-
-            try{
-                File f = new File("output.txt");
-                FileOutputStream fop = new FileOutputStream(f);
-                // if file doesnt exists, then create it
-                if (!f.exists()) {
-                    f.createNewFile();
-                }
-                fop.write(data);
-                fop.flush();
-                fop.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-        }
+        sendDfuToDevice(devs, "devo8.dfu");
+        sendBinToDevice(devs, "file.bin", 0x2000, null, null, null);
+        readBinFromDevice(devs, "file.bin", 0x2000, null, null, null, null);
         LibUsb.freeDeviceList(devices, true);
         LibUsb.exit(null);
     }
