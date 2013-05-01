@@ -77,4 +77,20 @@ public class DfuMemory {
         }
         return null;
     }
+    public int contiguousSize(int address) {
+        for(SegmentParser segment : segments) {
+            int end = 0;
+            boolean ok = false;
+            for (Sector sector: segment.sectors()) {
+                end = sector.end();
+                if (address >= sector.start() && address <= sector.end()) {
+                    ok = true;
+                }
+            }
+            if (ok) {
+                return end - address;
+            }
+        }
+        return -1;
+    }
 };
