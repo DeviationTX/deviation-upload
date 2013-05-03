@@ -405,16 +405,23 @@ public final class Dfu
                         return -1;
                     }
                 }
+                if (dfuseSpecialCommand(dev, sector_address, DFUSE_SET_ADDRESS) != 0) {
+                    System.out.format("Error: Write failed to set address: 0x%x%n", sector_address);
+                    return -1;
+                }
+                transaction = 2;
+
                 int sector_size = sector.size();
                 if (address + data.length - sector_address < sector_size) {
                     //Remaining data is less than the sector size
                     sector_size = address + data.length - sector_address;
                 }
                 int xfer = xfer_size;
-                while (sector_address < sector.start() + sector_size) {
-                    if (xfer_size > sector.start() + sector_size - sector_address) {
+                int sector_start = sector.start() + i * sector.size();
+                while (sector_address < sector_start + sector_size) {
+                    if (xfer_size > sector_start + sector_size - sector_address) {
                         //Need to transfer less than the xfer_size
-                        xfer  = sector.start() + sector_size - sector_address;
+                        xfer  = sector_start + sector_size - sector_address;
                         if (dfuseSpecialCommand(dev, sector_address, DFUSE_SET_ADDRESS) != 0) {
                             System.out.format("Error: Write failed to set address: 0x%x%n", sector_address);
                             return -1;
@@ -422,7 +429,7 @@ public final class Dfu
                         transaction = 2;
                     }
                     int offset = sector_address - address;
-                    //System.out.format("Copying array from %d to %d (length: %d)%n", sector_address, sector_address + xfer, data.length);
+                    //System.out.format("Writing array at 0x%x (length: %d) dest: %x%n", sector_address, xfer, (transaction-2)*xfer + address);
                     byte[] buf = Arrays.copyOfRange(data, offset, offset + xfer);
                     //address will be ((wBlockNum – 2) × wTransferSize) + Addres_Pointer
                     if (dfuseDownloadChunk(dev, buf, transaction) <= 0) {

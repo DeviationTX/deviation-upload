@@ -16,7 +16,7 @@ public class TxInfo {
         if (data[8] == 'D' && data[9] == 'E' && data[10] == 'V' && data[11] == 'O' && data[12] == '-') {
             if        (data[13] == '0' && data[14] == '6') {
                 type = TxType.DEVO6;
-            } else if (data[13] == '7' && data[14] == 'e') {
+            } else if (data[13] == '7' && data[14] == 'E') {
                 type = TxType.DEVO7e;
             } else if (data[13] == '0' && data[14] == '8') {
                 type = TxType.DEVO8;
@@ -36,7 +36,7 @@ public class TxInfo {
     public long id3() { return id3;}
     public TxType type() { return type;}
     private byte[] convertToByteArray(long[] data, int offset) {
-        byte []buf = new byte[16];
+        byte []buf = new byte[20];
         int i = 0;
         for (long  val : data) {
             buf[i++] = (byte)((val >>  0) & 0xff);
@@ -55,36 +55,56 @@ public class TxInfo {
         }
         return buf;
     }
+    private long calcCrc(long[] computed, int count) {
+        long [] data = new long[7];
+        data[0] = id1;
+        data[1] = id2;
+        data[2] = id3;
+        data[3] = computed[0];
+        data[4] = computed[1];
+        data[5] = computed[2];
+        data[6] = computed[3];
+        long crc = 0xFFFFFFFFL;
+        for (int i = 0; i < count; i++) {
+            crc = Crc.Dfu32(data, crc);
+        }
+        //System.out.format("Crc: 0x%x%n", crc);
+        return crc;
+    }
     private byte[] encode_7e() {
-        long[] a = new long[4];
+        long[] a = new long[5];
         a[0] = 0xFFFFFFFFL & (id1 + id2);
         a[1] = 0xFFFFFFFFL & (id2 ^ id2);
         a[2] = 0xFFFFFFFFL & (id1 + id3);
         a[3] = 0xFFFFFFFFL & (id2 ^ id3);
+        a[4] = calcCrc(a, 7);
         return convertToByteArray(a, 7);
     }
     private byte[] encode_6_8() {
-        long[] a = new long[4];
+        long[] a = new long[5];
         a[0] = 0xFFFFFFFFL & (id1 + id2);
         a[1] = 0xFFFFFFFFL & (id1 ^ id2);
         a[2] = 0xFFFFFFFFL & (id1 + id3);
         a[3] = 0xFFFFFFFFL & (id1 ^ id3);
+        a[4] = calcCrc(a, 8);
         return convertToByteArray(a, 8);
     }
     private byte[] encode_10() {
-        long[] a = new long[4];
+        long[] a = new long[5];
         a[0] = 0xFFFFFFFFL & (id1 + id2);
         a[1] = 0xFFFFFFFFL & (id1 ^ id2);
         a[2] = 0xFFFFFFFFL & (id2 + id3);
         a[3] = 0xFFFFFFFFL & (id2 ^ id3);
+        a[4] = calcCrc(a, 10);
         return convertToByteArray(a, 10);
     }
     private byte[] encode_12() {
-        long[] a = new long[4];
+        long[] a = new long[5];
         a[0] = 0xFFFFFFFFL & (id1 + id2 + id3);
         a[1] = 0xFFFFFFFFL & (id1 ^ id2 ^ id3);
         a[2] = 0xFFFFFFFFL & (id2 + id3);
         a[3] = 0xFFFFFFFFL & (id2 ^ id3);
+        a[4] = calcCrc(a, 12);
         return convertToByteArray(a, 12);
     }
     public byte [] encodeId() {
@@ -105,19 +125,19 @@ public class TxInfo {
         return true;
     }
     public static TxType getTypeFromString(String str) {
-        if(str.matches("DEVO-12") || str.matches("devo12")) {
+        if(str.matches("DEVO-12.*") || str.matches(".*devo12.*")) {
             return TxType.DEVO12;
         }
-        if(str.matches("DEVO-10") || str.matches("devo10")) {
+        if(str.matches("DEVO-10.*") || str.matches(".*devo10.*")) {
             return TxType.DEVO10;
         }
-        if(str.matches("DEVO-8") || str.matches("devo8")) {
+        if(str.matches("DEVO-8.*") || str.matches(".*devo8.*")) {
             return TxType.DEVO8;
         }
-        if(str.matches("DEVO-7E") || str.matches("devo7e")) {
+        if(str.matches("DEVO-7E.*") || str.matches(".*devo7e.*")) {
             return TxType.DEVO7e;
         }
-        if(str.matches("DEVO-6") || str.matches("devo6")) {
+        if(str.matches("DEVO-6.*") || str.matches(".*devo6.*")) {
             return TxType.DEVO6;
         }
         return TxType.DEVO_UNKNOWN;
