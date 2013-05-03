@@ -62,12 +62,13 @@ public class DeviationUploader
             TxInfo info = new TxInfo(txInfo);
             if (! info.matchType(TxInfo.getTypeFromString(elem.name()))) {
                 System.out.format("Error: Dfu Tx type '%s' does not match transmitter type '%s'%n",
-                                  TxInfo.typeToString(info.type()),
-                                  TxInfo.typeToString(TxInfo.getTypeFromString(elem.name())));
+                                  TxInfo.typeToString(TxInfo.getTypeFromString(elem.name())),
+                                  TxInfo.typeToString(info.type()));
                 break;
             }
             byte [] data = applyEncryption(elem, info);
             //Write data
+            Dfu.sendToDevice(dev, (int)elem.address(), data);
             dev.close();
         }
     }
