@@ -1,3 +1,5 @@
+package deviation;
+
 import java.io.*;
 
 public class IOUtil

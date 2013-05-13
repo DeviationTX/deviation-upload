@@ -1,6 +1,6 @@
-import java.io.*;
+package deviation;
+
 import java.util.*;
-import java.nio.ByteBuffer;
 
 import de.ailis.usb4java.libusb.*;
 
@@ -48,7 +48,7 @@ public class DfuFuncDescriptor
                 //desc.extra().get(extra, 0, desc.extraLength());
                 byte extra[] = new byte[desc.extra().remaining()];
                 desc.extra().get(extra, 0, desc.extra().remaining());
-                byte resbuf[] = find_descriptor(extra, USB_DT_DFU, 0);
+                //byte resbuf[] = find_descriptor(extra, USB_DT_DFU, 0);
                 if(extra != null) {
                     for (int i = 0; i < extra.length; i++) {
                         System.out.format("%02x ", extra[i]);

@@ -1,6 +1,7 @@
+package deviation;
 
-import java.io.*;
 import java.util.*;
+
 public class DfuFile {
     public static class ImageElement {
         private String name;
@@ -33,10 +34,10 @@ public class DfuFile {
             throw new IllegalArgumentException(String.format("DFU signature '%d' should be '1'", data[5]));
         }
         //big-endian
-        long DFUImageSize = ((long)(0xff & data[9]) << 24)
-                                | ((0xff & data[8]) << 16)
-                                | ((0xff & data[7]) <<  8)
-                                | ((0xff & data[6]) <<  0);
+        //long DFUImageSize = ((long)(0xff & data[9]) << 24)
+        //                        | ((0xff & data[8]) << 16)
+        //                        | ((0xff & data[7]) <<  8)
+        //                        | ((0xff & data[6]) <<  0);
         int bTargets = 0xff & data[10]; //Number of images
         int start = 11;
         for(int i = 0; i < bTargets; i++) {
@@ -77,10 +78,10 @@ public class DfuFile {
             targetName = new String(Arrays.copyOfRange(data, offset+11, offset+266));
         }
         //System.out.println("Name: '" + targetName + "'");
-        long targetSize = ((long)(0xff & data[offset+269]) << 24)
-                              | ((0xff & data[offset+268]) << 16)
-                              | ((0xff & data[offset+267]) <<  8)
-                              | ((0xff & data[offset+266]) <<  0);
+        //long targetSize = ((long)(0xff & data[offset+269]) << 24)
+        //                      | ((0xff & data[offset+268]) << 16)
+        //                      | ((0xff & data[offset+267]) <<  8)
+        //                      | ((0xff & data[offset+266]) <<  0);
         long numElements= ((long)(0xff & data[offset+273]) << 24)
                               | ((0xff & data[offset+272]) << 16)
                               | ((0xff & data[offset+271]) <<  8)

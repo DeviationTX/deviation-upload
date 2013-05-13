@@ -1,2 +1,5 @@
 target
 local
+.classpath
+.project
+.settings

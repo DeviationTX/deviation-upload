@@ -88,7 +88,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
           <archive>
             <addMavenDescriptor>false</addMavenDescriptor>
             <manifest>
-              <mainClass>DeviationUploader</mainClass>
+              <mainClass>deviation.DeviationUploader</mainClass>
             </manifest>
           </archive>
         </configuration>
