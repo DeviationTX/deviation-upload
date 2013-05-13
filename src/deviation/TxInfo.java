@@ -1,4 +1,5 @@
-import java.io.*;
+package deviation;
+
 import java.util.*;
 
 

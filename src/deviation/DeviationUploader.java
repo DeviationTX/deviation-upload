@@ -1,6 +1,7 @@
+package deviation;
+
 import java.io.*;
 import java.util.*;
-import java.nio.ByteBuffer;
 
 import de.ailis.usb4java.libusb.*;
 import org.apache.commons.cli.*;
@@ -145,72 +146,88 @@ public class DeviationUploader
         Options options = new Options();
         OptionGroup groupCmd = new OptionGroup();
         OptionGroup groupFile = new OptionGroup();
-        optionsHelp.addOption(OptionBuilder.withLongOpt("help")
-                                           .withDescription("Show help message")
-                                           .create("h"));
-        optionsHelp.addOption(OptionBuilder.withLongOpt("version")
-                                           .withDescription("Show help message")
-                                           .create("V"));
+        optionsHelp.addOption(Option.builder("h")
+        		                           .longOpt("help")
+                                           .desc("Show help message")
+                                           .build());
+        optionsHelp.addOption(Option.builder("V")
+        		                           .longOpt("version")
+                                           .desc("Show help message")
+                                           .build());
 
-        groupCmd.addOption(OptionBuilder.withLongOpt("send")
-                                        .withDescription("send file to transmitter")
-                                        .create("s"));
-        groupCmd.addOption(OptionBuilder.withLongOpt("fetch")
-                                        .withDescription("fetch file from transmitter")
-                                        .create("f"));
-        groupCmd.addOption(OptionBuilder.withLongOpt("list")
-                                        .withDescription("list transmitter interfaces")
-                                        .create("l"));
+        groupCmd.addOption(Option.builder("s")
+        		                        .longOpt("send")
+                                        .desc("send file to transmitter")
+                                        .build());
+        groupCmd.addOption(Option.builder("f")
+        		                        .longOpt("fetch")
+                                        .desc("fetch file from transmitter")
+                                        .build());
+        groupCmd.addOption(Option.builder("l")
+        		                        .longOpt("list")
+                                        .desc("list transmitter interfaces")
+                                        .build());
         groupCmd.setRequired(true);
         options.addOptionGroup(groupCmd);
-        groupFile.addOption(OptionBuilder.withLongOpt("dfu")
-                                .withArgName( "file" )
+        groupFile.addOption(Option.builder("d")
+        		                .longOpt("dfu")
+                                .argName( "file" )
                                 .hasArg()
-                                .withDescription(  "specify Dfu file to send" )
-                                .create( "d" ));
-        groupFile.addOption(OptionBuilder.withLongOpt("bin")
-                                .withArgName( "file" )
+                                .desc(  "specify Dfu file to send" )
+                                .build());
+        groupFile.addOption(Option.builder("b")
+        		                .longOpt("bin")
+                                .argName( "file" )
                                 .hasArg()
-                                .withDescription(  "specify bin file to send/receive" )
-                                .create( "b" ));
+                                .desc(  "specify bin file to send/receive" )
+                                .build());
         options.addOptionGroup(groupFile);
-        options.addOption(OptionBuilder.withLongOpt("address")
-                                .withArgName( "address" )
+        options.addOption(Option.builder("a")
+        		                .longOpt("address")
+                                .argName( "address" )
                                 .hasArg()
-                                .withDescription(  "specify address to send/receive from" )
-                                .create( "a" ));
-        options.addOption(OptionBuilder.withLongOpt("overwrite")
-                                .withDescription(  "overwrite local files (only relevant with -fetch")
-                                .create());
-        options.addOption(OptionBuilder.withLongOpt("length")
-                                .withArgName( "bytes" )
+                                .desc(  "specify address to send/receive from" )
+                                .build());
+        options.addOption(Option.builder()
+        		                .longOpt("overwrite")
+                                .desc(  "overwrite local files (only relevant with -fetch")
+                                .build());
+        options.addOption(Option.builder()
+        		                .longOpt("length")
+                                .argName( "bytes" )
                                 .hasArg()
-                                .withDescription(  "specify number of bytes to transfer" )
-                                .create());
-        options.addOption(OptionBuilder.withLongOpt("txid")
-                                .withArgName( "id" )
+                                .desc(  "specify number of bytes to transfer" )
+                                .build());
+        options.addOption(Option.builder()
+        		                .longOpt("txid")
+                                .argName( "id" )
                                 .hasArg()
-                                .withDescription(  "specify the tx id as vendorid:productid" )
-                                .create());
-        options.addOption(OptionBuilder.withLongOpt("alt-setting")
-                                .withArgName( "id" )
+                                .desc(  "specify the tx id as vendorid:productid" )
+                                .build());
+        options.addOption(Option.builder()
+        		                .longOpt("alt-setting")
+                                .argName( "id" )
                                 .hasArg()
-                                .withDescription(  "specify the alt-setting for this transfer" )
-                                .create());
-        options.addOption(OptionBuilder.withLongOpt("force-txtype")
-                                .withArgName( "txType" )
+                                .desc(  "specify the alt-setting for this transfer" )
+                                .build());
+        options.addOption(Option.builder()
+        		                .longOpt("force-txtype")
+                                .argName( "txType" )
                                 .hasArg()
-                                .withDescription(  "force the encryption to be to a specific transmitter type (very risky)" )
-                                .create());
-        options.addOption(OptionBuilder.withLongOpt("ignore-dfu-check")
-                                .withDescription(  "ignore Tx model checks")
-                                .create());
-        options.addOption(OptionBuilder.withLongOpt("help")
-                                       .withDescription("Show help message")
-                                       .create("h"));
-        options.addOption(OptionBuilder.withLongOpt("version")
-                                       .withDescription("Show help message")
-                                       .create("V"));
+                                .desc(  "force the encryption to be to a specific transmitter type (very risky)" )
+                                .build());
+        options.addOption(Option.builder()
+        		                .longOpt("ignore-dfu-check")
+                                .desc(  "ignore Tx model checks")
+                                .build());
+        options.addOption(Option.builder("h")
+        		                .longOpt("help")
+                                .desc("Show help message")
+                                .build());
+        options.addOption(Option.builder("V")
+        		                .longOpt("version")
+                                .desc("Show help message")
+                                .build());
 
         try {
             //Handle help and version info here
@@ -218,7 +235,7 @@ public class DeviationUploader
             if (cl.getOptions().length != 0) {
                 if (cl.hasOption("help")) {
                     HelpFormatter formatter = new HelpFormatter();
-                    formatter.printHelp( ver.name(), options );
+                    formatter.printHelp(ver.name(), options);
                 }
                 if (cl.hasOption("version")) {
                     System.out.println(ver.name() + ": " + ver.version());

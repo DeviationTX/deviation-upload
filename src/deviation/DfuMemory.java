@@ -1,10 +1,11 @@
+package deviation;
+
+import java.util.*;
+import java.util.regex.*;
+
 //Found DFU: [0483:df11] devnum=0, cfg=1, intf=0, alt=0, name="@Internal Flash  /0x08004000/00*002Ka,120*002Kg"
 //Found DFU: [0483:df11] devnum=0, cfg=1, intf=0, alt=1, name="@SPI Flash: Config/0x00002000/030*04Kg"
 //Found DFU: [0483:df11] devnum=0, cfg=1, intf=0, alt=2, name="@SPI Flash: Library/0x00020000/030*064Kg"
-
-import java.io.*;
-import java.util.*;
-import java.util.regex.*;
 
 public class DfuMemory {
     public static class SegmentParser {
@@ -14,7 +15,6 @@ public class DfuMemory {
             sectors = new ArrayList<Sector>();
             
             int address = (int)Long.decode(addressStr).longValue(); //Note:  because 'int' is signed, you can't address more than 0x7FFFFFFF
-            int index = 0;
             for (String sector : sectorStr.split(",")) {
                 Matcher m = Pattern.compile("(\\d+)\\*(\\d+)([BKM])([abcdefg])").matcher(sector);
                 if (m.matches()) {
@@ -45,7 +45,6 @@ public class DfuMemory {
                         address += size * count;
                     }
                 }
-                index++;
             }
         }
         public List<Sector> sectors() { return sectors;}

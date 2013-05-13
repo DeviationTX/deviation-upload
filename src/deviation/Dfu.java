@@ -1,3 +1,5 @@
+package deviation;
+
 import java.io.*;
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -22,7 +24,7 @@ public final class Dfu
     public static byte dfu_timeout   = 0;
     public static final int DFU_TIMEOUT = 5000;
 
-    private static short wTransaction = 0;
+    //private static short wTransaction = 0;
 
     public static List<DfuDevice> findInterfaces(Device device)
     {
@@ -333,7 +335,6 @@ public final class Dfu
         int xfer_size = 1024;
         int total_bytes = 0;
         int transaction = 2;
-        int ret;
 
         setIdle(dev);
         if (dfuseSpecialCommand(dev, address, DFUSE_SET_ADDRESS) != 0) {
@@ -347,7 +348,7 @@ public final class Dfu
 
         ByteArrayOutputStream data = new ByteArrayOutputStream();
         while (true) {
-                int rc, write_rc;
+                int rc;
 
                 /* last chunk can be smaller than original xfer_size */
                 if (requested_length - total_bytes < xfer_size)
@@ -358,12 +359,12 @@ public final class Dfu
                 total_bytes += rc;
                 data.write(buf, 0, rc);
                 if (rc < 0) {
-                        ret = rc;
+                        //ret = rc;
                         break;
                 }
                 if (rc < xfer_size || total_bytes >= requested_length) {
                         /* last block, return successfully */
-                        ret = total_bytes;
+                        //ret = total_bytes;
                         break;
                 }
         }
@@ -371,7 +372,6 @@ public final class Dfu
     }
     public static int sendToDevice(DfuDevice dev, int address, byte[] data)
     {
-        int ret;
         int xfer_size = 1024;
         // ensure the entire data rangeis writeable
         int sector_address = address;
