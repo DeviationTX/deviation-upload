@@ -10,6 +10,13 @@ public class TxInfo {
     private long id3;
     public enum TxType {DEVO_UNKNOWN, DEVO6, DEVO7e, DEVO8, DEVO10, DEVO12};
     private TxType type;
+    public TxInfo() {
+        model = null;
+        type = TxType.DEVO_UNKNOWN;
+        id1 = 0;
+        id2 = 0;
+        id3 = 0;
+    }
     public TxInfo(byte [] data)
     {
         model = new String(Arrays.copyOfRange(data, 0, 32));

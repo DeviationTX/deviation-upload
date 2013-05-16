@@ -4,6 +4,8 @@ import java.io.*;
 import java.util.*;
 
 import de.ailis.usb4java.libusb.*;
+import deviation.gui.DeviationUploadGUI;
+
 import org.apache.commons.cli.*;
 public class DeviationUploader
 {
@@ -24,28 +26,32 @@ public class DeviationUploader
     public static DfuDevice findDeviceByAddress(List<DfuDevice> devs, int address, Integer vid, Integer pid, Integer alt)
     {
         for (DfuDevice dev : devs) {
-            if ((vid == null || vid == dev.idVendor())
-                && (pid == null || pid == dev.idProduct())
-                && (alt == null || alt == dev.bAlternateSetting()))
-            {
-                if (dev.Memory().find(address) != null) {
-                    return dev;
+            if ((vid == null || vid == dev.idVendor()) && (pid == null || pid == dev.idProduct())) {
+                for (DfuInterface iface : dev.Interfaces()) {
+                    if ((alt == null || alt == iface.bAlternateSetting()) && iface.Memory().find(address) != null) {
+                        dev.SelectInterface(iface);
+                        return dev;
+                    }
                 }
+                
             }
         }
         return null;
     }
 
-    public static void sendDfuToDevice(List<DfuDevice> devs, String fname)
+    public static void sendDfuToDevice(List<DfuDevice> devs, String fname, Progress progress)
     {
         DfuFile file;
         try {
-            byte[] fdata = IOUtil.readFile(fname);
-            file = new DfuFile(fdata);
+            file = new DfuFile(fname);
         } catch (IOException e) {
             System.err.println("Caught IOException: " + e.getMessage());
             throw new RuntimeException(e);
         }
+        sendDfuToDevice(devs, file, progress);
+    }
+    public static void sendDfuToDevice(List<DfuDevice> devs, DfuFile file, Progress progress)
+    {
         for (DfuFile.ImageElement elem : file.imageElements()) {
             DfuDevice dev = findDeviceByAddress(devs, (int)elem.address(), file.idVendor(), file.idProduct(), elem.altSetting());
             if (dev == null) {
@@ -69,7 +75,7 @@ public class DeviationUploader
             }
             byte [] data = applyEncryption(elem, info);
             //Write data
-            Dfu.sendToDevice(dev, (int)elem.address(), data);
+            Dfu.sendToDevice(dev, (int)elem.address(), data, progress);
             dev.close();
         }
     }
@@ -99,7 +105,7 @@ public class DeviationUploader
         TxInfo info = new TxInfo(txInfo);
         DfuFile.ImageElement elem = new DfuFile.ImageElement("Binary", dev.bAlternateSetting(), address, data);
         data = applyEncryption(elem, info);
-        Dfu.sendToDevice(dev, address, data);
+        Dfu.sendToDevice(dev, address, data, null);
         dev.close();
     }
 
@@ -289,6 +295,10 @@ public class DeviationUploader
     }
     public static void main(String[] args)
     {
+        if (args.length == 0) {
+            DeviationUploadGUI.main(null);
+            while(true) {}
+        }
         CommandLine cl = handleCmdline(args);
         Integer vendorId = null;
         Integer productId = null;
@@ -319,7 +329,7 @@ public class DeviationUploader
         }
         if (cl.hasOption("send")) {
             if (cl.hasOption("dfu")) {
-                sendDfuToDevice(devs, cl.getOptionValue("dfu"));
+                sendDfuToDevice(devs, cl.getOptionValue("dfu"), null);
             } else {
                 int address = Long.decode(cl.getOptionValue("address")).intValue();
                 sendBinToDevice(devs, cl.getOptionValue("bin"), address, vendorId, productId, altSetting);

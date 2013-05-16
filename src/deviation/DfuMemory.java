@@ -79,6 +79,19 @@ public class DfuMemory {
         }
         return null;
     }
+    
+    public long findStartingAddress() {
+        long address = -1;
+        for(SegmentParser segment : segments) {
+            for (Sector sector: segment.sectors()) {
+                if (address == -1 || sector.start() < address) {
+                    address = sector.start();
+                }
+            }
+        }
+        return address;
+    }
+    
     public int contiguousSize(int address) {
         for(SegmentParser segment : segments) {
             int end = 0;
