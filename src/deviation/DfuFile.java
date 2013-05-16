@@ -1,5 +1,6 @@
 package deviation;
 
+import java.io.IOException;
 import java.util.*;
 
 public class DfuFile {
@@ -23,7 +24,8 @@ public class DfuFile {
     private int idProduct;
     private int idVendor;
     private List<ImageElement> imageElements;
-    public DfuFile(byte[] data) {
+    public DfuFile(String fname) throws IOException {
+        byte[] data = IOUtil.readFile(fname);
         imageElements = new ArrayList<ImageElement>();
 
         final byte [] szSignature = new byte[] {'D', 'f', 'u', 'S', 'e'};

@@ -39,6 +39,7 @@ public final class Dfu
             if (rc != 0) {
                 continue;
             }
+            DfuDevice dev = new DfuDevice(device);
             for (Interface uif : cfg.iface()) {
                 for (InterfaceDescriptor intf : uif.altsetting()) {
                     /*
@@ -51,11 +52,14 @@ public final class Dfu
                                       intf.bInterfaceSubClass());
                     */
                     if (intf.bInterfaceClass() == (byte)0xfe && intf.bInterfaceSubClass() == 0x01) {
-                       devices.add(new DfuDevice(device, intf, cfg));
+                       dev.AddInterface(intf, cfg);
                     }
                 }
             }
             LibUsb.freeConfigDescriptor(cfg);
+            if (! dev.Interfaces().isEmpty()) {
+                devices.add(dev);
+            }
             //if (desc.idVendor() == vendorId && desc.idProduct() == productId) return device;
         }
         return devices;
@@ -330,6 +334,20 @@ public final class Dfu
         }
         return 0;
     }
+    public static TxInfo getTxInfo(DfuDevice dev)
+    {
+        dev.SelectInterface(dev.Interfaces().get(0));
+        if (dev.open() != 0) {
+            System.out.println("Error: Unable to open device");
+            return new TxInfo();
+        }
+        dev.claim_and_set();
+        Dfu.setIdle(dev);
+        byte [] txInfo = Dfu.fetchFromDevice(dev, 0x08000400, 0x40);
+        dev.close();
+        return new TxInfo(txInfo);
+
+    }
     public static byte [] fetchFromDevice(DfuDevice dev, int address, int requested_length)
     {
         int xfer_size = 1024;
@@ -370,7 +388,7 @@ public final class Dfu
         }
         return data.toByteArray();
     }
-    public static int sendToDevice(DfuDevice dev, int address, byte[] data)
+    public static int sendToDevice(DfuDevice dev, int address, byte[] data,  Progress progress)
     {
         int xfer_size = 1024;
         // ensure the entire data rangeis writeable
@@ -398,6 +416,13 @@ public final class Dfu
         while (true) {
             Sector sector = dev.Memory().find(sector_address);
             for (int i = 0; i < sector.count(); i++) {
+                if (progress != null) {
+                    progress.update(1.0 * (sector_address - address) / data.length);
+                    if (progress.cancelled()) {
+                        System.out.format("Cancelled at address 0x%x%n", sector_address);
+                        return -1;
+                    }
+                }
                 if (sector.erasable()) {
                     System.out.format("Erasing page: 0x%x%n", sector_address);
                     if (dfuseSpecialCommand(dev, sector_address, DFUSE_ERASE_PAGE) != 0) {
@@ -431,6 +456,11 @@ public final class Dfu
                     int offset = sector_address - address;
                     //System.out.format("Writing array at 0x%x (length: %d) dest: %x%n", sector_address, xfer, (transaction-2)*xfer + address);
                     byte[] buf = Arrays.copyOfRange(data, offset, offset + xfer);
+                    
+                    if (progress != null && progress.cancelled()) {
+                        System.out.format("Cancelled at address 0x%x%n", sector_address);
+                        return -1;
+                    }
                     //address will be ((wBlockNum – 2) × wTransferSize) + Addres_Pointer
                     if (dfuseDownloadChunk(dev, buf, transaction) <= 0) {
                         System.out.format("Error: Write failed to write address : 0x%x%n", sector_address);

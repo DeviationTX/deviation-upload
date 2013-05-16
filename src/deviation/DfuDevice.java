@@ -1,39 +1,29 @@
 package deviation;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import de.ailis.usb4java.libusb.*;
 
 public class DfuDevice
     {
-        public static final int MAX_DESC_STR_LEN = 253;
-
+        
         private Device dev;
         private DeviceHandle handle;
-        private DfuMemory memory;
-        private int configuration_number;
-        private int interface_number;
-        private int altsetting_number;
-        private boolean DFU_IFF_DFU;
+        private List<DfuInterface> interfaces;
+        private DfuInterface selected_interface;
 
-        public DfuDevice(Device dev, InterfaceDescriptor intf, ConfigDescriptor cfg) {
+        public DfuDevice(Device dev) {
             this.handle = null;
             this.dev = dev;
-            this.configuration_number = 0xff & (int)cfg.bConfigurationValue();
-            this.interface_number = 0xff & (int)intf.bInterfaceNumber();
-            this.altsetting_number = 0xff & (int)intf.bAlternateSetting();
-            this.DFU_IFF_DFU = intf.bInterfaceProtocol() == 2;
-            DeviceHandle handle = new DeviceHandle();
-            if(LibUsb.open(dev, handle) == 0) {
-                StringBuffer name = new StringBuffer();
-                LibUsb.getStringDescriptorAscii(handle, intf.iInterface(), name, MAX_DESC_STR_LEN);
-                LibUsb.close(handle);
-                memory = new DfuMemory(name.toString());
-            } else {
-                memory = new DfuMemory(null);
-            }
+            interfaces = new ArrayList<DfuInterface>();
+            this.selected_interface = null;
         }
+        public void AddInterface(InterfaceDescriptor intf, ConfigDescriptor cfg) {
+            interfaces.add(new DfuInterface(dev, intf, cfg));    
+       }
         public Device Device() { return dev; }
         public DeviceHandle Handle() { return handle; }
-        public DfuMemory Memory() { return memory; }
         public int idVendor() {
             DeviceDescriptor ddesc = new DeviceDescriptor();
             LibUsb.getDeviceDescriptor(dev, ddesc);
@@ -44,10 +34,13 @@ public class DfuDevice
             LibUsb.getDeviceDescriptor(dev, ddesc);
             return 0xffff & (int)(ddesc.idProduct());
         }
-        public int bConfigurationValue() { return configuration_number; }
-        public int bInterfaceNumber() { return interface_number; }
-        public int bAlternateSetting() { return altsetting_number; }
-        public boolean DFU_IFF_DFU() { return DFU_IFF_DFU; }
+        
+        public DfuMemory Memory() { return selected_interface == null ? null :  selected_interface.Memory(); }
+        public int bConfigurationValue() { return selected_interface == null ? 0 : selected_interface.bConfigurationValue(); }
+        public int bInterfaceNumber() { return selected_interface == null ? 0 : selected_interface.bInterfaceNumber(); }
+        public int bAlternateSetting() { return selected_interface == null ? 0 : selected_interface.bAlternateSetting(); }
+        public boolean DFU_IFF_DFU() { return selected_interface == null ? false : selected_interface.DFU_IFF_DFU(); }
+        
         public int open() {
             if (handle == null) {
                 handle = new DeviceHandle();
@@ -62,11 +55,45 @@ public class DfuDevice
             }
         }
         public int claim_and_set()  {
-            int ret = LibUsb.claimInterface(handle, interface_number);
+            if (selected_interface == null) {
+                return -1;
+            }
+            int ret = LibUsb.claimInterface(handle, selected_interface.bInterfaceNumber());
             if (ret < 0) {
                 return ret;
             }
-            return LibUsb.setInterfaceAltSetting(handle, interface_number, altsetting_number);
+            return LibUsb.setInterfaceAltSetting(handle, selected_interface.bInterfaceNumber(), selected_interface.bAlternateSetting());
+        }
+        public boolean SelectInterface(DfuInterface iface)
+        {
+            if(interfaces.contains(iface)) {
+                selected_interface = iface;
+                return true;
+            }
+            return false;
+        }
+        public List<DfuInterface>Interfaces() { return interfaces;}
+        public String GetId() {
+            String id = String.valueOf(idVendor()) + ":"
+                    + String.valueOf(idProduct());
+            for (DfuInterface i : interfaces) {
+                id += ":";
+                if (i.Memory() != null) {
+                    id += i.Memory().name();
+                }
+            }
+            return id;
+        }
+        
+        @Override
+        public boolean equals(Object o) {
+            if(o instanceof DfuDevice) {
+                DfuDevice dd = (DfuDevice)o;
+                if (GetId().equals(dd.GetId())) {
+                    return true;
+                }
+            }
+            return false;
         }
 /*
         public byte bConfigurationValue() { return intf.getUsbConfiguration().getUsbConfigurationDescriptor().bConfigurationValue();}
