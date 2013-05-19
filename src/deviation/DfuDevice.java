@@ -12,12 +12,14 @@ public class DfuDevice
         private DeviceHandle handle;
         private List<DfuInterface> interfaces;
         private DfuInterface selected_interface;
+        private int open_count;
 
         public DfuDevice(Device dev) {
             this.handle = null;
             this.dev = dev;
             interfaces = new ArrayList<DfuInterface>();
             this.selected_interface = null;
+            open_count = 0;
         }
         public void AddInterface(InterfaceDescriptor intf, ConfigDescriptor cfg) {
             interfaces.add(new DfuInterface(dev, intf, cfg));    
@@ -43,15 +45,23 @@ public class DfuDevice
         
         public int open() {
             if (handle == null) {
+                open_count = 1;
                 handle = new DeviceHandle();
                 return LibUsb.open(dev, handle);
+            } else {
+                open_count++;
             }
             return 0;
         }
         public void close() {
             if (handle != null) {
-                LibUsb.close(handle);
-                handle = null;
+                if (open_count > 1) {
+                    open_count--;
+                } else {
+                    LibUsb.close(handle);
+                    handle = null;
+                    open_count = 0;
+                }
             }
         }
         public int claim_and_set()  {

@@ -27,4 +27,13 @@ public class IOUtil
             f.close();
         }
     }
+    public static boolean writeFile(String file, byte[] data) {
+        try {
+            FileOutputStream fos = new FileOutputStream(file);
+            fos.write(data);
+            fos.close();
+        } catch (Exception e) { return false;}
+        return true;
+
+    }
 }

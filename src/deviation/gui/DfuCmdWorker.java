@@ -2,7 +2,6 @@ package deviation.gui;
 
 import java.util.List;
 
-import javax.swing.JButton;
 import javax.swing.JProgressBar;
 import javax.swing.SwingWorker;
 
@@ -10,15 +9,15 @@ import deviation.*;
 
 class DfuCmdWorker extends SwingWorker<String, Double> implements Progress {
     private final JProgressBar fProgressBar;
-    private final JButton fButton;
+    private InstallBtnAction action;
     private DfuFile dfuFile;
     private List<DfuDevice> devs;
     private MonitorUSB monitor;
 
     //private final JLabel fLabel;
-    public DfuCmdWorker( List<DfuDevice> devs, DfuFile dfuFile, JProgressBar aProgressBar, JButton aButton, MonitorUSB monitor ) {
+    public DfuCmdWorker( List<DfuDevice> devs, DfuFile dfuFile, JProgressBar aProgressBar, InstallBtnAction action, MonitorUSB monitor ) {
         fProgressBar = aProgressBar;
-        fButton = aButton;
+        this.action = action;
         this.monitor = monitor;
         this.devs = devs;
         this.dfuFile = dfuFile;
@@ -50,16 +49,7 @@ class DfuCmdWorker extends SwingWorker<String, Double> implements Progress {
             fProgressBar.setValue(0);
         }
         monitor.ReleaseDevices();
-        fButton.setText("Send");
-        /*      
-      try {
-        fLabel.setText( get() );
-      } catch ( InterruptedException e ) {
-        e.printStackTrace();
-      } catch ( ExecutionException e ) {
-        e.printStackTrace();
-      }
-         */
+        action.setCancelState(false);
     }
     //Progress Interface
     public void update(Double status) {
