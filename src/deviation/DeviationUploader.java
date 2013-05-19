@@ -67,9 +67,9 @@ public class DeviationUploader
             Dfu.setIdle(dev);
             byte [] txInfo = Dfu.fetchFromDevice(dev, 0x08000400, 0x40);
             TxInfo info = new TxInfo(txInfo);
-            if (! info.matchType(TxInfo.getTypeFromString(elem.name()))) {
+            if (! info.matchModel(TxInfo.getModelFromString(elem.name()))) {
                 System.out.format("Error: Dfu Tx type '%s' does not match transmitter type '%s'%n",
-                                  TxInfo.typeToString(TxInfo.getTypeFromString(elem.name())),
+                                  TxInfo.typeToString(TxInfo.getModelFromString(elem.name())),
                                   TxInfo.typeToString(info.type()));
                 break;
             }

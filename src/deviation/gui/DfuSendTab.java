@@ -7,7 +7,6 @@ import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
-import java.util.List;
 
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
@@ -33,19 +32,13 @@ public class DfuSendTab extends JPanel {
     private JTabbedPane DFU_InfoTabbedPane;
     private JButton DFU_btnSend;
 
-    private final JProgressBar progressBar;
-
     private DfuFile dfuFile;
 
     private TxInfo txInfo;
-    private MonitorUSB monitor;
-    private DfuCmdWorker worker;
 
 
     public DfuSendTab(MonitorUSB monitor, TxInfo txInfo, JProgressBar progressBar) {
-        this.progressBar = progressBar;
         this.txInfo = txInfo;
-        this.monitor = monitor;
         dfuFile = null;
 
         JPanel DFUPanel = this;
@@ -91,10 +84,8 @@ public class DfuSendTab extends JPanel {
         gbc_DFUInfoPanel.gridy = 1;
         DFUPanel.add(DFU_InfoTabbedPane, gbc_DFUInfoPanel);
 
-        DFU_btnSend = new JButton("Send");
-        DFU_btnSend.setEnabled(false);
-        DFU_btnSend.addActionListener(new dfuSendBtnListener());
-
+        InstallBtnAction action = new InstallBtnAction(monitor, progressBar, "Send", "Install DFU onto transmitter", "Cancel DFU installation");
+        DFU_btnSend = new JButton(action);
         GridBagConstraints gbc_DFU_btnSend = new GridBagConstraints();
         gbc_DFU_btnSend.gridwidth = 3;
         gbc_DFU_btnSend.insets = new Insets(0, 0, 0, 5);
@@ -115,18 +106,18 @@ public class DfuSendTab extends JPanel {
                 try {
                     boolean first = true;
                     dfuFile = new DfuFile(fname);
-                    TxInfo.TxType type = TxInfo.TxType.DEVO_UNKNOWN;
+                    TxInfo.TxModel type = TxInfo.TxModel.DEVO_UNKNOWN;
                     for (DfuFile.ImageElement elem : dfuFile.imageElements()) {
                         DFU_InfoTabbedPane.addTab(elem.name(), new DfuInfoPanel(elem));
                         if (first) {
-                            type = TxInfo.getTypeFromString(elem.name());
+                            type = TxInfo.getModelFromString(elem.name());
                             first = false;
-                        } else if(type != TxInfo.getTypeFromString(elem.name())) {
+                        } else if(type != TxInfo.getModelFromString(elem.name())) {
                             throw new IOException("Found multiple Tx types in dfu");
                         }
                     }
                     DFU_txtFile.setText(fname);
-                    if(txInfo.matchType(type) && type != TxInfo.TxType.DEVO_UNKNOWN) {
+                    if(txInfo.matchModel(type) && type != TxInfo.TxModel.DEVO_UNKNOWN) {
                         DFU_btnSend.setEnabled(true);
                     } else{
                         DFU_btnSend.setEnabled(false);
@@ -226,21 +217,5 @@ public class DfuSendTab extends JPanel {
             DFU_txtUsed.setColumns(10);
         }
     }
-    private class dfuSendBtnListener implements ActionListener {
-        public void actionPerformed(ActionEvent e) {
-            if (DFU_btnSend.getText().equals("Send")) {
-                DFU_btnSend.setText("Cancel");
-                List<DfuDevice> devs = monitor.GetDevices();
-                if (devs == null || dfuFile == null) {
-                    return;
-                }
-                worker = new DfuCmdWorker( devs, dfuFile, progressBar, DFU_btnSend, monitor);
-                worker.execute();
-            } else {
-                worker.cancel(false);
-            }
-        }
-    }
-
 
 }

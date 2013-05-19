@@ -8,5 +8,17 @@ flavor of that.  It is not intended to be a generalized dfu upload/download
 tool, but instead is targetted only at communicating with Walkera transmitters.
 
 
-Instructions for updating jar files:
-mvn install:install-file -Dfile=usb4java-1.0.0-SNAPSHOT.jar -DgroupId=usb4java -DartifactId=usb4java -Dversion=1.0.0-SNAPSHOT -Dpackaging=jar -DlocalRepositoryPath=libs -DcreateChecksum=true
+Upgrading the jar files:
+download official release from:
+
+http://kayahr.github.io/usb4java/index.html and unzip
+
+usb4java:
+export VERSION=1.0.0; mvn install:install-file -Dfile=usb4java-$VERSION/lib/usb4java-$VERSION.jar -DgroupId=de-ailis -DartifactId=usb4java -Dversion=$VERSION -Dpackaging=jar -DlocalRepositoryPath=libs -DcreateChecksum=true
+
+javax-usb:
+export VERSION=1.0.2; mvn install:install-file -Dfile=usb4java-1.0.0/lib/usb-api-$VERSION.jar -DgroupId=javax -DartifactId=javax-usb -Dversion=$VERSION -Dpackaging=jar -DlocalRepositoryPath=libs -DcreateChecksum=true
+
+http://code.google.com/p/fat32-lib/
+fat32-lib:
+EXPORT VERSION=0.6.2; mvn install:install-file -Dfile=fat32-lib-$VERSION.jar -DgroupId=de-waldheinz -DartifactId=fat32-lib -Dversion=$VERSION -Dpackaging=jar -DlocalRepositoryPath=libs -DcreateChecksum=true

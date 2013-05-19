@@ -26,6 +26,12 @@ public class DfuFile {
     private List<ImageElement> imageElements;
     public DfuFile(String fname) throws IOException {
         byte[] data = IOUtil.readFile(fname);
+        init(data);
+    }
+    public DfuFile(byte[] data) {
+        init(data);
+    }
+    private void init(byte[] data) {
         imageElements = new ArrayList<ImageElement>();
 
         final byte [] szSignature = new byte[] {'D', 'f', 'u', 'S', 'e'};
@@ -77,7 +83,10 @@ public class DfuFile {
         int bAltSetting = 0xff & data[offset+6];
         String targetName = null;
         if (data[offset+7] != 0 || data[offset+8] != 0 || data[offset+9] != 0 || data[offset+10] != 0) {
-            targetName = new String(Arrays.copyOfRange(data, offset+11, offset+266));
+            byte[] arr = Arrays.copyOfRange(data, offset+11, offset+266);
+            int i;
+            for (i = 0; i < arr.length && arr[i] != 0; i++) {}
+            targetName = new String(arr, 0, i);
         }
         //System.out.println("Name: '" + targetName + "'");
         //long targetSize = ((long)(0xff & data[offset+269]) << 24)

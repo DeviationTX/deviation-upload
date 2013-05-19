@@ -8,11 +8,11 @@ public class TxInfo {
     private long id1;
     private long id2;
     private long id3;
-    public enum TxType {DEVO_UNKNOWN, DEVO6, DEVO7e, DEVO8, DEVO10, DEVO12};
-    private TxType type;
+    public enum TxModel {DEVO_UNKNOWN, DEVO6, DEVO7e, DEVO8, DEVO10, DEVO12};
+    private TxModel type;
     public TxInfo() {
         model = null;
-        type = TxType.DEVO_UNKNOWN;
+        type = TxModel.DEVO_UNKNOWN;
         id1 = 0;
         id2 = 0;
         id3 = 0;
@@ -20,18 +20,18 @@ public class TxInfo {
     public TxInfo(byte [] data)
     {
         model = new String(Arrays.copyOfRange(data, 0, 32));
-        type = TxType.DEVO_UNKNOWN;
+        type = TxModel.DEVO_UNKNOWN;
         if (data[8] == 'D' && data[9] == 'E' && data[10] == 'V' && data[11] == 'O' && data[12] == '-') {
             if        (data[13] == '0' && data[14] == '6') {
-                type = TxType.DEVO6;
+                type = TxModel.DEVO6;
             } else if (data[13] == '7' && data[14] == 'E') {
-                type = TxType.DEVO7e;
+                type = TxModel.DEVO7e;
             } else if (data[13] == '0' && data[14] == '8') {
-                type = TxType.DEVO8;
+                type = TxModel.DEVO8;
             } else if (data[13] == '1' && data[14] == '0') {
-                type = TxType.DEVO10;
+                type = TxModel.DEVO10;
             } else if (data[13] == '1' && data[14] == '2') {
-                type = TxType.DEVO12;
+                type = TxModel.DEVO12;
             }
         }
         id1 = (0xff & data[0x22]) | ((0xff & data[0x24]) << 8) | ((0xff & data[0x26]) << 16) | ((long)(0xff & data[0x28]) << 24);
@@ -42,7 +42,7 @@ public class TxInfo {
     public long id1() { return id1;}
     public long id2() { return id2;}
     public long id3() { return id3;}
-    public TxType type() { return type;}
+    public TxModel type() { return type;}
     private byte[] convertToByteArray(long[] data, int offset) {
         byte []buf = new byte[20];
         int i = 0;
@@ -125,32 +125,32 @@ public class TxInfo {
             default:     return null;
         }
     }
-    public boolean matchType(TxType t)
+    public boolean matchModel(TxModel t)
     {
-        if (type == TxType.DEVO_UNKNOWN || type != t) {
+        if (type == TxModel.DEVO_UNKNOWN || type != t) {
             return false;
         }
         return true;
     }
-    public static TxType getTypeFromString(String str) {
-        if(str.matches("DEVO-12.*") || str.matches(".*devo12.*")) {
-            return TxType.DEVO12;
+    public static TxModel getModelFromString(String str) {
+        if(str.matches("DEVO-12.*") || str.matches(".*devo12.*") || str.equals("12")) {
+            return TxModel.DEVO12;
         }
-        if(str.matches("DEVO-10.*") || str.matches(".*devo10.*")) {
-            return TxType.DEVO10;
+        if(str.matches("DEVO-10.*") || str.matches(".*devo10.*") || str.equals("10")) {
+            return TxModel.DEVO10;
         }
-        if(str.matches("DEVO-8.*") || str.matches(".*devo8.*")) {
-            return TxType.DEVO8;
+        if(str.matches("DEVO-8.*") || str.matches(".*devo8.*") || str.equals("8")) {
+            return TxModel.DEVO8;
         }
-        if(str.matches("DEVO-7E.*") || str.matches(".*devo7e.*")) {
-            return TxType.DEVO7e;
+        if(str.matches("DEVO-7E.*") || str.matches(".*devo7e.*") || str.equals("7e")) {
+            return TxModel.DEVO7e;
         }
-        if(str.matches("DEVO-6.*") || str.matches(".*devo6.*")) {
-            return TxType.DEVO6;
+        if(str.matches("DEVO-6.*") || str.matches(".*devo6.*") || str.equals("6")) {
+            return TxModel.DEVO6;
         }
-        return TxType.DEVO_UNKNOWN;
+        return TxModel.DEVO_UNKNOWN;
     }
-    public static String typeToString(TxType type)
+    public static String typeToString(TxModel type)
     {
         switch (type) {
             case DEVO6:  return "Devo 6";

@@ -5,6 +5,7 @@ import java.util.*;
 import java.nio.ByteBuffer;
 
 import de.ailis.usb4java.libusb.*;
+import deviation.DevoFat.FatStatus;
 
 public final class Dfu
 {
@@ -333,20 +334,6 @@ public final class Dfu
             }
         }
         return 0;
-    }
-    public static TxInfo getTxInfo(DfuDevice dev)
-    {
-        dev.SelectInterface(dev.Interfaces().get(0));
-        if (dev.open() != 0) {
-            System.out.println("Error: Unable to open device");
-            return new TxInfo();
-        }
-        dev.claim_and_set();
-        Dfu.setIdle(dev);
-        byte [] txInfo = Dfu.fetchFromDevice(dev, 0x08000400, 0x40);
-        dev.close();
-        return new TxInfo(txInfo);
-
     }
     public static byte [] fetchFromDevice(DfuDevice dev, int address, int requested_length)
     {
