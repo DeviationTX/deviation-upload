@@ -47,7 +47,7 @@ public class TxUtils {
         } else if (txType == TxModel.DEVO7e) {
             fat_start = 0;
         }
-        byte [] fatRootBytes = DevoFat.reverse(Dfu.fetchFromDevice(dev, fat_start, 0x200));
+        byte [] fatRootBytes = DevoFat.invert(Dfu.fetchFromDevice(dev, fat_start, 0x200));
         if (fatRootBytes[510] == 0x55 && ((int)fatRootBytes[511] & 0xff) == 0xaa
                 && fatRootBytes[54] == 0x46 && fatRootBytes[55] == 0x41) {
             has_root = true;
