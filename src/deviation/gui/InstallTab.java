@@ -6,6 +6,7 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.List;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -349,6 +350,25 @@ public class InstallTab extends JPanel {
             } else {
                 chckbxFormatMedia.setEnabled(true);                
             }
+        }
+        List<DfuDevice> devs = gui.getMonitor().GetDevices();
+        if (devs != null) {
+            DfuDevice dev = devs.get(0);
+            dev.SelectInterface(dev.Interfaces().get(0));
+            if (dev.open() != 0) {
+                System.out.println("Error: Unable to open device");
+                return;
+            }
+            dev.claim_and_set();
+            Dfu.setIdle(dev);
+                 
+            DevoFat fat = new DevoFat(dev, gui.getTxInfo().type());
+            try {
+            fat.Init(FatStatus.ROOT_AND_MEDIA_FAT);
+            } catch (Exception e) { System.out.println(e); }
+            fat.readDir("/media");
+            dev.close();
+            gui.getMonitor().ReleaseDevices();
         }
     }
     private void update_install_button() {
