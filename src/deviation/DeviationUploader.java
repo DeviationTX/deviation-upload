@@ -321,7 +321,7 @@ public class DeviationUploader
     public static void main(String[] args)
     {
         if (args.length == 0) {
-            test();
+            //test();
             DeviationUploadGUI.main(null);
             while(true) {}
         }
@@ -343,14 +343,16 @@ public class DeviationUploader
         LibUsb.getDeviceList(null, devices);
         List<DfuDevice> devs = Dfu.findDevices(devices);
         for(DfuDevice dev : devs) {
-            System.out.format("Found: %s [%05x:%04x] cfg=%d, intf=%d, alt=%d, name='%s'%n",
+        	DfuMemory mem = dev.Memory();
+        	
+            System.out.format("Found: %s [%05x:%04x] cfg=%d, intf=%d, alt=%d, name='%s'\n",
                 dev.DFU_IFF_DFU() ? "DFU" : "Runtime",
                 dev.idVendor(),
                 dev.idProduct(),
                 dev.bConfigurationValue(),
                 dev.bInterfaceNumber(),
                 dev.bAlternateSetting(),
-                dev.Memory().name());
+                mem == null ? dev.GetId() : mem.name());
             //DfuFuncDescriptor desc = new DfuFuncDescriptor(dev);
         }
         if (cl.hasOption("send")) {

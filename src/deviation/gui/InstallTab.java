@@ -6,8 +6,14 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
+import javax.swing.AbstractAction;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JFileChooser;
@@ -26,6 +32,7 @@ public class InstallTab extends JPanel {
      * 
      */
     private static final long serialVersionUID = 1L;
+    private static final String DEFAULT_DIR = "DefaultDir";
     
     private JTextField firmwareTxt;
     private JTextField libraryTxt;
@@ -35,17 +42,38 @@ public class InstallTab extends JPanel {
     private JTextField txtLibVersion;
     private JTextField txtLibSize;
     private JTextField txtLibUsed;
-    private JCheckBox chckbxFormatRoot;
-    private JCheckBox chckbxFormatMedia;
-    private JCheckBox chckbxReplaceTxini;
-    private JCheckBox chckbxReplaceModels;
+    private enum Checkbox {
+    	FORMATROOT ("Format Root"),
+    	FORMATMEDIA ("Format Media"),
+    	INSTALLLIB ("Install Library"),
+    	REPLACETX ("Replace tx.ini"),
+    	REPLACEHW ("Replace hardware.ini"),
+    	REPLACEMODEL ("Replace models");
+    	
+    	private final JCheckBox chkbx;
+    	private Checkbox(String str) {
+    		chkbx = new JCheckBox(str);
+    	}
+    	public void disable() {
+    		chkbx.setEnabled(false);
+    		chkbx.setSelected(false);
+    	}
+    	public void set(boolean val) {
+    		chkbx.setEnabled(true);
+    		chkbx.setSelected(val);
+    	}
+    	public JCheckBox get() { return chkbx; }
+    	//public int idx() { return ordinal(); }
+    };
     
     private JButton btnInstall;
+    private JButton filesystemBtn;
 
+    private FileInstaller fileInstaller;
     private ZipFileGroup zipFiles;
     DeviationUploadGUI gui;
     DfuCmdWorker worker;
-    
+
     DevoDetect fw;
     DevoDetect lib;
     public InstallTab(DeviationUploadGUI gui) {
@@ -53,6 +81,7 @@ public class InstallTab extends JPanel {
         zipFiles = new ZipFileGroup();
         fw = new DevoDetect();
         lib = new DevoDetect();
+        fileInstaller = new FileInstaller(gui.getMonitor(), gui.getProgressBar());
         
         GridBagLayout gbl_BinSendPanel = new GridBagLayout();
         gbl_BinSendPanel.columnWidths = new int[]{0, 45, 0, 0, 0};
@@ -105,7 +134,7 @@ public class InstallTab extends JPanel {
         add(libraryTxt, gbc_textField_1);
         libraryTxt.setColumns(10);
         
-        JButton filesystemBtn = new JButton("...");
+        filesystemBtn = new JButton("...");
         filesystemBtn.addActionListener(new FileChooserBtnListener(libraryTxt));
         GridBagConstraints gbc_button_1 = new GridBagConstraints();
         gbc_button_1.insets = new Insets(0, 0, 5, 0);
@@ -232,7 +261,7 @@ public class InstallTab extends JPanel {
         txtLibUsed.setColumns(10);
         */
         
-        InstallBtnAction action = new InstallBtnAction(gui.getMonitor(), gui.getProgressBar(), "Install/Upgrade", "Install firmware and/or filesystem", "Cancel installation");
+        AbstractAction action = fileInstaller.getButtonAction("Install/Upgrade", "Install firmware and/or filesystem", "Cancel installation");
         btnInstall = new JButton(action);
         //btnInstall.setEnabled(false);
 
@@ -240,117 +269,81 @@ public class InstallTab extends JPanel {
             public void actionPerformed(ActionEvent arg0) {
             }
         });
+
+        int row = 2;
+        for (Checkbox box : Checkbox.values()) {
+        	JCheckBox chkbx = box.get();
+        	checkboxSetCallback(chkbx);
+        	GridBagConstraints gbc_chckbx = new GridBagConstraints();
+        	gbc_chckbx.anchor = GridBagConstraints.WEST;
+        	gbc_chckbx.gridwidth = 2;
+        	gbc_chckbx.insets = new Insets(0, 0, 5, 5);
+        	gbc_chckbx.gridx = 0;
+        	gbc_chckbx.gridy = row++;
+        	add(chkbx, gbc_chckbx);
+        }
         
-        chckbxFormatRoot = new JCheckBox("Format Root");
-        GridBagConstraints gbc_chckbxFormatRoot = new GridBagConstraints();
-        gbc_chckbxFormatRoot.anchor = GridBagConstraints.WEST;
-        gbc_chckbxFormatRoot.gridwidth = 2;
-        gbc_chckbxFormatRoot.insets = new Insets(0, 0, 5, 5);
-        gbc_chckbxFormatRoot.gridx = 0;
-        gbc_chckbxFormatRoot.gridy = 2;
-        add(chckbxFormatRoot, gbc_chckbxFormatRoot);
-                
-        chckbxFormatMedia = new JCheckBox("Format Media");
-        GridBagConstraints gbc_chckbxFormatMedia = new GridBagConstraints();
-        gbc_chckbxFormatMedia.anchor = GridBagConstraints.WEST;
-        gbc_chckbxFormatMedia.gridwidth = 2;
-        gbc_chckbxFormatMedia.insets = new Insets(0, 0, 5, 5);
-        gbc_chckbxFormatMedia.gridx = 0;
-        gbc_chckbxFormatMedia.gridy = 3;
-        add(chckbxFormatMedia, gbc_chckbxFormatMedia);
-        
-        chckbxReplaceTxini = new JCheckBox("Replace tx.ini");
-        GridBagConstraints gbc_chckbxReplaceTxini = new GridBagConstraints();
-        gbc_chckbxReplaceTxini.anchor = GridBagConstraints.WEST;
-        gbc_chckbxReplaceTxini.gridwidth = 2;
-        gbc_chckbxReplaceTxini.insets = new Insets(0, 0, 5, 5);
-        gbc_chckbxReplaceTxini.gridx = 0;
-        gbc_chckbxReplaceTxini.gridy = 4;
-        add(chckbxReplaceTxini, gbc_chckbxReplaceTxini);
-        
-        chckbxReplaceModels = new JCheckBox("Replace models");
-        GridBagConstraints gbc_chckbxReplaceModels = new GridBagConstraints();
-        gbc_chckbxReplaceModels.anchor = GridBagConstraints.WEST;
-        gbc_chckbxReplaceModels.gridwidth = 2;
-        gbc_chckbxReplaceModels.insets = new Insets(0, 0, 5, 5);
-        gbc_chckbxReplaceModels.gridx = 0;
-        gbc_chckbxReplaceModels.gridy = 5;
-        add(chckbxReplaceModels, gbc_chckbxReplaceModels);
         GridBagConstraints gbc_btnInstall = new GridBagConstraints();
         gbc_btnInstall.gridwidth = 4;
         gbc_btnInstall.gridx = 0;
-        gbc_btnInstall.gridy = 6;
+        gbc_btnInstall.gridy = row;
         add(btnInstall, gbc_btnInstall);
         
         update_checkboxes();
         update_install_button();
     }
+    private void checkboxSetCallback(JCheckBox chkbx) {
+    	chkbx.addItemListener(new ItemListener() {
+    	    public void itemStateChanged(ItemEvent e) {
+    	    	update_files_to_install();
+    	    }
+    	});
+    }
     public void parseZipFiles() {
         fw = zipFiles.GetFirmwareInfo();
-        txtFwVersion.setText("");
-        txtFwSize.setText("");
-        txtLibVersion.setText("");
-        txtLibSize.setText("");
-        if (fw.Found()) {
-            txtFwVersion.setText(fw.version());
-            DfuFile fwDfu = zipFiles.GetFirmwareDfu();
-            if (fwDfu != null) {
-                int size = 0;
-                for (DfuFile.ImageElement elem : fwDfu.imageElements()) {
-                    size += elem.data().length;
-                }
-                txtFwSize.setText(String.valueOf(size / 1024) + " kb");
-            }            
-        }
         lib = zipFiles.GetLibraryInfo();
-        if (lib.Found()) {
-            txtLibVersion.setText(lib.version());
-            
-            int size = 0;
-            for (DfuFile fsDfu : zipFiles.GetLibraryDfus()) {
-                for (DfuFile.ImageElement elem : fsDfu.imageElements()) {
-                    size += elem.data().length;
-                }
-            }
-            for (FileInfo file : zipFiles.GetFilesystemFiles()) {
-                if (! file.name().matches(".*\\.dfu")) {
-                    size += file.size();
-                }
-            }
-            txtLibSize.setText(String.valueOf(size / 1024) + " kb");
-
-        }
         update_checkboxes();
-        update_install_button();
+        update_filechooser();
+        update_files_to_install();
+    }
+    private void update_filechooser() {
+    	String fwFile = zipFiles.firmwareZip();
+    	String libFile = zipFiles.libraryZip();
+    	firmwareTxt.setText(fwFile);
+    	if(fwFile.equals(libFile) && zipFiles.GetFirmwareInfo().isFirmware() && zipFiles.GetLibraryInfo().isLibrary()) {
+    		//one zip file with both lib and 
+    		libFile = "";
+    		filesystemBtn.setEnabled(false);
+        	libraryTxt.setEnabled(false);
+    	} else {
+    		filesystemBtn.setEnabled(true);
+        	libraryTxt.setEnabled(true);
+    	}
+    	libraryTxt.setText(libFile);
     }
     private void update_checkboxes() {
-            chckbxFormatRoot.setSelected(false);
-            chckbxFormatRoot.setEnabled(false);
-            chckbxFormatMedia.setSelected(false);
-            chckbxFormatMedia.setEnabled(false);
-            chckbxReplaceTxini.setSelected(false);
-            chckbxReplaceTxini.setEnabled(false);
-            chckbxReplaceModels.setSelected(false);
-            chckbxReplaceModels.setEnabled(false);
-        if (gui.getTxInfo().type() == TxModel.DEVO_UNKNOWN || lib.firmware() != Firmware.DEVIATION){
+    	for (Checkbox c : Checkbox.values()) {
+    		c.disable();
+    	}
+        if (gui.getTxInfo().type() == TxModel.DEVO_UNKNOWN || fw.firmware() != Firmware.DEVIATION){
             return;
         }
-        if (gui.getFatType() == FatStatus.NO_FAT || gui.getFatType() == FatStatus.MEDIA_FAT) {
-            chckbxFormatRoot.setSelected(true);
-            chckbxReplaceTxini.setSelected(true);
-            chckbxReplaceModels.setSelected(true);            
-        } else {
-            chckbxFormatRoot.setEnabled(true);
-            chckbxReplaceTxini.setEnabled(true);
-            chckbxReplaceModels.setEnabled(true);            
-        }
+        boolean chkboxval = (gui.getFatType() == FatStatus.NO_FAT || gui.getFatType() == FatStatus.MEDIA_FAT);
+        Checkbox.FORMATROOT.set(chkboxval);
+        Checkbox.REPLACETX.set(chkboxval);
+        Checkbox.REPLACEHW.set(chkboxval);
+        Checkbox.REPLACEMODEL.set(chkboxval);
         if (gui.getTxInfo().type() == TxModel.DEVO12) {
             if (gui.getFatType() == FatStatus.NO_FAT || gui.getFatType() == FatStatus.ROOT_FAT) {
-                chckbxFormatMedia.setSelected(true);                
+                Checkbox.FORMATMEDIA.set(true);
             } else {
-                chckbxFormatMedia.setEnabled(true);                
+                Checkbox.FORMATMEDIA.set(false);
             }
         }
+        if (zipFiles.GetLibraryInfo().Found()) {
+        	Checkbox.INSTALLLIB.set(true);
+        }
+        /*
         List<DfuDevice> devs = gui.getMonitor().GetDevices();
         if (devs != null) {
             DfuDevice dev = devs.get(0);
@@ -370,6 +363,7 @@ public class InstallTab extends JPanel {
             dev.close();
             gui.getMonitor().ReleaseDevices();
         }
+        */
     }
     private void update_install_button() {
         boolean enabled = true;
@@ -388,6 +382,50 @@ public class InstallTab extends JPanel {
         }
         btnInstall.setEnabled(enabled);
     }
+    private void update_files_to_install() {
+        txtFwVersion.setText("");
+        txtFwSize.setText("");
+        txtLibVersion.setText("");
+        txtLibSize.setText("");
+        if (fw.Found()) {
+            txtFwVersion.setText(fw.version());
+            DfuFile fwDfu = zipFiles.GetFirmwareDfu();
+            if (fwDfu != null) {
+            	fileInstaller.setFirmwareDfu(fwDfu);
+                int size = 0;
+                for (DfuFile.ImageElement elem : fwDfu.imageElements()) {
+                    size += elem.data().length;
+                }
+                txtFwSize.setText(String.valueOf(size / 1024) + " kb");
+            }            
+        }
+        if (Checkbox.INSTALLLIB.get().isSelected() && lib.Found()) {
+            txtLibVersion.setText(lib.version());
+            fileInstaller.setLibraryDfus(zipFiles.GetLibraryDfus());
+            fileInstaller.clearFiles();
+            
+            int size = 0;
+            for (DfuFile fsDfu : zipFiles.GetLibraryDfus()) {
+                for (DfuFile.ImageElement elem : fsDfu.imageElements()) {
+                    size += elem.data().length;
+                }
+            }
+            for (FileInfo file : zipFiles.GetFilesystemFiles()) {
+                if (file.name().matches(".*\\.dfu") || file.name().matches(".*\\.zip"))
+                	continue;
+                if (! Checkbox.REPLACETX.get().isSelected() && file.name().equals("tx.ini"))
+                   	continue;
+                if (! Checkbox.REPLACEHW.get().isSelected() && file.name().equals("hardware.ini"))
+                  	continue;
+                if (! Checkbox.REPLACEMODEL.get().isSelected() && file.name().matches("models/.*"))
+                	continue;
+                size += file.size();
+                fileInstaller.addFile(file);
+            }
+            txtLibSize.setText(String.valueOf(size / 1024) + " kb");
+        }
+        update_install_button();
+    }
     private class FileChooserBtnListener implements ActionListener {
         JTextField txtField;
         public FileChooserBtnListener(JTextField txt) {
@@ -396,11 +434,18 @@ public class InstallTab extends JPanel {
         }
         public void actionPerformed(ActionEvent e) {
             final JFileChooser fc = new JFileChooser();
+            UploaderPreferences prefs = new UploaderPreferences();
+            String startDir = prefs.get(DEFAULT_DIR, System.getProperty("user.home"));
+            fc.setCurrentDirectory(new File(startDir));
             FileNameExtensionFilter ff = new FileNameExtensionFilter("Zip Files", "zip");
             fc.addChoosableFileFilter(ff);
             fc.setFileFilter(ff);
             int returnVal = fc.showOpenDialog(null);
             if (returnVal == JFileChooser.APPROVE_OPTION) {
+            	startDir = fc.getSelectedFile().getParent();
+            	if (startDir != null) {
+            		prefs.put(DEFAULT_DIR,  startDir);
+            	}
                 String fname = fc.getSelectedFile().getPath();
                 if (! txtField.getText().isEmpty()) {
                     zipFiles.RemoveZipFile(txtField.getText());

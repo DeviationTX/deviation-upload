@@ -79,12 +79,13 @@ public class DeviationUploadGUI {
 	    txInfo = new TxInfo(b);
          */
         txInfo = new TxInfo();
+        monitor = new MonitorUSB(this);
         //redirectSystemStreams();
         initialize();
         RefreshDevices(null);
         LibUsb.init(null);
         Timer timer1 = new Timer();
-        monitor = new MonitorUSB(this);
+        
         timer1.schedule(monitor, 0, 5000);
     }
 
@@ -194,7 +195,7 @@ public class DeviationUploadGUI {
         frame.getContentPane().add(progressBar, gbc_progressBar);
 
         //Create tabs
-        DfuSendTab DfuPanel = new DfuSendTab(monitor, txInfo, progressBar);
+        DfuSendTab DfuPanel = new DfuSendTab(this, txInfo, progressBar);
         tabbedPane.addTab("DFU", null, DfuPanel, null);
         tabbedPane.setEnabledAt(0, true);
 

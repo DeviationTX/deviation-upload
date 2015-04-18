@@ -9,13 +9,13 @@ import deviation.*;
 
 class DfuCmdWorker extends SwingWorker<String, Double> implements Progress {
     private final JProgressBar fProgressBar;
-    private InstallBtnAction action;
+    private FileInstaller action;
     private DfuFile dfuFile;
     private List<DfuDevice> devs;
     private MonitorUSB monitor;
 
     //private final JLabel fLabel;
-    public DfuCmdWorker( List<DfuDevice> devs, DfuFile dfuFile, JProgressBar aProgressBar, InstallBtnAction action, MonitorUSB monitor ) {
+    public DfuCmdWorker( List<DfuDevice> devs, DfuFile dfuFile, JProgressBar aProgressBar, FileInstaller action, MonitorUSB monitor ) {
         fProgressBar = aProgressBar;
         this.action = action;
         this.monitor = monitor;

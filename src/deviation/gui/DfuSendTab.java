@@ -8,6 +8,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 
+import javax.swing.AbstractAction;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
@@ -32,15 +33,17 @@ public class DfuSendTab extends JPanel {
     private JTabbedPane DFU_InfoTabbedPane;
     private JButton DFU_btnSend;
 
+    private FileInstaller fileInstaller;
     private DfuFile dfuFile;
 
     private TxInfo txInfo;
 
 
-    public DfuSendTab(MonitorUSB monitor, TxInfo txInfo, JProgressBar progressBar) {
+    public DfuSendTab(DeviationUploadGUI gui, TxInfo txInfo, JProgressBar progressBar) {
         this.txInfo = txInfo;
         dfuFile = null;
-
+        fileInstaller = new FileInstaller(gui.getMonitor(), gui.getProgressBar());
+        
         JPanel DFUPanel = this;
         GridBagLayout gbl_DFUPanel = new GridBagLayout();
         gbl_DFUPanel.columnWidths = new int[]{0, 0, 0, 0};
@@ -84,7 +87,7 @@ public class DfuSendTab extends JPanel {
         gbc_DFUInfoPanel.gridy = 1;
         DFUPanel.add(DFU_InfoTabbedPane, gbc_DFUInfoPanel);
 
-        InstallBtnAction action = new InstallBtnAction(monitor, progressBar, "Send", "Install DFU onto transmitter", "Cancel DFU installation");
+        AbstractAction action = fileInstaller.getButtonAction("Send", "Install DFU onto transmitter", "Cancel DFU installation");
         DFU_btnSend = new JButton(action);
         GridBagConstraints gbc_DFU_btnSend = new GridBagConstraints();
         gbc_DFU_btnSend.gridwidth = 3;
