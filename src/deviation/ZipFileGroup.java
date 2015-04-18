@@ -13,24 +13,32 @@ public class ZipFileGroup {
     private class ZipFile {
         String zipFile;
         List<FileInfo> files;
-        List<DfuFile> dfuFiles;
+        DfuFile dfuFirmware;
+        List<DfuFile> dfuLibs;
         DevoDetect devoType;
         public ZipFile(String fname) {
             zipFile = fname;
-            dfuFiles = new ArrayList<DfuFile>();
+            dfuLibs = new ArrayList<DfuFile>();
             files = GetFileList(fname);
             devoType = new DevoDetect();
 
             for (FileInfo file : files) {
+            	if (file.name().equals("tx.ini")) {
+            		devoType.isLibrary(true);
+            	}
                 if (file.name().matches(".*\\.dfu")) {
                     DfuFile dfu = new DfuFile(file.data());
-                    dfuFiles.add(dfu);
-                    if (! devoType.Found()) {
-                        for (DfuFile.ImageElement elem : dfu.imageElements()) {
-                            if (devoType.Analyze(elem.name())) {
-                                break;
-                            }
+                    DevoDetect type = new DevoDetect();
+                    for (DfuFile.ImageElement elem : dfu.imageElements()) {
+                        if (type.Analyze(elem.name())) {
+                            devoType.update(type);
+                            break;
                         }
+                    }
+                    if (type.isFirmware()) {
+                    	dfuFirmware = dfu;
+                    } else if (type.isLibrary()) {
+                    	dfuLibs.add(dfu);
                     }
                 }
             }
@@ -100,8 +108,10 @@ public class ZipFileGroup {
 
         public List<FileInfo> list() { return files; }
         public String name() { return zipFile; }
-        public List<DfuFile> listDfu() { return dfuFiles; }
+        //public List<DfuFile> listDfu() { return dfuFiles; }
         public DevoDetect devoInfo() { return devoType; }
+        public DfuFile getFirmwareDfu() { return dfuFirmware; }
+        public List<DfuFile> getLibraryDfus() { return dfuLibs; }
     }
     
     public ZipFileGroup() {
@@ -121,18 +131,18 @@ public class ZipFileGroup {
             index++;
         }
     }
-    public List<DfuFile>GetDfuFiles() {
-        List<DfuFile> dfus = new ArrayList<DfuFile>();
-        for (ZipFile zipFile : zipFiles) {
-            for (DfuFile dfu : zipFile.listDfu()) {
-                dfus.add(dfu);
-            }
-        }
-        return dfus;
-    }
+    //public List<DfuFile>GetDfuFiles() {
+    //    List<DfuFile> dfus = new ArrayList<DfuFile>();
+    //    for (ZipFile zipFile : zipFiles) {
+    //        for (DfuFile dfu : zipFile.listDfu()) {
+    //            dfus.add(dfu);
+    //        }
+    //    }
+    //    return dfus;
+    //}
     public DevoDetect GetFirmwareInfo() {
         for (ZipFile zipFile : zipFiles) {
-            if (zipFile.devoInfo().type() == DevoDetect.Type.FIRMWARE) {
+            if (zipFile.devoInfo().isFirmware()) {
                 return zipFile.devoInfo();
             }
         }
@@ -140,37 +150,51 @@ public class ZipFileGroup {
     }
     public DfuFile GetFirmwareDfu() {
         for (ZipFile zipFile : zipFiles) {
-            if (zipFile.devoInfo().type() == DevoDetect.Type.FIRMWARE) {
-                List<DfuFile>dfus = zipFile.listDfu();
-                if (dfus.size() > 0) {
-                    return dfus.get(0);
-                }
-            }
+        	DfuFile fw = zipFile.getFirmwareDfu();
+        	if (fw != null) {
+        		return fw;
+        	}
         }
         return null;
     }
     public DevoDetect GetLibraryInfo() {
         for (ZipFile zipFile : zipFiles) {
-            if (zipFile.devoInfo().type() == DevoDetect.Type.LIBRARY) {
+            if (zipFile.devoInfo().isLibrary()) {
                 return zipFile.devoInfo();
             }
         }
         return new DevoDetect();
     }
     public List<DfuFile> GetLibraryDfus() {
+        List<DfuFile> dfus = new ArrayList<DfuFile>();
         for (ZipFile zipFile : zipFiles) {
-            if (zipFile.devoInfo().type() == DevoDetect.Type.LIBRARY) {
-                return zipFile.listDfu();
-            }
+        	dfus.addAll(zipFile.getLibraryDfus());
         }
-        return null;
+        return dfus;
+
     }
     public List<FileInfo> GetFilesystemFiles() {
         for (ZipFile zipFile : zipFiles) {
-            if (zipFile.devoInfo().type() == DevoDetect.Type.LIBRARY) {
+            if (zipFile.devoInfo().isLibrary()) {
                 return zipFile.list();
             }
         }
         return null;
+    }
+    public String firmwareZip() {
+    	for (ZipFile zipFile : zipFiles) {
+    		if (zipFile.devoInfo().isFirmware()) {
+    			return zipFile.name();
+    		}
+    	}
+    	return "";
+    }
+    public String libraryZip() {
+    	for (ZipFile zipFile : zipFiles) {
+    		if (zipFile.devoInfo().isLibrary()) {
+    			return zipFile.name();
+    		}
+    	}
+    	return "";
     }
 }

@@ -48,6 +48,9 @@ public class TxUtils {
             fat_start = 0;
         }
         byte [] fatRootBytes = DevoFat.invert(Dfu.fetchFromDevice(dev, fat_start, 0x200));
+        //Magic bytes indicating FAT:
+        //end of sector (510,511) must be 0x55aa
+        //Fat type (54,55,56,57,58) must be FAT16 (we actuallyony check the 1st 2 bytes as sufficient)
         if (fatRootBytes[510] == 0x55 && ((int)fatRootBytes[511] & 0xff) == 0xaa
                 && fatRootBytes[54] == 0x46 && fatRootBytes[55] == 0x41) {
             has_root = true;
