@@ -7,9 +7,16 @@ import java.util.List;
 import javax.swing.AbstractAction;
 import javax.swing.JProgressBar;
 
+import deviation.DeviationUploader;
+import deviation.DevoFat;
+import deviation.DevoFat.FatStatus;
+import deviation.Dfu;
 import deviation.DfuDevice;
 import deviation.DfuFile;
 import deviation.FileInfo;
+import deviation.Transmitter;
+import deviation.TxInfo;
+import deviation.TxUtils;
 
 class FileInstaller {
 	private final JProgressBar progressBar;
@@ -19,6 +26,9 @@ class FileInstaller {
 	private DfuFile firmwareDfu;
 	private List<DfuFile> libraryDfus;
 	private List<FileInfo> files;
+	private boolean format_root;
+	private boolean format_media;
+	private final int SECTOR_SIZE = 0x1000;
 
 	class ButtonAction extends AbstractAction {
 		private static final long serialVersionUID = 1L;
@@ -46,7 +56,7 @@ class FileInstaller {
 				if (devs == null) {
 					return;
 				}
-
+/*
 				if (firmwareDfu != null) {
 					setCancelState(true);
 					worker = new DfuCmdWorker( devs, firmwareDfu, progressBar, FileInstaller.this, monitor);
@@ -59,10 +69,45 @@ class FileInstaller {
 						worker.execute();
 					}
 				}
+*/
+				updateRoot();
 			} else {
 				//Note that the worker disables the cancel state
 				worker.cancel(false);
 			}
+		}
+		private void updateRoot() {
+			List<DfuDevice> devs = monitor.GetDevices();
+			if (devs == null)
+				return;
+			TxInfo txInfo = TxUtils.getTxInfo(devs.get(0));
+			DfuDevice dev = DeviationUploader.findDeviceByAddress(devs, txInfo.type().getRootSectorOffset() * SECTOR_SIZE, null, null, null);
+			if (dev.open() != 0) {
+				System.out.println("Error: Unable to open device");
+				return;
+			}
+			dev.claim_and_set();
+			Dfu.setIdle(dev);
+
+			DevoFat fat = new DevoFat(dev, txInfo.type());
+			try {
+				if (format_root) {
+					fat.Format(FatStatus.ROOT_FAT);
+				} else {
+					fat.Init(FatStatus.ROOT_FAT);
+				}
+				if (format_media) {
+					fat.Format(FatStatus.MEDIA_FAT);
+				} else {
+					fat.Init(FatStatus.MEDIA_FAT);
+				}
+			} catch (Exception e) { System.out.println(e); }
+			for (FileInfo file: files) {
+				fat.copyFile(file);
+			}
+			fat.close();
+			dev.close();
+			monitor.ReleaseDevices();
 		}
 		public void setCancelState(boolean state) {
 			if (state) {
@@ -91,4 +136,6 @@ class FileInstaller {
 	public void setLibraryDfus(List<DfuFile> dfus) { libraryDfus = dfus; }
 	public void clearFiles() { files.clear(); }
 	public void addFile(FileInfo file) { files.add(file); }
+	public void formatRoot(boolean fmt) { format_root = fmt; }
+	public void formatMedia(boolean fmt) { format_media = fmt; }
 }

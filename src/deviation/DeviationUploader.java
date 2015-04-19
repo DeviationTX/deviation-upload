@@ -7,7 +7,6 @@ import de.ailis.usb4java.libusb.*;
 import de.waldheinz.fs.fat.FatFileSystem;
 import de.waldheinz.fs.util.*;
 import de.waldheinz.fs.*;
-import deviation.DevoFat.FatStatus;
 import deviation.gui.DeviationUploadGUI;
 
 import org.apache.commons.cli.*;
@@ -301,6 +300,15 @@ public class DeviationUploader
         try {
             BlockDevice bd = new FileDisk(new File("test.fat"), false);
             FileSystem fs = FatFileSystem.read(bd, false);
+            ZipFileGroup zips = new ZipFileGroup();
+            FSUtils fsu = new FSUtils();
+            zips.AddZipFile("test.zip");
+            for (FileInfo file: zips.GetFilesystemFiles()) {
+            	fsu.copyFile(fs, file);
+            }
+            fs.close();
+            bd.close();
+            /*
             String[]dirs = "/media/".split("/");
             FsDirectory dir = fs.getRoot();
             for (String subdir : dirs) {
@@ -314,6 +322,7 @@ public class DeviationUploader
                 FsDirectoryEntry entry = itr.next();
                 System.out.println(entry.getName());
             }
+            */
         } catch (Exception e) { System.out.println(e); }
         System.exit(0);
 

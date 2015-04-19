@@ -109,7 +109,7 @@ public class DfuSendTab extends JPanel {
                 try {
                     boolean first = true;
                     dfuFile = new DfuFile(fname);
-                    TxInfo.TxModel type = TxInfo.TxModel.DEVO_UNKNOWN;
+                    Transmitter type = Transmitter.DEVO_UNKNOWN;
                     for (DfuFile.ImageElement elem : dfuFile.imageElements()) {
                         DFU_InfoTabbedPane.addTab(elem.name(), new DfuInfoPanel(elem));
                         if (first) {
@@ -120,7 +120,7 @@ public class DfuSendTab extends JPanel {
                         }
                     }
                     DFU_txtFile.setText(fname);
-                    if(txInfo.matchModel(type) && type != TxInfo.TxModel.DEVO_UNKNOWN) {
+                    if(txInfo.matchModel(type)) {
                         DFU_btnSend.setEnabled(true);
                     } else{
                         DFU_btnSend.setEnabled(false);

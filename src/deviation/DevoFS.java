@@ -34,8 +34,25 @@ public class DevoFS implements BlockDevice
         this(dev, start_address, invert, size, DEFAULT_SECTOR_SIZE);
     }
 
-    public void close() throws IOException { ram.close(); }
-    public void flush() throws IOException { ram.flush(); }
+    public void close() throws IOException {
+    	int sector_num;
+    	for (sector_num = 0; sector_num < changed.length; sector_num++) {
+            if (changed[sector_num]) {
+            	ByteBuffer byteBuffer = ByteBuffer.allocate(sectorSize);
+            	ram.read(sector_num * sectorSize, byteBuffer);
+            	byteBuffer.flip();
+            	byte [] data = new byte[sectorSize];
+            	byteBuffer.get(data, 0, sectorSize);
+                if (invert) {
+                    data = DevoFat.invert(data);
+                }
+                Dfu.sendToDevice(dev,  (int)(startAddress + sector_num * sectorSize), data, null);
+                changed[sector_num] = false;
+            }
+    	}
+    	ram.close();
+    }
+    public void flush() throws IOException { System.out.println("flush"); ram.flush(); }
     public int getSectorSize() throws IOException { return sectorSize; }
     public long getSize() throws IOException { return ram.getSize(); }
     public boolean isClosed() { return ram.isClosed(); }
