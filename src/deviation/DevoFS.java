@@ -2,78 +2,73 @@ package deviation;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import de.waldheinz.fs.BlockDevice;
-import de.waldheinz.fs.util.RamDisk;
 
 public class DevoFS implements BlockDevice
 {
-    public final static int DEFAULT_SECTOR_SIZE = 512;
-    private final RamDisk ram;
+    //private final RamDisk ram;
+    private final byte[] ram;
+    private final ByteBuffer rambuf;
     private final DfuDevice dev;
     private final boolean[] cached;
     private final boolean[] changed;
-    private final long startAddress;
+    private final long startOffset;
+    private final long memAddress;
     private final int sectorSize;
     private final boolean invert;
 
 
-    public DevoFS(DfuDevice dev, long start_address, boolean invert, int size, int sector_size)
+    public DevoFS(DfuDevice dev, long start_address, boolean invert)
     {
-        ram = new RamDisk(size, sector_size);
+    	memAddress = dev.Memory().findStartingAddress();
+        startOffset = start_address - memAddress;
+        
+    	Sector sector = dev.Memory().find((int)memAddress);
+        sectorSize = sector.size();
+        int mem_size = dev.Memory().contiguousSize((int)memAddress);
+        
+    	ram = new byte[mem_size];
+    	rambuf = ByteBuffer.wrap(ram);
         this.dev = dev;
-        cached = new boolean[(size + sector_size - 1) / sector_size];
-        changed = new boolean[(size + sector_size - 1) / sector_size];
-        startAddress = start_address;
-        sectorSize = sector_size;
+        cached = new boolean[(mem_size + sectorSize - 1) / sectorSize];
+        changed = new boolean[(mem_size + sectorSize - 1) / sectorSize];
         this.invert = invert;
     }
     
-    public DevoFS(DfuDevice dev, long start_address, boolean invert, int size)
-    {
-        this(dev, start_address, invert, size, DEFAULT_SECTOR_SIZE);
-    }
-
     public void close() throws IOException {
     	int sector_num;
     	for (sector_num = 0; sector_num < changed.length; sector_num++) {
             if (changed[sector_num]) {
-            	ByteBuffer byteBuffer = ByteBuffer.allocate(sectorSize);
-            	ram.read(sector_num * sectorSize, byteBuffer);
-            	byteBuffer.flip();
-            	byte [] data = new byte[sectorSize];
-            	byteBuffer.get(data, 0, sectorSize);
+            	byte [] data = Arrays.copyOfRange(ram, sector_num * sectorSize,  sector_num * sectorSize + sectorSize);
                 if (invert) {
                     data = DevoFat.invert(data);
                 }
-                Dfu.sendToDevice(dev,  (int)(startAddress + sector_num * sectorSize), data, null);
+                Dfu.sendToDevice(dev,  (int)(memAddress + sector_num * sectorSize), data, null);
                 changed[sector_num] = false;
             }
     	}
-    	ram.close();
     }
-    public void flush() throws IOException { System.out.println("flush"); ram.flush(); }
+    public void flush() throws IOException { System.out.println("flush");}
     public int getSectorSize() throws IOException { return sectorSize; }
-    public long getSize() throws IOException { return ram.getSize(); }
-    public boolean isClosed() { return ram.isClosed(); }
-    public boolean isReadOnly() { return ram.isReadOnly(); }
+    public long getSize() throws IOException { return ram.length; }
+    public boolean isClosed() { return false; }
+    public boolean isReadOnly() { return false; }
     
     private void cache(int sector_num) throws IOException {
-        System.out.format(("Cache of 0x%08x : %d%n"), startAddress + sector_num * sectorSize, cached[sector_num] ? 1 : 0);
+        System.out.format(("Cache of 0x%08x : %d%n"), memAddress + sector_num * sectorSize, cached[sector_num] ? 1 : 0);
         if (! cached[sector_num]) {
-            byte[] data = Dfu.fetchFromDevice(dev, (int)(startAddress + sector_num * sectorSize), sectorSize);
+            byte[] data = Dfu.fetchFromDevice(dev, (int)(memAddress + sector_num * sectorSize), sectorSize);
             if (invert) {
                 data = DevoFat.invert(data);
             }
-            ByteBuffer byteBuffer = ByteBuffer.allocate(data.length);
-            byteBuffer.put(data);
-            byteBuffer.flip();
-            ram.write(sector_num * sectorSize, byteBuffer);
+            System.arraycopy(data, 0, ram, sector_num * sectorSize, data.length);
             cached[sector_num] = true;
         }
     }
     public void read(long devOffset, ByteBuffer dest) throws IOException {
-        long start = devOffset;
+        long start = startOffset + devOffset;
         long end = start + dest.remaining();
         int curSector = (int)(start / sectorSize);
         long lastSector = (end + sectorSize -1) / sectorSize;
@@ -81,23 +76,27 @@ public class DevoFS implements BlockDevice
             cache(curSector);
             curSector++;
         }
-        ram.read(devOffset, dest);
+        rambuf.limit((int)end);
+        rambuf.position((int)start);
+        dest.put(rambuf);
     }
 
     public void write(long devOffset, ByteBuffer src) throws IOException {
-        long start = devOffset;
+        long start = startOffset + devOffset;
         long end = start + src.remaining();
         int curSector = (int)(start / sectorSize);
         long lastSector = (end + sectorSize -1) / sectorSize;
-        if (devOffset % sectorSize > 0) {
+        if (start % sectorSize > 0) {
             //Not at a sector boundary
-            cache((int)(devOffset / sectorSize));
+            cache((int)(start / sectorSize));
         }
-        if ((devOffset + src.remaining()) % sectorSize > 0) {
+        if (end % sectorSize > 0) {
             //End is not on a sector boundary;
-            cache((int)((devOffset + src.remaining()) / sectorSize));
+            cache((int)(end / sectorSize));
         }
-        ram.write(devOffset, src);
+        rambuf.limit((int)end);
+        rambuf.position((int)start);
+        rambuf.put(src);
         while (curSector <= lastSector) {
             changed[curSector] = true;
             curSector++;

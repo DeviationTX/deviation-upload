@@ -103,7 +103,7 @@ public class DfuMemory {
                 }
             }
             if (ok) {
-                return end - address;
+                return end + 1 - address;
             }
         }
         return -1;

@@ -7,16 +7,11 @@ import java.util.List;
 import javax.swing.AbstractAction;
 import javax.swing.JProgressBar;
 
-import deviation.DeviationUploader;
 import deviation.DevoFat;
 import deviation.DevoFat.FatStatus;
-import deviation.Dfu;
 import deviation.DfuDevice;
 import deviation.DfuFile;
 import deviation.FileInfo;
-import deviation.Transmitter;
-import deviation.TxInfo;
-import deviation.TxUtils;
 
 class FileInstaller {
 	private final JProgressBar progressBar;
@@ -80,16 +75,14 @@ class FileInstaller {
 			List<DfuDevice> devs = monitor.GetDevices();
 			if (devs == null)
 				return;
-			TxInfo txInfo = TxUtils.getTxInfo(devs.get(0));
-			DfuDevice dev = DeviationUploader.findDeviceByAddress(devs, txInfo.type().getRootSectorOffset() * SECTOR_SIZE, null, null, null);
-			if (dev.open() != 0) {
-				System.out.println("Error: Unable to open device");
-				return;
-			}
-			dev.claim_and_set();
-			Dfu.setIdle(dev);
+			DfuDevice dev = devs.get(0);
+    		if (dev.open() != 0) {
+    			System.out.println("Error: Unable to open device");
+    			return;
+    		}
+    		dev.claim_and_set();
 
-			DevoFat fat = new DevoFat(dev, txInfo.type());
+			DevoFat fat = new DevoFat(dev);
 			try {
 				if (format_root) {
 					fat.Format(FatStatus.ROOT_FAT);

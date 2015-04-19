@@ -82,6 +82,17 @@ public class DfuDevice
             }
             return false;
         }
+        public DfuInterface SelectInterfaceByAddr(int address, Integer alt)
+        {
+        	for (DfuInterface iface : interfaces) {
+        		if ((alt == null || alt == iface.bAlternateSetting()) && iface.Memory().find(address) != null) {
+        			selected_interface = iface;
+        			return iface;
+        		}
+        	}
+        	return null;
+        }
+        public DfuInterface SelectInterfaceByAddr(int address) { return SelectInterfaceByAddr(address, null); }
         public List<DfuInterface>Interfaces() { return interfaces;}
         public String GetId() {
             String id = String.valueOf(idVendor()) + ":"

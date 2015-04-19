@@ -1,0 +1,5 @@
+# Read filestsem from Devo 8/10 and convert to a FAT fs
+# Note that the filesystem is stored inverted on the transmitter, so we invert it after download
+java -jar target/DeviationUpload-0.5-jar-with-dependencies.jar -f -b fat.inverted -a 0x36000
+perl -0777ne 'print pack(q{C*}, map {0xff - $_} unpack(q{C*}, $_))' fat.inverted > fat.fs
+
