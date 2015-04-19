@@ -30,13 +30,9 @@ public class DeviationUploader
     {
         for (DfuDevice dev : devs) {
             if ((vid == null || vid == dev.idVendor()) && (pid == null || pid == dev.idProduct())) {
-                for (DfuInterface iface : dev.Interfaces()) {
-                    if ((alt == null || alt == iface.bAlternateSetting()) && iface.Memory().find(address) != null) {
-                        dev.SelectInterface(iface);
-                        return dev;
-                    }
-                }
-                
+            	if (dev.SelectInterfaceByAddr(address, alt) != null) {
+                    return dev;
+                }                
             }
         }
         return null;
@@ -120,7 +116,7 @@ public class DeviationUploader
                     vid, pid, alt);
             return;
         }
-        if (length == null) {
+        if (length == 0) {
             length = dev.Memory().contiguousSize(address);
         }
         if (dev.open() != 0) {
@@ -373,8 +369,10 @@ public class DeviationUploader
             }
         }
         if (cl.hasOption("fetch")) {
-            int address = Long.decode(cl.getOptionValue("address")).intValue();
-            int length = Integer.decode(cl.getOptionValue("length"));
+        	String addrStr = cl.getOptionValue("address");
+            int address = addrStr == null ? 0 : Long.decode(addrStr).intValue();
+        	String lenStr = cl.getOptionValue("length");
+            int length = lenStr == null ? 0 : Integer.decode(lenStr);
             readBinFromDevice(devs, cl.getOptionValue("bin"), address, length, vendorId, productId, altSetting);
         }
         LibUsb.freeDeviceList(devices, true);

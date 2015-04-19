@@ -401,68 +401,67 @@ public final class Dfu
         }
         while (true) {
             Sector sector = dev.Memory().find(sector_address);
-            for (int i = 0; i < sector.count(); i++) {
-                if (progress != null) {
-                    progress.update(1.0 * (sector_address - address) / data.length);
-                    if (progress.cancelled()) {
-                        System.out.format("Cancelled at address 0x%x%n", sector_address);
-                        return -1;
-                    }
-                }
-                if (sector.erasable()) {
-                    System.out.format("Erasing page: 0x%x%n", sector_address);
-                    if (dfuseSpecialCommand(dev, sector_address, DFUSE_ERASE_PAGE) != 0) {
-                        System.out.format("Error: Write failed to erase address: 0x%x%n", sector_address);
-                        return -1;
-                    }
-                }
-                if (dfuseSpecialCommand(dev, sector_address, DFUSE_SET_ADDRESS) != 0) {
-                    System.out.format("Error: Write failed to set address: 0x%x%n", sector_address);
+            int sector_size = sector.size();
+            int sector_index = (sector_address - sector.start()) / sector_size;
+            int sector_start = sector.start() + sector_index * sector_size;
+            if (progress != null) {
+                progress.update(1.0 * (sector_address - address) / data.length);
+                if (progress.cancelled()) {
+                    System.out.format("Cancelled at address 0x%x%n", sector_address);
                     return -1;
                 }
-                transaction = 2;
+            }
+            if (sector.erasable()) {
+                System.out.format("Erasing page: 0x%x%n", sector_address);
+                if (dfuseSpecialCommand(dev, sector_address, DFUSE_ERASE_PAGE) != 0) {
+                    System.out.format("Error: Write failed to erase address: 0x%x%n", sector_address);
+                    return -1;
+                }
+            }
+            if (dfuseSpecialCommand(dev, sector_address, DFUSE_SET_ADDRESS) != 0) {
+                System.out.format("Error: Write failed to set address: 0x%x%n", sector_address);
+                return -1;
+            }
+            transaction = 2;
 
-                int sector_size = sector.size();
-                if (address + data.length - sector_address < sector_size) {
-                    //Remaining data is less than the sector size
-                    sector_size = address + data.length - sector_address;
-                }
-                int xfer = xfer_size;
-                int sector_start = sector.start() + i * sector.size();
-                while (sector_address < sector_start + sector_size) {
-                    if (xfer_size > sector_start + sector_size - sector_address) {
-                        //Need to transfer less than the xfer_size
-                        xfer  = sector_start + sector_size - sector_address;
-                        if (dfuseSpecialCommand(dev, sector_address, DFUSE_SET_ADDRESS) != 0) {
-                            System.out.format("Error: Write failed to set address: 0x%x%n", sector_address);
-                            return -1;
-                        }
-                        transaction = 2;
-                    }
-                    int offset = sector_address - address;
-                    //System.out.format("Writing array at 0x%x (length: %d) dest: %x%n", sector_address, xfer, (transaction-2)*xfer + address);
-                    byte[] buf = Arrays.copyOfRange(data, offset, offset + xfer);
-                    
-                    if (progress != null && progress.cancelled()) {
-                        System.out.format("Cancelled at address 0x%x%n", sector_address);
+            if (address + data.length - sector_address < sector_size) {
+                //Remaining data is less than the sector size
+                sector_size = address + data.length - sector_address;
+            }
+            int xfer = xfer_size;
+            while (sector_address < sector_start + sector_size) {
+                if (xfer_size > sector_start + sector_size - sector_address) {
+                    //Need to transfer less than the xfer_size
+                    xfer  = sector_start + sector_size - sector_address;
+                    if (dfuseSpecialCommand(dev, sector_address, DFUSE_SET_ADDRESS) != 0) {
+                        System.out.format("Error: Write failed to set address: 0x%x%n", sector_address);
                         return -1;
                     }
-                    //address will be ((wBlockNum – 2) × wTransferSize) + Addres_Pointer
-                    if (dfuseDownloadChunk(dev, buf, transaction) <= 0) {
-                        System.out.format("Error: Write failed to write address : 0x%x%n", sector_address);
-                        return -1;
-                    }
-                    sector_address += xfer;
-                    transaction++;
+                    transaction = 2;
                 }
-                if (sector_address >= address + data.length) {
-                    return 0;
-                }
-                if (xfer != xfer_size) {
-                    System.out.format("Error: xfer_size %d is not a multiple of the sector size: %d%n",
-                                      xfer_size, sector.size());
+                int offset = sector_address - address;
+                //System.out.format("Writing array at 0x%x (length: %d) dest: %x%n", sector_address, xfer, (transaction-2)*xfer + address);
+                byte[] buf = Arrays.copyOfRange(data, offset, offset + xfer);
+                
+                if (progress != null && progress.cancelled()) {
+                    System.out.format("Cancelled at address 0x%x%n", sector_address);
                     return -1;
                 }
+                //address will be ((wBlockNum – 2) × wTransferSize) + Addres_Pointer
+                if (dfuseDownloadChunk(dev, buf, transaction) <= 0) {
+                    System.out.format("Error: Write failed to write address : 0x%x%n", sector_address);
+                    return -1;
+                }
+                sector_address += xfer;
+                transaction++;
+            }
+            if (sector_address >= address + data.length) {
+                return 0;
+            }
+            if (xfer != xfer_size) {
+                System.out.format("Error: xfer_size %d is not a multiple of the sector size: %d%n",
+                                  xfer_size, sector.size());
+                return -1;
             }
         }
     }
