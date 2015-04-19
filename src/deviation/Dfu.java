@@ -5,7 +5,6 @@ import java.util.*;
 import java.nio.ByteBuffer;
 
 import de.ailis.usb4java.libusb.*;
-import deviation.DevoFat.FatStatus;
 
 public final class Dfu
 {
@@ -349,7 +348,7 @@ public final class Dfu
         /* Use a short length to lower risk of running out of bounds */
 
         System.out.format("bytes_per_hash=%d\n", xfer_size);
-        System.out.println("Starting upload");
+        System.out.println("Starting device read");
 
         ByteArrayOutputStream data = new ByteArrayOutputStream();
         while (true) {
@@ -384,7 +383,7 @@ public final class Dfu
         while (true) {
             Sector sector = dev.Memory().find(sector_address);
             if (sector == null || ! sector.writable()) {
-                System.out.format("Error: No sector found that can be written at address %d%n", sector_address);
+                System.out.format("Error: No sector found that can be written at address 0x%08x%n", sector_address);
                 return -1;
             }
             if (sector.end() >= address + data.length) {

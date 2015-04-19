@@ -9,9 +9,6 @@ import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 
 import javax.swing.AbstractAction;
 import javax.swing.JButton;
@@ -25,7 +22,6 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import deviation.*;
 import deviation.DevoDetect.Firmware;
 import deviation.DevoFat.FatStatus;
-import deviation.TxInfo.TxModel;
 
 public class InstallTab extends JPanel {
     /**
@@ -325,7 +321,7 @@ public class InstallTab extends JPanel {
     	for (Checkbox c : Checkbox.values()) {
     		c.disable();
     	}
-        if (gui.getTxInfo().type() == TxModel.DEVO_UNKNOWN || fw.firmware() != Firmware.DEVIATION){
+        if (gui.getTxInfo().type() == Transmitter.DEVO_UNKNOWN || fw.firmware() != Firmware.DEVIATION){
             return;
         }
         boolean chkboxval = (gui.getFatType() == FatStatus.NO_FAT || gui.getFatType() == FatStatus.MEDIA_FAT);
@@ -333,7 +329,7 @@ public class InstallTab extends JPanel {
         Checkbox.REPLACETX.set(chkboxval);
         Checkbox.REPLACEHW.set(chkboxval);
         Checkbox.REPLACEMODEL.set(chkboxval);
-        if (gui.getTxInfo().type() == TxModel.DEVO12) {
+        if (gui.getTxInfo().type().hasMediaFS()) {
             if (gui.getFatType() == FatStatus.NO_FAT || gui.getFatType() == FatStatus.ROOT_FAT) {
                 Checkbox.FORMATMEDIA.set(true);
             } else {
@@ -344,26 +340,7 @@ public class InstallTab extends JPanel {
         	Checkbox.INSTALLLIB.set(true);
         }
         /*
-        List<DfuDevice> devs = gui.getMonitor().GetDevices();
-        if (devs != null) {
-            DfuDevice dev = devs.get(0);
-            dev.SelectInterface(dev.Interfaces().get(0));
-            if (dev.open() != 0) {
-                System.out.println("Error: Unable to open device");
-                return;
-            }
-            dev.claim_and_set();
-            Dfu.setIdle(dev);
-                 
-            DevoFat fat = new DevoFat(dev, gui.getTxInfo().type());
-            try {
-            fat.Init(FatStatus.ROOT_AND_MEDIA_FAT);
-            } catch (Exception e) { System.out.println(e); }
-            fat.readDir("/media");
-            dev.close();
-            gui.getMonitor().ReleaseDevices();
-        }
-        */
+         */
     }
     private void update_install_button() {
         boolean enabled = true;
@@ -424,6 +401,8 @@ public class InstallTab extends JPanel {
             }
             txtLibSize.setText(String.valueOf(size / 1024) + " kb");
         }
+        fileInstaller.formatRoot(Checkbox.FORMATROOT.get().isSelected());
+        fileInstaller.formatMedia(Checkbox.FORMATMEDIA.get().isSelected());
         update_install_button();
     }
     private class FileChooserBtnListener implements ActionListener {

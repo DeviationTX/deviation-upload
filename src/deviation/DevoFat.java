@@ -9,7 +9,6 @@ import de.waldheinz.fs.FsDirectory;
 import de.waldheinz.fs.FsDirectoryEntry;
 import de.waldheinz.fs.fat.FatFileSystem;
 import de.waldheinz.fs.fat.SuperFloppyFormatter;
-import deviation.TxInfo.TxModel;
 
 public class DevoFat {
     
@@ -20,42 +19,37 @@ public class DevoFat {
     private final int SECTOR_SIZE = 4096;
     private FileSystem rootFs;
     private FileSystem mediaFs;
-    private TxModel model;
+    private Transmitter model;
+    private FSUtils fsutils;
     
-    public DevoFat(DfuDevice dev, TxModel model) {
-        int sector_offset;
-        int num_sectors;
+    public DevoFat(DfuDevice dev, Transmitter tx) {
         mediaBlockDev = null;
         rootBlockDev = null;
-        this.model = model;
-        switch(model) {
-        case DEVO7e:
-            sector_offset = 0;
-            num_sectors = 512;
-            break;
-        case DEVO6:
-        case DEVO8:
-        case DEVO10:
-            sector_offset = 54;
-            num_sectors = 1024;
-            break;
-        case DEVO12:
-            sector_offset = 0;
-            num_sectors = 512;
-            mediaBlockDev = new DevoFS(dev, 0x64080000, false, 16 * 1024 * 1024, SECTOR_SIZE);
-            break;
-        default:
-            return;
+        this.model = tx;
+        fsutils = new FSUtils();
+    	if (tx == Transmitter.DEVO_UNKNOWN)
+    		return;
+        if (tx.hasMediaFS()) {
+        	mediaBlockDev = new DevoFS(dev,
+        			tx.getMediaSectorOffset() * SECTOR_SIZE,
+        			tx.isMediaInverted(),
+        			tx.getMediaSectorCount() * SECTOR_SIZE,
+        			SECTOR_SIZE);
         }
-        rootBlockDev = new DevoFS(dev, sector_offset * SECTOR_SIZE, true, (num_sectors - sector_offset) * SECTOR_SIZE, SECTOR_SIZE);
+        rootBlockDev = new DevoFS(dev,
+        		tx.getRootSectorOffset() * SECTOR_SIZE,
+        		tx.isRootInverted(),
+        		(tx.getRootSectorCount() - tx.getRootSectorOffset()) * SECTOR_SIZE,
+        		SECTOR_SIZE);
     }
+    public boolean hasSeparateMediaDrive() { return mediaBlockDev == null ? false : true; }
     public void Format(FatStatus type) throws IOException {
         if (type == FatStatus.ROOT_FAT || type == FatStatus.ROOT_AND_MEDIA_FAT) {
             rootFs = SuperFloppyFormatter.get(rootBlockDev).format();
             mediaFs = rootFs;
         }
         if (type == FatStatus.MEDIA_FAT || type == FatStatus.ROOT_AND_MEDIA_FAT) {
-            if (model == TxModel.DEVO12) {
+            if (model.hasMediaFS()) {
                 mediaFs = SuperFloppyFormatter.get(mediaBlockDev).format();
             }
         }
@@ -66,7 +60,7 @@ public class DevoFat {
             mediaFs = rootFs;
         }
         if (type == FatStatus.MEDIA_FAT || type == FatStatus.ROOT_AND_MEDIA_FAT) {
-            if (model == TxModel.DEVO12) {
+            if (model.hasMediaFS()) {
                 mediaFs = FatFileSystem.read(mediaBlockDev, false);
             }
         }
@@ -93,6 +87,24 @@ public class DevoFat {
         } catch (IOException e) {
             System.out.println(e);
         }
+    }
+    public void copyFile(FileInfo file) {
+    	FileSystem fs = (file.name().matches("media/")) ? mediaFs : rootFs;
+    	fsutils.copyFile(fs,  file);
+    }
+    public void close() {
+    	if (rootFs != null) {
+    		try {
+    			rootFs.close();
+    			rootBlockDev.close();
+    		} catch(Exception e) {}
+    	}
+    	if (mediaFs != null && mediaFs != rootFs) {
+    		try {
+    			mediaFs.close();
+    			mediaBlockDev.close();
+    		} catch (Exception e) {}
+    	}
     }
 
     public static byte[] invert(byte[] data) {

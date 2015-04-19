@@ -3,14 +3,12 @@ package deviation;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import deviation.TxInfo.TxModel;
-
 public class DevoDetect {
     public enum Firmware {UNKNOWN, DEVIATION, WALKERA};
     private enum Type {UNKNOWN, FIRMWARE, LIBRARY, FIRMWARE_LIBRARY};
     private Firmware firmware;
     private Type type;
-    private TxModel model;
+    private Transmitter model;
     String version;
     public DevoDetect() {
         init();
@@ -18,14 +16,14 @@ public class DevoDetect {
     private void init() {
         firmware = Firmware.UNKNOWN;
         type = Type.UNKNOWN;
-        model = TxModel.DEVO_UNKNOWN;
+        model = Transmitter.DEVO_UNKNOWN;
         version = null;
     }
     public void update(DevoDetect item)
     {
     	if (firmware == Firmware.UNKNOWN)
     		firmware = item.firmware;
-    	if (model == TxModel.DEVO_UNKNOWN)
+    	if (model == Transmitter.DEVO_UNKNOWN)
     		model = item.model;
     	if (version == null)
     		version = item.version;
@@ -33,7 +31,7 @@ public class DevoDetect {
     	
     }
     public boolean Analyze(String id) {
-        init();
+        //init();
         Type thisType = Type.UNKNOWN;
         Matcher m;
         int idx;
@@ -106,5 +104,5 @@ public class DevoDetect {
     public boolean isLibrary() { return (type == Type.LIBRARY || type == Type.FIRMWARE_LIBRARY) ? true : false; }
     public boolean isLibrary(boolean add) { addRemoveType(Type.LIBRARY, add); return add;}
     public Firmware firmware() { return firmware; }
-    public TxModel model() { return model; }
+    public Transmitter model() { return model; }
 }
