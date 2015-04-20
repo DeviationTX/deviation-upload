@@ -76,6 +76,8 @@ public class DevoDetect {
     }
     private void addRemoveType(Type _type, boolean add) {
     	if (add) {
+    		if (type == Type.FIRMWARE_LIBRARY)
+    			return;
         	if ((_type == Type.FIRMWARE && type == Type.LIBRARY)
         			|| (_type == Type.LIBRARY && type == Type.FIRMWARE))
         	{
