@@ -1,7 +1,7 @@
 package deviation;
 
 public interface Progress {
-    public void update(Double val);
+    public void update(Integer val);
     public boolean cancelled();
 
 }

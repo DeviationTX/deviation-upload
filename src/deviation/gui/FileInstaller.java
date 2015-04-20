@@ -6,14 +6,17 @@ import java.util.List;
 
 import javax.swing.AbstractAction;
 import javax.swing.JProgressBar;
+import javax.swing.SwingWorker;
 
 import deviation.DevoFat;
 import deviation.DevoFat.FatStatus;
+import deviation.DeviationUploader;
 import deviation.DfuDevice;
 import deviation.DfuFile;
 import deviation.FileInfo;
+import deviation.Progress;
 
-class FileInstaller {
+class FileInstaller extends SwingWorker<String, Integer> implements Progress {
 	private final JProgressBar progressBar;
 	private MonitorUSB monitor;
 	private ButtonAction buttonAction;
@@ -23,7 +26,9 @@ class FileInstaller {
 	private List<FileInfo> files;
 	private boolean format_root;
 	private boolean format_media;
-	private final int SECTOR_SIZE = 0x1000;
+	private List<DfuDevice>  devs;
+	private long bytesTransferred;
+	private long totalBytes;
 
 	class ButtonAction extends AbstractAction {
 		private static final long serialVersionUID = 1L;
@@ -32,8 +37,6 @@ class FileInstaller {
 		private String normalDesc;
 		private String cancelDesc;
 		private String cancelLbl;
-
-		private DfuCmdWorker worker;		
 
 		public ButtonAction(String text, String normalDesc, String cancelDesc) {
 			super(text);
@@ -47,60 +50,16 @@ class FileInstaller {
 		}
 		public void actionPerformed(ActionEvent e) {
 			if (getValue(NAME).equals(normalLbl)) {
-				List<DfuDevice> devs = monitor.GetDevices();
+				devs = monitor.GetDevices();
 				if (devs == null) {
 					return;
 				}
-/*
-				if (firmwareDfu != null) {
-					setCancelState(true);
-					worker = new DfuCmdWorker( devs, firmwareDfu, progressBar, FileInstaller.this, monitor);
-					worker.execute();
-				}
-				if (libraryDfus.size() > 0) {
-					for(DfuFile dfu : libraryDfus) {
-						setCancelState(true);
-						worker = new DfuCmdWorker( devs, dfu, progressBar, FileInstaller.this, monitor);
-						worker.execute();
-					}
-				}
-*/
-				updateRoot();
+				setCancelState(true);
+				FileInstaller.this.execute();
 			} else {
 				//Note that the worker disables the cancel state
-				worker.cancel(false);
+				FileInstaller.this.cancel(false);
 			}
-		}
-		private void updateRoot() {
-			List<DfuDevice> devs = monitor.GetDevices();
-			if (devs == null)
-				return;
-			DfuDevice dev = devs.get(0);
-    		if (dev.open() != 0) {
-    			System.out.println("Error: Unable to open device");
-    			return;
-    		}
-    		dev.claim_and_set();
-
-			DevoFat fat = new DevoFat(dev);
-			try {
-				if (format_root) {
-					fat.Format(FatStatus.ROOT_FAT);
-				} else {
-					fat.Init(FatStatus.ROOT_FAT);
-				}
-				if (format_media) {
-					fat.Format(FatStatus.MEDIA_FAT);
-				} else {
-					fat.Init(FatStatus.MEDIA_FAT);
-				}
-			} catch (Exception e) { System.out.println(e); }
-			for (FileInfo file: files) {
-				fat.copyFile(file);
-			}
-			fat.close();
-			dev.close();
-			monitor.ReleaseDevices();
 		}
 		public void setCancelState(boolean state) {
 			if (state) {
@@ -131,4 +90,81 @@ class FileInstaller {
 	public void addFile(FileInfo file) { files.add(file); }
 	public void formatRoot(boolean fmt) { format_root = fmt; }
 	public void formatMedia(boolean fmt) { format_media = fmt; }
+	public void setTotalBytes(long bytes) { totalBytes = bytes; }
+
+	private void updateRoot(List<DfuDevice> devs) {
+		if (! format_root && ! format_media && files.size() == 0)
+			return;
+		DfuDevice dev = devs.get(0);
+		if (dev.open() != 0) {
+			System.out.println("Error: Unable to open device");
+			return;
+		}
+		dev.claim_and_set();
+
+		DevoFat fat = new DevoFat(dev, this);
+		try {
+			if (format_root) {
+				fat.Format(FatStatus.ROOT_FAT);
+			} else {
+				fat.Init(FatStatus.ROOT_FAT);
+			}
+			if (format_media) {
+				fat.Format(FatStatus.MEDIA_FAT);
+			} else {
+				fat.Init(FatStatus.MEDIA_FAT);
+			}
+		} catch (Exception e) { System.out.println(e); }
+		for (FileInfo file: files) {
+			fat.copyFile(file);
+		}
+		fat.close();
+		dev.close();
+	}
+    @Override
+    protected void process( List<Integer> blocks ) {
+        //update the percentage of the progress bar that is done
+    	for (Integer block : blocks) {
+    		bytesTransferred += block;
+    	}
+        int amount = progressBar.getMaximum() - progressBar.getMinimum();
+        progressBar.setValue( ( int ) (progressBar.getMinimum() + ( amount * 1.0 * bytesTransferred / totalBytes)));
+    }
+    @Override
+    protected void done() {
+        try {
+            if (get().equals("Finished")) {
+                System.out.println("Completed transfer");
+                progressBar.setValue(100);
+            }
+        } catch (Exception e) {
+            System.out.println("Completed failed");
+            progressBar.setValue(0);
+        }
+        monitor.ReleaseDevices();
+        buttonAction.setCancelState(false);
+    }
+	public void update(Integer block) {
+		publish(block);
+	}
+	public boolean cancelled() {
+		return isCancelled();
+	}
+	@Override
+	protected String doInBackground() throws Exception {
+		//List<DfuDevice> devs = monitor.GetDevices();  //ReleaseDevices is called in done()
+		bytesTransferred = 0;
+		if (firmwareDfu != null) {
+			DeviationUploader.sendDfuToDevice(devs, firmwareDfu, this);
+		}
+		if (libraryDfus != null && libraryDfus.size() > 0) {
+			for(DfuFile dfu : libraryDfus) {
+				DeviationUploader.sendDfuToDevice(devs, dfu, this);
+			}
+		}
+		updateRoot(devs);
+		
+        return "Finished";
+	}
+
 }

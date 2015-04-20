@@ -68,7 +68,6 @@ public class InstallTab extends JPanel {
     private FileInstaller fileInstaller;
     private ZipFileGroup zipFiles;
     DeviationUploadGUI gui;
-    DfuCmdWorker worker;
 
     DevoDetect fw;
     DevoDetect lib;
@@ -285,22 +284,23 @@ public class InstallTab extends JPanel {
         gbc_btnInstall.gridy = row;
         add(btnInstall, gbc_btnInstall);
         
-        update_checkboxes();
-        update_install_button();
+        reset_checkboxes();
+    }
+    public void refresh() {
+    	reset_checkboxes();
     }
     private void checkboxSetCallback(JCheckBox chkbx) {
     	chkbx.addItemListener(new ItemListener() {
     	    public void itemStateChanged(ItemEvent e) {
-    	    	update_files_to_install();
+    	    	update_checkboxes();
     	    }
     	});
     }
     public void parseZipFiles() {
         fw = zipFiles.GetFirmwareInfo();
         lib = zipFiles.GetLibraryInfo();
-        update_checkboxes();
+        reset_checkboxes();
         update_filechooser();
-        update_files_to_install();
     }
     private void update_filechooser() {
     	String fwFile = zipFiles.firmwareZip();
@@ -317,7 +317,7 @@ public class InstallTab extends JPanel {
     	}
     	libraryTxt.setText(libFile);
     }
-    private void update_checkboxes() {
+    private void reset_checkboxes() {
     	for (Checkbox c : Checkbox.values()) {
     		c.disable();
     	}
@@ -339,8 +339,15 @@ public class InstallTab extends JPanel {
         if (zipFiles.GetLibraryInfo().Found()) {
         	Checkbox.INSTALLLIB.set(true);
         }
-        /*
-         */
+        update_checkboxes();
+    }
+    private void update_checkboxes() {
+    	if (Checkbox.FORMATROOT.get().isSelected()) {
+    		Checkbox.REPLACETX.set(true);
+    		Checkbox.REPLACEHW.set(true);
+    		Checkbox.REPLACEMODEL.set(true);
+    	}
+    	update_files_to_install();
     }
     private void update_install_button() {
         boolean enabled = true;
@@ -364,6 +371,10 @@ public class InstallTab extends JPanel {
         txtFwSize.setText("");
         txtLibVersion.setText("");
         txtLibSize.setText("");
+        fileInstaller.clearFiles();
+        fileInstaller.setLibraryDfus(null);
+    	fileInstaller.setFirmwareDfu(null);
+    	long totalSize = 0;
         if (fw.Found()) {
             txtFwVersion.setText(fw.version());
             DfuFile fwDfu = zipFiles.GetFirmwareDfu();
@@ -374,6 +385,7 @@ public class InstallTab extends JPanel {
                     size += elem.data().length;
                 }
                 txtFwSize.setText(String.valueOf(size / 1024) + " kb");
+                totalSize += size;
             }            
         }
         if (Checkbox.INSTALLLIB.get().isSelected() && lib.Found()) {
@@ -388,21 +400,23 @@ public class InstallTab extends JPanel {
                 }
             }
             for (FileInfo file : zipFiles.GetFilesystemFiles()) {
-                if (file.name().matches(".*\\.dfu") || file.name().matches(".*\\.zip"))
+                if (file.name().matches("(?i:.*\\.dfu)") || file.name().matches("(?i:.*\\.zip)"))
                 	continue;
-                if (! Checkbox.REPLACETX.get().isSelected() && file.name().equals("tx.ini"))
+                if (! Checkbox.REPLACETX.get().isSelected() && file.name().equalsIgnoreCase("tx.ini"))
                    	continue;
-                if (! Checkbox.REPLACEHW.get().isSelected() && file.name().equals("hardware.ini"))
+                if (! Checkbox.REPLACEHW.get().isSelected() && file.name().equalsIgnoreCase("hardware.ini"))
                   	continue;
-                if (! Checkbox.REPLACEMODEL.get().isSelected() && file.name().matches("models/.*"))
+                if (! Checkbox.REPLACEMODEL.get().isSelected() && file.name().matches("(?i:models/.*)"))
                 	continue;
                 size += file.size();
                 fileInstaller.addFile(file);
             }
             txtLibSize.setText(String.valueOf(size / 1024) + " kb");
+            totalSize += size;
         }
         fileInstaller.formatRoot(Checkbox.FORMATROOT.get().isSelected());
         fileInstaller.formatMedia(Checkbox.FORMATMEDIA.get().isSelected());
+        fileInstaller.setTotalBytes(totalSize);
         update_install_button();
     }
     private class FileChooserBtnListener implements ActionListener {

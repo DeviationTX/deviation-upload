@@ -47,6 +47,8 @@ public class DeviationUploadGUI {
     private DevoFat.FatStatus fatStatus;
     private List<DfuMemory> devMemory;
 
+    private DfuSendTab DfuSendPanel;
+    private InstallTab InstallPanel;
     /**
      * Launch the application.
      */
@@ -93,9 +95,11 @@ public class DeviationUploadGUI {
      * Initialize the contents of the frame.
      */
     private void initialize() {
+    	DeviationVersion ver = new DeviationVersion();
         frame = new JFrame();
         frame.setBounds(100, 100, 590, 480);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setTitle(ver.name() + " - " + ver.version());
         GridBagLayout gridBagLayout = new GridBagLayout();
         gridBagLayout.columnWidths = new int[]{0, 0};
         gridBagLayout.rowHeights = new int[]{0, 0, 0, 0, 0};
@@ -195,12 +199,12 @@ public class DeviationUploadGUI {
         frame.getContentPane().add(progressBar, gbc_progressBar);
 
         //Create tabs
-        DfuSendTab DfuPanel = new DfuSendTab(this, txInfo, progressBar);
-        tabbedPane.addTab("DFU", null, DfuPanel, null);
-        tabbedPane.setEnabledAt(0, true);
-
-        JPanel InstallPanel = new InstallTab(this);
+        InstallPanel = new InstallTab(this);
         tabbedPane.addTab("Install/Upgrade", null, InstallPanel, null);
+        tabbedPane.setEnabledAt(0, true);
+        
+        DfuSendPanel = new DfuSendTab(this, txInfo, progressBar);
+        tabbedPane.addTab("DFU", null, DfuSendPanel, null);
         tabbedPane.setEnabledAt(1, true);
 
         JPanel BinSendPanel = new JPanel();
@@ -234,6 +238,8 @@ public class DeviationUploadGUI {
         txtTransmitter.setText(TxInfo.typeToString(txInfo.type()));
         AbstractTableModel tableModel = (AbstractTableModel) table.getModel();
         tableModel.fireTableDataChanged();
+        DfuSendPanel.refresh();
+        InstallPanel.refresh();
     }
     public void RefreshDevices() {
         List<DfuDevice> devs = monitor.GetDevices();

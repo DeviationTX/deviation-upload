@@ -12,7 +12,7 @@ public class FSUtils {
 	public FSUtils() {
 	}
 	public void copyFile(FileSystem fs, FileInfo file) {
-		String[]filepath = file.name().split("/");
+		String[]filepath = file.name().toUpperCase().split("/");
 		String filename = filepath[filepath.length-1];
 		
 		String[]filedir;
