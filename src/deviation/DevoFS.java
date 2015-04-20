@@ -18,12 +18,16 @@ public class DevoFS implements BlockDevice
     private final long memAddress;
     private final int sectorSize;
     private final boolean invert;
+    private final int fsSectorSize;
+    private final Progress progress;
 
 
-    public DevoFS(DfuDevice dev, long start_address, boolean invert)
+    public DevoFS(DfuDevice dev, long start_address, boolean invert, int fs_sector_size, Progress progress)
     {
     	memAddress = dev.Memory().findStartingAddress();
         startOffset = start_address - memAddress;
+        fsSectorSize = fs_sector_size;
+        this.progress = progress;
         
     	Sector sector = dev.Memory().find((int)memAddress);
         sectorSize = sector.size();
@@ -45,16 +49,22 @@ public class DevoFS implements BlockDevice
                 if (invert) {
                     data = DevoFat.invert(data);
                 }
-                Dfu.sendToDevice(dev,  (int)(memAddress + sector_num * sectorSize), data, null);
+                Dfu.sendToDevice(dev,  (int)(memAddress + sector_num * sectorSize), data, progress);
                 changed[sector_num] = false;
             }
     	}
     }
     public void flush() throws IOException { System.out.println("flush");}
-    public int getSectorSize() throws IOException { return sectorSize; }
-    public long getSize() throws IOException { return ram.length; }
+    public int getSectorSize() throws IOException { return fsSectorSize; }
+    public long getSize() throws IOException { return ram.length - startOffset; }
     public boolean isClosed() { return false; }
     public boolean isReadOnly() { return false; }
+    public void markAllCached() {
+    	// This is used for the format operation to prevent disk reads
+    	for (int i = 0; i < cached.length; i++) {
+    		cached[i] = true;
+    	}
+    }
     
     private void cache(int sector_num) throws IOException {
         System.out.format(("Cache of 0x%08x : %d%n"), memAddress + sector_num * sectorSize, cached[sector_num] ? 1 : 0);

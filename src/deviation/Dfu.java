@@ -405,7 +405,7 @@ public final class Dfu
             int sector_index = (sector_address - sector.start()) / sector_size;
             int sector_start = sector.start() + sector_index * sector_size;
             if (progress != null) {
-                progress.update(1.0 * (sector_address - address) / data.length);
+                progress.update(data.length > sector_size ? sector_size : data.length);
                 if (progress.cancelled()) {
                     System.out.format("Cancelled at address 0x%x%n", sector_address);
                     return -1;

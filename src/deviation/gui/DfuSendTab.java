@@ -97,6 +97,7 @@ public class DfuSendTab extends JPanel {
         DFUPanel.add(DFU_btnSend, gbc_DFU_btnSend);
 
     }
+    public void refresh() {}
     private class FileChooserBtnListener implements ActionListener {
         public void actionPerformed(ActionEvent e) {
             final JFileChooser fc = new JFileChooser();

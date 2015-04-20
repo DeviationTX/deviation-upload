@@ -17,7 +17,7 @@ public class FileInfo {
 
     public FileInfo(ZipEntry ze, byte[] data) {
         size = (int)ze.getSize();
-        name = ze.getName();
+        name = ze.getName().toUpperCase();
         time= ze.getTime();
         Crc = ze.getCrc();
         this.data = data;        

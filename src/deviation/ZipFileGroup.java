@@ -23,10 +23,10 @@ public class ZipFileGroup {
             devoType = new DevoDetect();
 
             for (FileInfo file : files) {
-            	if (file.name().equals("tx.ini")) {
+            	if (file.name().equalsIgnoreCase("tx.ini")) {
             		devoType.isLibrary(true);
             	}
-                if (file.name().matches(".*\\.dfu")) {
+                if (file.name().matches("(?i:.*\\.dfu)")) {
                     DfuFile dfu = new DfuFile(file.data());
                     DevoDetect type = new DevoDetect();
                     for (DfuFile.ImageElement elem : dfu.imageElements()) {
