@@ -203,7 +203,7 @@ public class DeviationUploadGUI {
         tabbedPane.addTab("Install/Upgrade", null, InstallPanel, null);
         tabbedPane.setEnabledAt(0, true);
         
-        DfuSendPanel = new DfuSendTab(this, txInfo, progressBar);
+        DfuSendPanel = new DfuSendTab(this);
         tabbedPane.addTab("DFU", null, DfuSendPanel, null);
         tabbedPane.setEnabledAt(1, true);
 

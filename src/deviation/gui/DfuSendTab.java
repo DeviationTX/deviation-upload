@@ -6,6 +6,7 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
 import java.io.IOException;
 
 import javax.swing.AbstractAction;
@@ -25,6 +26,7 @@ public class DfuSendTab extends JPanel {
      * 
      */
     private static final long serialVersionUID = 1L;
+    private static final String DEFAULT_DIR = "DefaultDir";
     private JTextField DFU_txtFile;
     private JTextField DFU_txtStartAddress;
     private JTextField DFU_txtEndAddress;
@@ -32,15 +34,13 @@ public class DfuSendTab extends JPanel {
     private JTextField DFU_txtUsed;
     private JTabbedPane DFU_InfoTabbedPane;
     private JButton DFU_btnSend;
+    private DeviationUploadGUI gui;
 
     private FileInstaller fileInstaller;
     private DfuFile dfuFile;
 
-    private TxInfo txInfo;
-
-
-    public DfuSendTab(DeviationUploadGUI gui, TxInfo txInfo, JProgressBar progressBar) {
-        this.txInfo = txInfo;
+    public DfuSendTab(DeviationUploadGUI gui) {
+    	this.gui = gui;
         dfuFile = null;
         fileInstaller = new FileInstaller(gui.getMonitor(), gui.getProgressBar());
         
@@ -101,17 +101,26 @@ public class DfuSendTab extends JPanel {
     private class FileChooserBtnListener implements ActionListener {
         public void actionPerformed(ActionEvent e) {
             final JFileChooser fc = new JFileChooser();
+            UploaderPreferences prefs = new UploaderPreferences();
+            String startDir = prefs.get(DEFAULT_DIR, System.getProperty("user.home"));
+            fc.setCurrentDirectory(new File(startDir));
             FileNameExtensionFilter ff = new FileNameExtensionFilter("DFU Files", "dfu");
             fc.addChoosableFileFilter(ff);
             fc.setFileFilter(ff);
             int returnVal = fc.showOpenDialog(null);
             if (returnVal == JFileChooser.APPROVE_OPTION) {
+            	startDir = fc.getSelectedFile().getParent();
+            	if (startDir != null) {
+            		prefs.put(DEFAULT_DIR,  startDir);
+            	}
                 String fname = fc.getSelectedFile().getPath();
                 try {
                     boolean first = true;
                     dfuFile = new DfuFile(fname);
                     Transmitter type = Transmitter.DEVO_UNKNOWN;
+                    int size = 0;
                     for (DfuFile.ImageElement elem : dfuFile.imageElements()) {
+                    	size += elem.data().length;
                         DFU_InfoTabbedPane.addTab(elem.name(), new DfuInfoPanel(elem));
                         if (first) {
                             type = TxInfo.getModelFromString(elem.name());
@@ -121,13 +130,18 @@ public class DfuSendTab extends JPanel {
                         }
                     }
                     DFU_txtFile.setText(fname);
-                    if(txInfo.matchModel(type)) {
+                    fileInstaller.clearFiles();
+                    fileInstaller.setLibraryDfus(null);
+                	fileInstaller.setFirmwareDfu(null);
+                    if(gui.getTxInfo().matchModel(type)) {
                         DFU_btnSend.setEnabled(true);
+                        fileInstaller.setFirmwareDfu(dfuFile);
+                        fileInstaller.setTotalBytes(size);
                     } else{
                         DFU_btnSend.setEnabled(false);
                         System.out.format("Error: Dfu Tx type '%s' does not match transmitter type '%s'%n",
                                 TxInfo.typeToString(type),
-                                TxInfo.typeToString(txInfo.type()));
+                                TxInfo.typeToString(gui.getTxInfo().type()));
                     }
                 } catch (IOException ex) {
                     System.err.println("Caught IOException: " + ex.getMessage());
