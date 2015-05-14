@@ -70,6 +70,9 @@ public class DeviationUploader
                 System.out.format("Error: Dfu Tx type '%s' does not match transmitter type '%s'%n",
                                   TxInfo.typeToString(TxInfo.getModelFromString(elem.name())),
                                   TxInfo.typeToString(info.type()));
+                if (TxInfo.typeToString(info.type()) == "Unknown") {
+                	System.out.format("\tTransmitter ID: '%s'\n", new String(txInfo));
+                }
                 break;
             }
             byte [] data = applyEncryption(elem, info);
@@ -78,7 +81,7 @@ public class DeviationUploader
             dev.close();
         }
     }
-
+    
     public static void sendBinToDevice(List<DfuDevice> devs, String fname, int address, Integer vid, Integer pid, Integer alt)
     {
         byte[] data;
@@ -143,6 +146,19 @@ public class DeviationUploader
             e.printStackTrace();
         }
     }
+    public static void resetDevices(List <DfuDevice> devs)
+    {
+    	for (DfuDevice dev: devs) {
+    		if (dev.open() != 0) {
+    			System.out.println("Error: Unable to open device");
+    			break;
+    		}
+    		dev.claim_and_set();
+    		Dfu.setIdle(dev);
+    		Dfu.resetSTM32(dev);
+    		dev.close();
+    	}
+    }
 
     public static CommandLine handleCmdline(String[] args)
     {
@@ -172,7 +188,7 @@ public class DeviationUploader
         		                        .longOpt("list")
                                         .desc("list transmitter interfaces")
                                         .build());
-        groupCmd.setRequired(true);
+        //groupCmd.setRequired(true);
         options.addOptionGroup(groupCmd);
         groupFile.addOption(Option.builder("d")
         		                .longOpt("dfu")
@@ -233,6 +249,10 @@ public class DeviationUploader
         		                .longOpt("version")
                                 .desc("Show help message")
                                 .build());
+        options.addOption(Option.builder("r")
+                .longOpt("reset")
+                .desc("Reset after any other options have been perfomed")
+                .build());
 
         try {
             //Handle help and version info here
@@ -249,6 +269,10 @@ public class DeviationUploader
             }
             //No handle all other options
             cl = new DefaultParser().parse(options, args);
+            if (groupCmd.getSelected() == null && ! cl.hasOption("reset")) {
+            	System.err.println("Must specify at leats one of: -s -f -l -r -h");
+            	System.exit(1);
+            }
             String file = null;
             if (cl.hasOption("dfu")) {
                 file = cl.getOptionValue("dfu");
@@ -296,9 +320,9 @@ public class DeviationUploader
         try {
             BlockDevice bd = new FileDisk(new File("test.fat"), false);
             FileSystem fs = FatFileSystem.read(bd, false);
-            ZipFileGroup zips = new ZipFileGroup();
+            FileGroup zips = new FileGroup();
             FSUtils fsu = new FSUtils();
-            zips.AddZipFile("test.zip");
+            zips.AddFile("test.zip");
             for (FileInfo file: zips.GetFilesystemFiles()) {
             	fsu.copyFile(fs, file);
             }
@@ -374,6 +398,9 @@ public class DeviationUploader
         	String lenStr = cl.getOptionValue("length");
             int length = lenStr == null ? 0 : Integer.decode(lenStr);
             readBinFromDevice(devs, cl.getOptionValue("bin"), address, length, vendorId, productId, altSetting);
+        }
+        if (cl.hasOption("reset")) {
+        	resetDevices(devs);
         }
         LibUsb.freeDeviceList(devices, true);
         LibUsb.exit(null);

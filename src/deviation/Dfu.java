@@ -75,7 +75,7 @@ public final class Dfu
         return devices;
     }
 
-    public static int detach(DfuDevice dev, short timeout) {
+    public static int detach(DfuDevice dev, int timeout) {
         ByteBuffer buffer = ByteBuffer.allocateDirect(6);
         return LibUsb.controlTransfer( dev.Handle(),
             /* bmRequestType */ (LibUsb.ENDPOINT_OUT | LibUsb.REQUEST_TYPE_CLASS | LibUsb.RECIPIENT_INTERFACE),
@@ -199,6 +199,7 @@ public final class Dfu
         }
         return bytes_sent;
     }
+    //Send To Device
     public static int dfuseDownloadChunk(DfuDevice dev, byte [] data, int transaction)
     {
         int bytes_sent = dfuseDownload(dev, data, transaction);
@@ -464,5 +465,29 @@ public final class Dfu
                 return -1;
             }
         }
+    }
+    public static int resetSTM32(DfuDevice dev) {
+    	DfuStatus status = new DfuStatus(null);
+    	System.out.format("Resetting STM32, starting firmware at address 0x08000000...\n");
+    	int set_ret = dfuseSpecialCommand(dev, 0x08000000, DFUSE_SET_ADDRESS);
+    	if( set_ret < 0 ) {
+    		System.out.format("Error: Unable to set start address for reseting\n");
+    		return -1;
+    	}
+
+    	int dret = dfuseDownload(dev, new byte[0], 2);
+
+    	if( dret < 0 ) {
+    		System.out.format("Error: Unable to initiate zero-length download\n");
+    		return -1;
+    	}
+    	status = getStatus(dev);
+
+    	if( status.bState != DfuStatus.STATE_DFU_MANIFEST) {
+    		System.out.format("Error: Expected STM32 to be in dfuMANIFEST state after get-status command!\n");
+    	} else {
+    		System.out.format("Successfully reset STM32\n");
+    	}
+    	return 0;
     }
 }
