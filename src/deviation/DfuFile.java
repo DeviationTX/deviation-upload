@@ -20,19 +20,29 @@ public class DfuFile {
         public int altSetting() { return altSetting; }
         public String name() { return name; }
     }
+    private DevoDetect type;
+    private String owner;
+    private String name;
     private int fwVersion;
     private int idProduct;
     private int idVendor;
     private List<ImageElement> imageElements;
     public DfuFile(String fname) throws IOException {
         byte[] data = IOUtil.readFile(fname);
+        name = fname;
         init(data);
     }
+    public DfuFile(FileInfo file) {
+    	name = file.name();
+        init(file.data());
+    }
     public DfuFile(byte[] data) {
+    	name = null;
         init(data);
     }
     private void init(byte[] data) {
         imageElements = new ArrayList<ImageElement>();
+        type = new DevoDetect();
 
         final byte [] szSignature = new byte[] {'D', 'f', 'u', 'S', 'e'};
         if (! Arrays.equals(Arrays.copyOfRange(data, 0, 5), szSignature)) {
@@ -73,6 +83,11 @@ public class DfuFile {
         long crc = Crc.Crc32(Arrays.copyOfRange(data, 0, data.length-4));
         if (crc != dwCRC) {
             throw new IllegalArgumentException(String.format("DFU CRC '0x%x' does not match calculated value '0x%x'", dwCRC, crc));
+        }
+       	for (ImageElement elem : imageElements) {
+       		if (type.Analyze(elem.name())) {
+       			break;
+       		}
         }
     }
     public int parseImage(byte[] data, int offset) {
@@ -117,6 +132,13 @@ public class DfuFile {
     public int fwVersion() { return fwVersion;}
     public int idProduct() { return idProduct;}
     public int idVendor()  { return idVendor;}
+    public String owner() { return owner;}
+    public void setOwner(String owner) { this.owner = owner; }
+    public String name() { return name; }
+    public void setName(String name) { this.name = name; }
+    public DevoDetect type() { return type; }
+    public void setType(DevoDetect type) { this.type = type; }
+    
     public List<ImageElement> imageElements() { return imageElements;}
 }
 

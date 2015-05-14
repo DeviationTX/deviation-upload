@@ -9,6 +9,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.io.File;
+import java.util.List;
 
 import javax.swing.AbstractAction;
 import javax.swing.JButton;
@@ -66,16 +67,16 @@ public class InstallTab extends JPanel {
     private JButton filesystemBtn;
 
     private FileInstaller fileInstaller;
-    private ZipFileGroup zipFiles;
+    private FileGroup zipFiles;
     DeviationUploadGUI gui;
 
-    DevoDetect fw;
-    DevoDetect lib;
+    DfuFile fw;
+    List<DfuFile> libs;
     public InstallTab(DeviationUploadGUI gui) {
         this.gui = gui;
-        zipFiles = new ZipFileGroup();
-        fw = new DevoDetect();
-        lib = new DevoDetect();
+        zipFiles = new FileGroup();
+        fw = null;
+        libs = null;
         fileInstaller = new FileInstaller(gui.getMonitor(), gui.getProgressBar());
         
         GridBagLayout gbl_BinSendPanel = new GridBagLayout();
@@ -297,8 +298,8 @@ public class InstallTab extends JPanel {
     	});
     }
     public void parseZipFiles() {
-        fw = zipFiles.GetFirmwareInfo();
-        lib = zipFiles.GetLibraryInfo();
+        fw = zipFiles.GetFirmwareDfu();
+        libs = zipFiles.GetLibraryDfus();
         reset_checkboxes();
         update_filechooser();
     }
@@ -306,7 +307,7 @@ public class InstallTab extends JPanel {
     	String fwFile = zipFiles.firmwareZip();
     	String libFile = zipFiles.libraryZip();
     	firmwareTxt.setText(fwFile);
-    	if(fwFile.equals(libFile) && zipFiles.GetFirmwareInfo().isFirmware() && zipFiles.GetLibraryInfo().isLibrary()) {
+    	if(fwFile.equals(libFile) && fw != null && zipFiles.hasLibrary()) {
     		//one zip file with both lib and 
     		libFile = "";
     		filesystemBtn.setEnabled(false);
@@ -321,7 +322,7 @@ public class InstallTab extends JPanel {
     	for (Checkbox c : Checkbox.values()) {
     		c.disable();
     	}
-        if (gui.getTxInfo().type() == Transmitter.DEVO_UNKNOWN || fw.firmware() != Firmware.DEVIATION){
+        if (gui.getTxInfo().type() == Transmitter.DEVO_UNKNOWN || (fw != null && fw.type().firmware() != Firmware.DEVIATION)) {
             return;
         }
         boolean chkboxval = (gui.getFatType() == FatStatus.NO_FAT || gui.getFatType() == FatStatus.MEDIA_FAT);
@@ -336,7 +337,7 @@ public class InstallTab extends JPanel {
                 Checkbox.FORMATMEDIA.set(false);
             }
         }
-        if (zipFiles.GetLibraryInfo().Found()) {
+        if (zipFiles.hasLibrary()) {
         	Checkbox.INSTALLLIB.set(true);
         }
         update_checkboxes();
@@ -351,17 +352,17 @@ public class InstallTab extends JPanel {
     }
     private void update_install_button() {
         boolean enabled = true;
-        if(fw.Found()) {
-            if(! gui.getTxInfo().matchModel(fw.model())) {
+        if(fw != null) {
+            if(! gui.getTxInfo().matchModel(fw.type().model())) {
                 enabled = false;
             }
         }
-        if(lib.Found()) {
-            if(! gui.getTxInfo().matchModel(lib.model())) {
+        if(zipFiles.hasLibrary()) {
+            if(libs.size() > 0 && ! gui.getTxInfo().matchModel(libs.get(0).type().model())) {
                 enabled = false;
             }
         }
-        if (!fw.Found() && ! lib.Found()) {
+        if (fw == null && ! zipFiles.hasLibrary()) {
             enabled = false;
         }
         btnInstall.setEnabled(enabled);
@@ -375,33 +376,34 @@ public class InstallTab extends JPanel {
         fileInstaller.setLibraryDfus(null);
     	fileInstaller.setFirmwareDfu(null);
     	long totalSize = 0;
-        if (fw.Found()) {
-            txtFwVersion.setText(fw.version());
-            DfuFile fwDfu = zipFiles.GetFirmwareDfu();
-            if (fwDfu != null) {
-            	fileInstaller.setFirmwareDfu(fwDfu);
-                int size = 0;
-                for (DfuFile.ImageElement elem : fwDfu.imageElements()) {
-                    size += elem.data().length;
-                }
-                txtFwSize.setText(String.valueOf(size / 1024) + " kb");
-                totalSize += size;
-            }            
+        if (fw!= null) {
+            txtFwVersion.setText(fw.type().version());
+           	fileInstaller.setFirmwareDfu(fw);
+            int size = 0;
+            for (DfuFile.ImageElement elem : fw.imageElements()) {
+                size += elem.data().length;
+            }
+            txtFwSize.setText(String.valueOf(size / 1024) + " kb");
+            totalSize += size;
         }
-        if (Checkbox.INSTALLLIB.get().isSelected() && lib.Found()) {
-            txtLibVersion.setText(lib.version());
-            fileInstaller.setLibraryDfus(zipFiles.GetLibraryDfus());
-            fileInstaller.clearFiles();
+        if (Checkbox.INSTALLLIB.get().isSelected() && zipFiles.hasLibrary()) {
+        	if (libs.size() > 0) {
+        		txtLibVersion.setText(libs.get(0).type().version());
+                fileInstaller.setLibraryDfus(libs);
+        	} else if (fw != null) {
+        		txtLibVersion.setText(fw.type().version());
+        	} else {
+        		DevoDetect type = new DevoDetect();
+        		txtLibVersion.setText(type.version());
+        	}
             
             int size = 0;
-            for (DfuFile fsDfu : zipFiles.GetLibraryDfus()) {
+            for (DfuFile fsDfu : libs) {
                 for (DfuFile.ImageElement elem : fsDfu.imageElements()) {
                     size += elem.data().length;
                 }
             }
             for (FileInfo file : zipFiles.GetFilesystemFiles()) {
-                if (file.name().matches("(?i:.*\\.dfu)") || file.name().matches("(?i:.*\\.zip)"))
-                	continue;
                 if (! Checkbox.REPLACETX.get().isSelected() && file.name().equalsIgnoreCase("tx.ini"))
                    	continue;
                 if (! Checkbox.REPLACEHW.get().isSelected() && file.name().equalsIgnoreCase("hardware.ini"))
@@ -441,9 +443,9 @@ public class InstallTab extends JPanel {
             	}
                 String fname = fc.getSelectedFile().getPath();
                 if (! txtField.getText().isEmpty()) {
-                    zipFiles.RemoveZipFile(txtField.getText());
+                    zipFiles.RemoveFile(txtField.getText());
                 }
-                zipFiles.AddZipFile(fname);
+                zipFiles.AddFile(fname);
                 txtField.setText(fname);
                 parseZipFiles();
 //                } catch (IOException ex) {

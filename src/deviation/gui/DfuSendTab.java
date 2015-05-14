@@ -133,7 +133,7 @@ public class DfuSendTab extends JPanel {
                     fileInstaller.clearFiles();
                     fileInstaller.setLibraryDfus(null);
                 	fileInstaller.setFirmwareDfu(null);
-                    if(gui.getTxInfo().matchModel(type)) {
+                    if(true || gui.getTxInfo().matchModel(type)) {
                         DFU_btnSend.setEnabled(true);
                         fileInstaller.setFirmwareDfu(dfuFile);
                         fileInstaller.setTotalBytes(size);
