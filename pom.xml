@@ -5,7 +5,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
   <modelVersion>4.0.0</modelVersion>
   <groupId>DeviationUpload</groupId>
   <artifactId>DeviationUpload</artifactId>
-  <version>0.6.1</version>
+  <version>0.6.2</version>
   <name>Deviation Uploader</name>
   <description>USB Uploader for Walkera DEVO
   Transmitters</description>
