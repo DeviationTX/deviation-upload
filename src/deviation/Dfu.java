@@ -383,11 +383,12 @@ public final class Dfu
         setIdle(dev);
         while (true) {
             Sector sector = dev.Memory().find(sector_address);
+            System.out.format("%d: %d (%d)\n", sector_address, sector == null ? -1 : sector.end(), address + data.length);
             if (sector == null || ! sector.writable()) {
                 System.out.format("Error: No sector found that can be written at address 0x%08x%n", sector_address);
                 return -1;
             }
-            if (sector.end() >= address + data.length) {
+            if (sector.end() + 1>= address + data.length) {
                 break;
             }
             sector_address = sector.end() + 1;

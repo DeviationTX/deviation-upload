@@ -24,11 +24,11 @@ public enum Transmitter {
 	},
 	DEVO6("Devo 6", "DEVO-06", 6, 54, 1024, true, -1, -1, false) {
 		public boolean modelMatch(String str) { return str.matches("DEVO-6.*") || str.matches(".*devo6.*") || str.equals("6"); }	
-	};
-/*
+	},
   	DEVOF7("Devo F7", "DEVO-F7", 7, -1, -1, true, -1, -1, false) {
 		public boolean modelMatch(String str) { return str.matches("DEVO-F7.*") || str.matches(".*devof7.*") || str.equals("f7"); }	
-	},
+	};
+/*
 	DEVOF4("Devo F4", "DEVO-F4", 4, -1, -1, true, -1, -1, false) {
 		public boolean modelMatch(String str) { return str.matches("DEVO-F4.*") || str.matches(".*devof4.*") || str.equals("f4"); }	
 	},
