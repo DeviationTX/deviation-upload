@@ -1,12 +1,16 @@
-package deviation;
+package deviation.filesystem;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import de.waldheinz.fs.BlockDevice;
+import deviation.Dfu;
+import deviation.DfuDevice;
+import deviation.Progress;
+import deviation.Sector;
 
-public class DevoFS implements BlockDevice
+public class FlashIO implements BlockDevice
 {
     //private final RamDisk ram;
     private final byte[] ram;
@@ -22,7 +26,7 @@ public class DevoFS implements BlockDevice
     private final Progress progress;
 
 
-    public DevoFS(DfuDevice dev, long start_address, boolean invert, int fs_sector_size, Progress progress)
+    public FlashIO(DfuDevice dev, long start_address, boolean invert, int fs_sector_size, Progress progress)
     {
     	memAddress = dev.Memory().findStartingAddress();
         startOffset = start_address - memAddress;
@@ -47,7 +51,7 @@ public class DevoFS implements BlockDevice
             if (changed[sector_num]) {
             	byte [] data = Arrays.copyOfRange(ram, sector_num * sectorSize,  sector_num * sectorSize + sectorSize);
                 if (invert) {
-                    data = DevoFat.invert(data);
+                    data = TxInterface.invert(data);
                 }
                 Dfu.sendToDevice(dev,  (int)(memAddress + sector_num * sectorSize), data, progress);
                 changed[sector_num] = false;
@@ -71,7 +75,7 @@ public class DevoFS implements BlockDevice
         if (! cached[sector_num]) {
             byte[] data = Dfu.fetchFromDevice(dev, (int)(memAddress + sector_num * sectorSize), sectorSize);
             if (invert) {
-                data = DevoFat.invert(data);
+                data = TxInterface.invert(data);
             }
             System.arraycopy(data, 0, ram, sector_num * sectorSize, data.length);
             cached[sector_num] = true;

@@ -1,22 +1,28 @@
-package deviation;
+package deviation.filesystem;
 
 import java.io.IOException;
 import java.util.Iterator;
 
-import de.waldheinz.fs.BlockDevice;
 import de.waldheinz.fs.FileSystem;
 import de.waldheinz.fs.FsDirectory;
 import de.waldheinz.fs.FsDirectoryEntry;
 import de.waldheinz.fs.fat.FatFileSystem;
 import de.waldheinz.fs.fat.SuperFloppyFormatter;
+import deviation.DfuDevice;
+import deviation.DfuInterface;
+import deviation.FileInfo;
+import deviation.Progress;
+import deviation.Transmitter;
+import deviation.TxInfo;
+import deviation.TxUtils;
 
-public class DevoFat {
+public class TxInterface {
     
     public enum FatStatus {NO_FAT, ROOT_FAT, MEDIA_FAT, ROOT_AND_MEDIA_FAT};
 
     DfuDevice dev;
-    DevoFS rootBlockDev;
-    DevoFS mediaBlockDev;
+    FlashIO rootBlockDev;
+    FlashIO mediaBlockDev;
     private final int SECTOR_SIZE = 4096;
     private FileSystem rootFs;
     private FileSystem mediaFs;
@@ -26,7 +32,7 @@ public class DevoFat {
     private FSUtils fsutils;
     private Progress progress;
     
-    public DevoFat(DfuDevice dev, Progress progress) {
+    public TxInterface(DfuDevice dev, Progress progress) {
         mediaBlockDev = null;
         rootBlockDev = null;
         this.dev = dev;
@@ -39,11 +45,11 @@ public class DevoFat {
     		return;
         if (tx.hasMediaFS()) {
     		mediaIface = dev.SelectInterfaceByAddr(tx.getMediaSectorOffset() * SECTOR_SIZE);
-        	mediaBlockDev = new DevoFS(dev, tx.getMediaSectorOffset() * SECTOR_SIZE, tx.isMediaInverted(), SECTOR_SIZE, progress);
+        	mediaBlockDev = new FlashIO(dev, tx.getMediaSectorOffset() * SECTOR_SIZE, tx.isMediaInverted(), SECTOR_SIZE, progress);
         	dev.close();
         }
 		rootIface = dev.SelectInterfaceByAddr(tx.getRootSectorOffset() * SECTOR_SIZE);
-        rootBlockDev = new DevoFS(dev, tx.getRootSectorOffset() * SECTOR_SIZE, tx.isRootInverted(), SECTOR_SIZE, progress);
+        rootBlockDev = new FlashIO(dev, tx.getRootSectorOffset() * SECTOR_SIZE, tx.isRootInverted(), SECTOR_SIZE, progress);
     }
     public boolean hasSeparateMediaDrive() { return mediaBlockDev == null ? false : true; }
     public void Format(FatStatus type) throws IOException {

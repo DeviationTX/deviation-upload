@@ -27,7 +27,8 @@ import javax.swing.table.TableModel;
 
 import de.ailis.usb4java.libusb.LibUsb;
 import deviation.*;
-import deviation.DevoFat.FatStatus;
+import deviation.filesystem.TxInterface;
+import deviation.filesystem.TxInterface.FatStatus;
 
 import javax.swing.JTextArea;
 
@@ -44,7 +45,7 @@ public class DeviationUploadGUI {
 
     private TxInfo txInfo;
     private MonitorUSB monitor;
-    private DevoFat.FatStatus fatStatus;
+    private TxInterface.FatStatus fatStatus;
     private List<DfuMemory> devMemory;
 
     private DfuSendTab DfuSendPanel;

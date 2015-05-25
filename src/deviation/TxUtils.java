@@ -1,6 +1,7 @@
 package deviation;
 
-import deviation.DevoFat.FatStatus;
+import deviation.filesystem.TxInterface;
+import deviation.filesystem.TxInterface.FatStatus;
 
 public class TxUtils {
     public static TxInfo getTxInfo(DfuDevice dev)
@@ -43,7 +44,7 @@ public class TxUtils {
             }
             //IOUtil.writeFile("fatmedia", fatMediaBytes);
         }
-        byte [] fatRootBytes = DevoFat.invert(Dfu.fetchFromDevice(dev, txType.getRootSectorOffset()*SECTOR_SIZE, 0x200));
+        byte [] fatRootBytes = TxInterface.invert(Dfu.fetchFromDevice(dev, txType.getRootSectorOffset()*SECTOR_SIZE, 0x200));
         //Magic bytes indicating FAT:
         //end of sector (510,511) must be 0x55aa
         //Fat type (54,55,56,57,58) must be FAT16 (we actuallyony check the 1st 2 bytes as sufficient)
