@@ -7,6 +7,9 @@ import de.ailis.usb4java.libusb.*;
 import de.waldheinz.fs.fat.FatFileSystem;
 import de.waldheinz.fs.util.*;
 import de.waldheinz.fs.*;
+import deviation.filesystem.FSUtils;
+import deviation.filesystem.FileDisk2;
+import deviation.filesystem.DevoFS.DevoFSFileSystem;
 import deviation.gui.DeviationUploadGUI;
 
 import org.apache.commons.cli.*;
@@ -347,6 +350,30 @@ public class DeviationUploader
         System.exit(0);
 
     }
+    private static void test1_recur(String indent, FsDirectory dir) {
+        Iterator<FsDirectoryEntry> itr = dir.iterator();
+    	while(itr.hasNext()) {
+    		try {
+    			FsDirectoryEntry entry = itr.next();
+    			if (entry.isDirectory()) {
+    				System.out.format("%sDIR: %s\n", indent, entry.getName());
+    				test1_recur(indent + "    ", entry.getDirectory());
+    			} else {
+    				System.out.format("%sFILE: %s (%d)\n", indent, entry.getName(), entry.getFile().getLength());
+    			}
+    		} catch (Exception e) { System.out.println(e); }
+    	}
+    }
+    private static void test1() {
+    	try {
+    		FileDisk2 f = new FileDisk2(new File("test.devofs"), false, 4096);
+    		DevoFSFileSystem fs = new DevoFSFileSystem(f, false);
+            FsDirectory dir = fs.getRoot();
+            test1_recur("", dir);
+    	} catch (Exception e) { System.out.println(e); }    
+     	System.exit(0);
+    }
+    
     public static void main(String[] args)
     {
         if (args.length == 0) {

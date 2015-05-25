@@ -1,4 +1,4 @@
-package deviation;
+package deviation.filesystem;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -7,6 +7,7 @@ import de.waldheinz.fs.FileSystem;
 import de.waldheinz.fs.FsDirectory;
 import de.waldheinz.fs.FsDirectoryEntry;
 import de.waldheinz.fs.FsFile;
+import deviation.FileInfo;
 
 public class FSUtils {
 	public FSUtils() {

@@ -22,7 +22,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 import deviation.*;
 import deviation.DevoDetect.Firmware;
-import deviation.DevoFat.FatStatus;
+import deviation.filesystem.TxInterface.FatStatus;
 
 public class InstallTab extends JPanel {
     /**

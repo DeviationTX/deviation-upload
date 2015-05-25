@@ -8,8 +8,8 @@ import javax.swing.AbstractAction;
 import javax.swing.JProgressBar;
 import javax.swing.SwingWorker;
 
-import deviation.DevoFat;
-import deviation.DevoFat.FatStatus;
+import deviation.filesystem.TxInterface;
+import deviation.filesystem.TxInterface.FatStatus;
 import deviation.DeviationUploader;
 import deviation.DfuDevice;
 import deviation.DfuFile;
@@ -102,7 +102,7 @@ class FileInstaller extends SwingWorker<String, Integer> implements Progress {
 		}
 		dev.claim_and_set();
 
-		DevoFat fat = new DevoFat(dev, this);
+		TxInterface fat = new TxInterface(dev, this);
 		try {
 			if (format_root) {
 				fat.Format(FatStatus.ROOT_FAT);
