@@ -51,7 +51,8 @@ public class DeviationUploadGUI {
 
     private DfuSendTab DfuSendPanel;
     private InstallTab InstallPanel;
-    /**
+
+/**
      * Launch the application.
      */
     public static void main(String[] args) {
@@ -85,11 +86,13 @@ public class DeviationUploadGUI {
     	txInterface = null;
         txInfo = new TxInfo();
         monitor = new MonitorUSB(this);
+        
         //redirectSystemStreams();
         initialize();
         RefreshDevices(null);
         LibUsb.init(null);
         Timer timer1 = new Timer(5000, monitor);
+        timer1.setInitialDelay(0);
         timer1.start();
     }
 
@@ -230,8 +233,8 @@ public class DeviationUploadGUI {
             fsStatus = FSStatus.NO_FS;
         } else {
         	txInterface = new TxInterface(dev);
-            txInfo = TxUtils.getTxInfo(dev);
-            fsStatus = TxUtils.getFSStatus(dev, txInfo.type());
+            txInfo = TxInfo.getTxInfo(dev);
+            fsStatus = txInterface.getFSStatus();
             devMemory = new ArrayList<DfuMemory>();
             for (DfuInterface iface : dev.Interfaces()) {
                 devMemory.add(iface.Memory());
@@ -292,4 +295,5 @@ public class DeviationUploadGUI {
     public TxInfo getTxInfo() {return txInfo;}
     public FSStatus getFSType() { return fsStatus; }
     public TxInterface getTxInterface() { return txInterface; }
+    
 }

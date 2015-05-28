@@ -54,6 +54,9 @@ public class DeviationUploader
     public static void sendDfuToDevice(DfuDevice dev, DfuFile file, Progress progress)
     {
         for (DfuFile.ImageElement elem : file.imageElements()) {
+        	if (progress != null && progress.cancelled()) {
+        		return;
+        	}
             if (! findDeviceByAddress(dev, (int)elem.address(), file.idVendor(), file.idProduct(), elem.altSetting())) {
                 System.out.format("Error: Did not find matching device for VID:0x%x PID:0x%x alt:%d%n",
                     file.idVendor(), file.idProduct(), elem.altSetting());
@@ -320,10 +323,9 @@ public class DeviationUploader
             BlockDevice bd = new FileDisk(new File("test.fat"), false);
             FileSystem fs = FatFileSystem.read(bd, false);
             FileGroup zips = new FileGroup();
-            FSUtils fsu = new FSUtils();
             zips.AddFile("test.zip");
             for (FileInfo file: zips.GetFilesystemFiles()) {
-            	fsu.copyFile(fs, file);
+            	FSUtils.copyFile(fs, file);
             }
             fs.close();
             bd.close();
