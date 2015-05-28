@@ -22,7 +22,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 import deviation.*;
 import deviation.DevoDetect.Firmware;
-import deviation.filesystem.TxInterface.FatStatus;
+import deviation.filesystem.TxInterface.FSStatus;
 
 public class InstallTab extends JPanel {
     /**
@@ -35,10 +35,10 @@ public class InstallTab extends JPanel {
     private JTextField libraryTxt;
     private JTextField txtFwVersion;
     private JTextField txtFwSize;
-    private JTextField txtFwUsed;
+    //private JTextField txtFwUsed;
     private JTextField txtLibVersion;
     private JTextField txtLibSize;
-    private JTextField txtLibUsed;
+    //private JTextField txtLibUsed;
     private enum Checkbox {
     	FORMATROOT ("Format Root"),
     	FORMATMEDIA ("Format Media"),
@@ -77,7 +77,7 @@ public class InstallTab extends JPanel {
         zipFiles = new FileGroup();
         fw = null;
         libs = null;
-        fileInstaller = new FileInstaller(gui.getMonitor(), gui.getProgressBar());
+        fileInstaller = new FileInstaller(gui);
         
         GridBagLayout gbl_BinSendPanel = new GridBagLayout();
         gbl_BinSendPanel.columnWidths = new int[]{0, 45, 0, 0, 0};
@@ -325,13 +325,13 @@ public class InstallTab extends JPanel {
         if (gui.getTxInfo().type() == Transmitter.DEVO_UNKNOWN || (fw != null && fw.type().firmware() != Firmware.DEVIATION)) {
             return;
         }
-        boolean chkboxval = (gui.getFatType() == FatStatus.NO_FAT || gui.getFatType() == FatStatus.MEDIA_FAT);
+        boolean chkboxval = (gui.getFSType() == FSStatus.NO_FS || gui.getFSType() == FSStatus.MEDIA_FS);
         Checkbox.FORMATROOT.set(chkboxval);
         Checkbox.REPLACETX.set(chkboxval);
         Checkbox.REPLACEHW.set(chkboxval);
         Checkbox.REPLACEMODEL.set(chkboxval);
         if (gui.getTxInfo().type().hasMediaFS()) {
-            if (gui.getFatType() == FatStatus.NO_FAT || gui.getFatType() == FatStatus.ROOT_FAT) {
+            if (gui.getFSType() == FSStatus.NO_FS || gui.getFSType() == FSStatus.ROOT_FS) {
                 Checkbox.FORMATMEDIA.set(true);
             } else {
                 Checkbox.FORMATMEDIA.set(false);

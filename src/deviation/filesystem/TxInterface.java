@@ -15,10 +15,11 @@ import deviation.Progress;
 import deviation.Transmitter;
 import deviation.TxInfo;
 import deviation.TxUtils;
+import deviation.filesystem.DevoFS.DevoFSFileSystem;
 
 public class TxInterface {
     
-    public enum FatStatus {NO_FAT, ROOT_FAT, MEDIA_FAT, ROOT_AND_MEDIA_FAT};
+    public enum FSStatus {NO_FS, ROOT_FS, MEDIA_FS, ROOT_AND_MEDIA_FS};
 
     DfuDevice dev;
     FlashIO rootBlockDev;
@@ -30,13 +31,13 @@ public class TxInterface {
     private DfuInterface mediaIface;
     private Transmitter model;
     private FSUtils fsutils;
-    private Progress progress;
+    //private Progress progress;
     
-    public TxInterface(DfuDevice dev, Progress progress) {
+    public TxInterface(DfuDevice dev) {
         mediaBlockDev = null;
         rootBlockDev = null;
         this.dev = dev;
-        this.progress = progress;
+        //this.progress = progress;
 		TxInfo txInfo = TxUtils.getTxInfo(dev);
 		Transmitter tx = txInfo.type();
         this.model = tx;
@@ -45,38 +46,62 @@ public class TxInterface {
     		return;
         if (tx.hasMediaFS()) {
     		mediaIface = dev.SelectInterfaceByAddr(tx.getMediaSectorOffset() * SECTOR_SIZE);
-        	mediaBlockDev = new FlashIO(dev, tx.getMediaSectorOffset() * SECTOR_SIZE, tx.isMediaInverted(), SECTOR_SIZE, progress);
+        	mediaBlockDev = new FlashIO(dev, tx.getMediaSectorOffset() * SECTOR_SIZE, tx.isMediaInverted(), SECTOR_SIZE, null);
         	dev.close();
         }
 		rootIface = dev.SelectInterfaceByAddr(tx.getRootSectorOffset() * SECTOR_SIZE);
-        rootBlockDev = new FlashIO(dev, tx.getRootSectorOffset() * SECTOR_SIZE, tx.isRootInverted(), SECTOR_SIZE, progress);
+        rootBlockDev = new FlashIO(dev, tx.getRootSectorOffset() * SECTOR_SIZE, tx.isRootInverted(), SECTOR_SIZE, null);
+    	
     }
+    public void setProgress(Progress progress) {
+    	rootBlockDev.setProgress(progress);
+    	if (model.hasMediaFS()) {
+    		mediaBlockDev.setProgress(progress);
+    	}
+    }
+    public DfuDevice getDevice() { return dev; }
     public boolean hasSeparateMediaDrive() { return mediaBlockDev == null ? false : true; }
-    public void Format(FatStatus type) throws IOException {
-        if (type == FatStatus.ROOT_FAT || type == FatStatus.ROOT_AND_MEDIA_FAT) {
+    public void Format(FSStatus type) throws IOException {
+        if (type == FSStatus.ROOT_FS || type == FSStatus.ROOT_AND_MEDIA_FS) {
         	dev.SelectInterface(rootIface);
         	rootBlockDev.markAllCached();
-            rootFs = SuperFloppyFormatter.get(rootBlockDev).format();
+        	if (model.getRootFSType() == FSType.FAT) {
+        		rootFs = SuperFloppyFormatter.get(rootBlockDev).format();
+        	} else {
+        		rootFs = DevoFSFileSystem.format(rootBlockDev);
+        	}
             mediaFs = rootFs;
         }
-        if (type == FatStatus.MEDIA_FAT || type == FatStatus.ROOT_AND_MEDIA_FAT) {
+        if (type == FSStatus.MEDIA_FS || type == FSStatus.ROOT_AND_MEDIA_FS) {
             if (model.hasMediaFS()) {
             	dev.SelectInterface(mediaIface);
             	mediaBlockDev.markAllCached();
-                mediaFs = SuperFloppyFormatter.get(mediaBlockDev).format();
+            	if (model.getRootFSType() == FSType.FAT) {
+            		mediaFs = SuperFloppyFormatter.get(mediaBlockDev).format();
+            	} else {
+            		mediaFs = DevoFSFileSystem.format(mediaBlockDev);
+            	}
             }
         }
     }
-    public void Init(FatStatus type) throws IOException {
-        if (type == FatStatus.ROOT_FAT || type == FatStatus.ROOT_AND_MEDIA_FAT) {
+    public void Init(FSStatus type) throws IOException {
+        if (type == FSStatus.ROOT_FS || type == FSStatus.ROOT_AND_MEDIA_FS) {
         	dev.SelectInterface(rootIface);
-            rootFs = FatFileSystem.read(rootBlockDev, false);
+        	if (model.getRootFSType() == FSType.FAT) {
+        		rootFs = FatFileSystem.read(rootBlockDev, false);
+        	} else {
+        		rootFs = DevoFSFileSystem.read(rootBlockDev, false);
+        	}
             mediaFs = rootFs;
         }
-        if (type == FatStatus.MEDIA_FAT || type == FatStatus.ROOT_AND_MEDIA_FAT) {
+        if (type == FSStatus.MEDIA_FS || type == FSStatus.ROOT_AND_MEDIA_FS) {
             if (model.hasMediaFS()) {
             	dev.SelectInterface(mediaIface);
-                mediaFs = FatFileSystem.read(mediaBlockDev, false);
+            	if (model.getRootFSType() == FSType.FAT) {
+            		mediaFs = FatFileSystem.read(mediaBlockDev, false);
+            	} else {
+            		mediaFs = DevoFSFileSystem.read(mediaBlockDev, false);
+            	}
             }
         }
     }

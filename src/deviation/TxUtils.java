@@ -1,7 +1,8 @@
 package deviation;
 
+import deviation.filesystem.FSType;
 import deviation.filesystem.TxInterface;
-import deviation.filesystem.TxInterface.FatStatus;
+import deviation.filesystem.TxInterface.FSStatus;
 
 public class TxUtils {
     public static TxInfo getTxInfo(DfuDevice dev)
@@ -19,11 +20,11 @@ public class TxUtils {
         return txInfo;
 
     }
-    public static FatStatus getFatStatus(DfuDevice dev, Transmitter txType) {
+    public static FSStatus getFSStatus(DfuDevice dev, Transmitter txType) {
     	final int SECTOR_SIZE = 0x1000;
         boolean has_root = false;
         boolean has_media = false;
-        FatStatus status = FatStatus.NO_FAT;
+        FSStatus status = FSStatus.NO_FS;
         if (txType == Transmitter.DEVO_UNKNOWN) {
             return status;
         }
@@ -37,32 +38,41 @@ public class TxUtils {
         Dfu.setIdle(dev);
         
         if (txType.hasMediaFS()) {
-            byte [] fatMediaBytes = Dfu.fetchFromDevice(dev, txType.getMediaSectorOffset()*SECTOR_SIZE, 0x200);
-            if (fatMediaBytes[510] == 0x55 && ((int)fatMediaBytes[511] & 0xff) == 0xaa
-                    && fatMediaBytes[54] == 0x46 && fatMediaBytes[55] == 0x41) {
-                has_media = true;
-            }
+        	if (txType.getMediaFSType() == FSType.FAT) {
+        		byte [] fatMediaBytes = Dfu.fetchFromDevice(dev, txType.getMediaSectorOffset()*SECTOR_SIZE, 0x200);
+        		if (fatMediaBytes[510] == 0x55 && ((int)fatMediaBytes[511] & 0xff) == 0xaa
+        				&& fatMediaBytes[54] == 0x46 && fatMediaBytes[55] == 0x41)
+        		{
+        			has_media = true;
+        		}
+        	} else {
+        		has_media = true;
+        	}
             //IOUtil.writeFile("fatmedia", fatMediaBytes);
         }
-        byte [] fatRootBytes = TxInterface.invert(Dfu.fetchFromDevice(dev, txType.getRootSectorOffset()*SECTOR_SIZE, 0x200));
-        //Magic bytes indicating FAT:
-        //end of sector (510,511) must be 0x55aa
-        //Fat type (54,55,56,57,58) must be FAT16 (we actuallyony check the 1st 2 bytes as sufficient)
-        if (fatRootBytes[510] == 0x55 && ((int)fatRootBytes[511] & 0xff) == 0xaa
-                && fatRootBytes[54] == 0x46 && fatRootBytes[55] == 0x41) {
-            has_root = true;
-            if (txType.hasMediaFS()) {
-                has_media = true;
-            }
-        }
+    	if (txType.getRootFSType() == FSType.FAT) {
+    		byte [] fatRootBytes = TxInterface.invert(Dfu.fetchFromDevice(dev, txType.getRootSectorOffset()*SECTOR_SIZE, 0x200));
+    		//Magic bytes indicating FAT:
+    		//end of sector (510,511) must be 0x55aa
+    		//Fat type (54,55,56,57,58) must be FAT16 (we actuallyony check the 1st 2 bytes as sufficient)
+    		if (fatRootBytes[510] == 0x55 && ((int)fatRootBytes[511] & 0xff) == 0xaa
+    				&& fatRootBytes[54] == 0x46 && fatRootBytes[55] == 0x41) {
+    			has_root = true;
+    			if (txType.hasMediaFS()) {
+    				has_media = true;
+    			}
+    		}
+    	} else {
+    		has_root = true;
+    	}
         dev.close();
         //IOUtil.writeFile("fatroot", fatRootBytes);
         if (has_media && has_root) {
-            status = FatStatus.ROOT_AND_MEDIA_FAT;
+            status = FSStatus.ROOT_AND_MEDIA_FS;
         } else if (has_media) {
-            status = FatStatus.MEDIA_FAT;
+            status = FSStatus.MEDIA_FS;
         } else if  (has_root) {
-            status = FatStatus.ROOT_FAT;
+            status = FSStatus.ROOT_FS;
         }
         return status;
     }

@@ -74,6 +74,11 @@ public final class Dfu
         }
         return devices;
     }
+    public static DfuDevice findFirstDevice(DeviceList usb_devices)
+    {
+    	List<DfuDevice> devices = findDevices(usb_devices);
+    	return devices.size() > 0 ? devices.get(0) : null;
+    }
 
     public static int detach(DfuDevice dev, int timeout) {
         ByteBuffer buffer = ByteBuffer.allocateDirect(6);

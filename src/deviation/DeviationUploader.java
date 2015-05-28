@@ -1,6 +1,7 @@
 package deviation;
 
 import java.io.*;
+import java.nio.ByteBuffer;
 import java.util.*;
 
 import de.ailis.usb4java.libusb.*;
@@ -29,19 +30,17 @@ public class DeviationUploader
         }
         return data;
     }
-    public static DfuDevice findDeviceByAddress(List<DfuDevice> devs, int address, Integer vid, Integer pid, Integer alt)
+    public static boolean findDeviceByAddress(DfuDevice dev, int address, Integer vid, Integer pid, Integer alt)
     {
-        for (DfuDevice dev : devs) {
-            if ((vid == null || vid == dev.idVendor()) && (pid == null || pid == dev.idProduct())) {
-            	if (dev.SelectInterfaceByAddr(address, alt) != null) {
-                    return dev;
-                }                
+        if ((vid == null || vid == dev.idVendor()) && (pid == null || pid == dev.idProduct())) {
+        	if (dev.SelectInterfaceByAddr(address, alt) != null) {
+                return true;
             }
         }
-        return null;
+        return false;
     }
 
-    public static void sendDfuToDevice(List<DfuDevice> devs, String fname, Progress progress)
+    public static void sendDfuToDevice(DfuDevice dev, String fname, Progress progress)
     {
         DfuFile file;
         try {
@@ -50,13 +49,12 @@ public class DeviationUploader
             System.err.println("Caught IOException: " + e.getMessage());
             throw new RuntimeException(e);
         }
-        sendDfuToDevice(devs, file, progress);
+        sendDfuToDevice(dev, file, progress);
     }
-    public static void sendDfuToDevice(List<DfuDevice> devs, DfuFile file, Progress progress)
+    public static void sendDfuToDevice(DfuDevice dev, DfuFile file, Progress progress)
     {
         for (DfuFile.ImageElement elem : file.imageElements()) {
-            DfuDevice dev = findDeviceByAddress(devs, (int)elem.address(), file.idVendor(), file.idProduct(), elem.altSetting());
-            if (dev == null) {
+            if (! findDeviceByAddress(dev, (int)elem.address(), file.idVendor(), file.idProduct(), elem.altSetting())) {
                 System.out.format("Error: Did not find matching device for VID:0x%x PID:0x%x alt:%d%n",
                     file.idVendor(), file.idProduct(), elem.altSetting());
                 continue;
@@ -85,7 +83,7 @@ public class DeviationUploader
         }
     }
     
-    public static void sendBinToDevice(List<DfuDevice> devs, String fname, int address, Integer vid, Integer pid, Integer alt)
+    public static void sendBinToDevice(DfuDevice dev, String fname, int address, Integer vid, Integer pid, Integer alt)
     {
         byte[] data;
         try {
@@ -94,8 +92,7 @@ public class DeviationUploader
             System.err.println("Caught IOException: " + e.getMessage());
             throw new RuntimeException(e);
         }
-        DfuDevice dev = findDeviceByAddress(devs, address, vid, pid, alt);
-        if (dev == null) {
+        if (! findDeviceByAddress(dev, address, vid, pid, alt)) {
             System.out.format("Error: Did not find matching device for VID:0x%x PID:0x%x alt:%d%n",
                     vid, pid, alt);
             return;
@@ -114,10 +111,9 @@ public class DeviationUploader
         dev.close();
     }
 
-    public static void readBinFromDevice(List<DfuDevice> devs, String fname, int address, Integer length, Integer vid, Integer pid, Integer alt)
+    public static void readBinFromDevice(DfuDevice dev, String fname, int address, Integer length, Integer vid, Integer pid, Integer alt)
     {
-        DfuDevice dev = findDeviceByAddress(devs, address, vid, pid, alt);
-        if (dev == null) {
+        if (! findDeviceByAddress(dev, address, vid, pid, alt)) {
             System.out.format("Error: Did not find matching device for VID:0x%x PID:0x%x alt:%d%n",
                     vid, pid, alt);
             return;
@@ -364,12 +360,16 @@ public class DeviationUploader
     		} catch (Exception e) { System.out.println(e); }
     	}
     }
-    private static void test1() {
+    public static void test1() {
     	try {
     		FileDisk2 f = new FileDisk2(new File("test.devofs"), false, 4096);
     		DevoFSFileSystem fs = new DevoFSFileSystem(f, false);
             FsDirectory dir = fs.getRoot();
             test1_recur("", dir);
+            ByteBuffer dest = ByteBuffer.allocate((int)f.getSize());
+            Arrays.fill(dest.array(), (byte)0);
+            f.write(0, dest);
+            fs.close();
     	} catch (Exception e) { System.out.println(e); }    
      	System.exit(0);
     }
@@ -377,7 +377,6 @@ public class DeviationUploader
     public static void main(String[] args)
     {
         if (args.length == 0) {
-            //test();
             DeviationUploadGUI.main(null);
             while(true) {}
         }
@@ -413,10 +412,10 @@ public class DeviationUploader
         }
         if (cl.hasOption("send")) {
             if (cl.hasOption("dfu")) {
-                sendDfuToDevice(devs, cl.getOptionValue("dfu"), null);
+                sendDfuToDevice(devs.get(0), cl.getOptionValue("dfu"), null);
             } else {
                 int address = Long.decode(cl.getOptionValue("address")).intValue();
-                sendBinToDevice(devs, cl.getOptionValue("bin"), address, vendorId, productId, altSetting);
+                sendBinToDevice(devs.get(0), cl.getOptionValue("bin"), address, vendorId, productId, altSetting);
             }
         }
         if (cl.hasOption("fetch")) {
@@ -424,7 +423,7 @@ public class DeviationUploader
             int address = addrStr == null ? 0 : Long.decode(addrStr).intValue();
         	String lenStr = cl.getOptionValue("length");
             int length = lenStr == null ? 0 : Integer.decode(lenStr);
-            readBinFromDevice(devs, cl.getOptionValue("bin"), address, length, vendorId, productId, altSetting);
+            readBinFromDevice(devs.get(0), cl.getOptionValue("bin"), address, length, vendorId, productId, altSetting);
         }
         if (cl.hasOption("reset")) {
         	resetDevices(devs);

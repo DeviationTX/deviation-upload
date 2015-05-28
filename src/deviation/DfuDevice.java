@@ -2,6 +2,7 @@ package deviation;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 
 import de.ailis.usb4java.libusb.*;
 
@@ -12,14 +13,13 @@ public class DfuDevice
         private DeviceHandle handle;
         private List<DfuInterface> interfaces;
         private DfuInterface selected_interface;
-        private int open_count;
+        static final protected ReentrantLock lock = new ReentrantLock();
 
         public DfuDevice(Device dev) {
             this.handle = null;
             this.dev = dev;
             interfaces = new ArrayList<DfuInterface>();
             this.selected_interface = null;
-            open_count = 0;
         }
         public void AddInterface(InterfaceDescriptor intf, ConfigDescriptor cfg) {
             interfaces.add(new DfuInterface(dev, intf, cfg));    
@@ -44,25 +44,29 @@ public class DfuDevice
         public boolean DFU_IFF_DFU() { return selected_interface == null ? false : selected_interface.DFU_IFF_DFU(); }
         
         public int open() {
+        	lock.lock();
             if (handle == null) {
-                open_count = 1;
                 handle = new DeviceHandle();
-                return LibUsb.open(dev, handle);
-            } else {
-                open_count++;
+                int result = LibUsb.open(dev, handle);
+                if (result != LibUsb.SUCCESS){
+                	lock.unlock();
+                }
+                return result;
             }
             return 0;
         }
         public void close() {
-            if (handle != null) {
-                if (open_count > 1) {
-                    open_count--;
-                } else {
-                    LibUsb.close(handle);
-                    handle = null;
-                    open_count = 0;
-                }
+        	if (lock.getHoldCount() == 1 && handle != null) {
+        		LibUsb.close(handle);
+                handle = null;
             }
+        	lock.unlock();
+        }
+        public static boolean tryLock() {
+        	return lock.tryLock();
+        }
+        public static void unLock() {
+        	lock.unlock();
         }
         public int claim_and_set()  {
             if (selected_interface == null) {
