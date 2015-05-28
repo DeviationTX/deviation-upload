@@ -8,13 +8,13 @@ import de.waldheinz.fs.FsDirectory;
 import de.waldheinz.fs.FsDirectoryEntry;
 import de.waldheinz.fs.fat.FatFileSystem;
 import de.waldheinz.fs.fat.SuperFloppyFormatter;
+import deviation.Dfu;
 import deviation.DfuDevice;
 import deviation.DfuInterface;
 import deviation.FileInfo;
 import deviation.Progress;
 import deviation.Transmitter;
 import deviation.TxInfo;
-import deviation.TxUtils;
 import deviation.filesystem.DevoFS.DevoFSFileSystem;
 
 public class TxInterface {
@@ -30,7 +30,6 @@ public class TxInterface {
     private DfuInterface rootIface;
     private DfuInterface mediaIface;
     private Transmitter model;
-    private FSUtils fsutils;
     //private Progress progress;
     
     public TxInterface(DfuDevice dev) {
@@ -38,10 +37,9 @@ public class TxInterface {
         rootBlockDev = null;
         this.dev = dev;
         //this.progress = progress;
-		TxInfo txInfo = TxUtils.getTxInfo(dev);
+		TxInfo txInfo = TxInfo.getTxInfo(dev);
 		Transmitter tx = txInfo.type();
         this.model = tx;
-        fsutils = new FSUtils();
     	if (tx == Transmitter.DEVO_UNKNOWN)
     		return;
         if (tx.hasMediaFS()) {
@@ -140,7 +138,7 @@ public class TxInterface {
         } else {
         	dev.SelectInterface(mediaIface);
         }
-    	fsutils.copyFile(fs,  file);
+    	FSUtils.copyFile(fs,  file);
     }
     public void close() {
     	if (rootFs != null) {
@@ -166,6 +164,51 @@ public class TxInterface {
             data[i] = (byte)(j&0xff);
         }
         return data;
+    }
+    private boolean DetectFS(DfuInterface iface) throws IOException {
+    	dev.SelectInterface(iface);
+        if (dev.open() != 0) {
+        	throw new IOException();
+        }
+        dev.claim_and_set();
+        Dfu.setIdle(dev);
+    	boolean ret = FSUtils.DetectFS(mediaBlockDev, model);
+    	dev.close();
+    	return ret;
+    }
+    public FSStatus getFSStatus() {
+        boolean has_root = false;
+        boolean has_media = false;
+        FSStatus status = FSStatus.NO_FS;
+        if (model == Transmitter.DEVO_UNKNOWN) {
+            return status;
+        }
+    
+        if (model.hasMediaFS()) {
+        	try {
+        		has_media = DetectFS(mediaIface);
+        	} catch (Exception e){
+        		System.out.println("Error: Unable to open device");
+        		return FSStatus.NO_FS;
+        	}
+        }
+    	if (model.getRootFSType() == FSType.FAT) {
+           	try {
+        		has_root = DetectFS(rootIface);
+        	} catch (Exception e){
+        		System.out.println("Error: Unable to open device");
+        		return FSStatus.NO_FS;
+        	}
+    	}
+        //IOUtil.writeFile("fatroot", fatRootBytes);
+        if (has_media && has_root) {
+            status = FSStatus.ROOT_AND_MEDIA_FS;
+        } else if (has_media) {
+            status = FSStatus.MEDIA_FS;
+        } else if  (has_root) {
+            status = FSStatus.ROOT_FS;
+        }
+        return status;
     }
 
 }

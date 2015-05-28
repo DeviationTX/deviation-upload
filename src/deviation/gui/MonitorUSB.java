@@ -30,7 +30,7 @@ public class MonitorUSB implements ActionListener{
                 DeviceList devices = new DeviceList();
                 LibUsb.getDeviceList(null, devices);
                 DfuDevice dev = Dfu.findFirstDevice(devices);
-                if (dev != null) {
+                if (dev == null) {
                     if (dfuDev != null) {
                         LibUsb.freeDeviceList(this.devices, true);
                         dfuDev = null;

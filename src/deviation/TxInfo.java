@@ -61,4 +61,19 @@ public class TxInfo {
     {
     	return type.getName();
     }
+    public static TxInfo getTxInfo(DfuDevice dev)
+    {
+        dev.SelectInterface(dev.Interfaces().get(0));
+        if (dev.open() != 0) {
+            System.out.println("Error: Unable to open device");
+            return new TxInfo();
+        }
+        dev.claim_and_set();
+        Dfu.setIdle(dev);
+        byte [] txInfoBytes = Dfu.fetchFromDevice(dev, 0x08000400, 0x40);
+        TxInfo txInfo = new TxInfo(txInfoBytes);
+        dev.close();
+        return txInfo;
+
+    }
 }

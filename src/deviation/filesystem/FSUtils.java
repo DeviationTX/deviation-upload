@@ -3,16 +3,16 @@ package deviation.filesystem;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import de.waldheinz.fs.BlockDevice;
 import de.waldheinz.fs.FileSystem;
 import de.waldheinz.fs.FsDirectory;
 import de.waldheinz.fs.FsDirectoryEntry;
 import de.waldheinz.fs.FsFile;
 import deviation.FileInfo;
+import deviation.Transmitter;
 
 public class FSUtils {
-	public FSUtils() {
-	}
-	public void copyFile(FileSystem fs, FileInfo file) {
+	public static void copyFile(FileSystem fs, FileInfo file) {
 		String[]filepath = file.name().toUpperCase().split("/");
 		String filename = filepath[filepath.length-1];
 		
@@ -72,4 +72,26 @@ public class FSUtils {
         	return;
 		}
 	}
+    public static boolean DetectFS(BlockDevice blkDev, Transmitter tx)
+    {
+    	if (tx.getMediaFSType() == FSType.FAT) {
+    		try {
+    			ByteBuffer buf = ByteBuffer.allocate(0x200);
+    			blkDev.read(0,  buf);
+    			byte fatBytes[] = buf.array();
+        		//Magic bytes indicating FAT:
+        		//end of sector (510,511) must be 0x55aa
+        		//Fat type (54,55,56,57,58) must be FAT16 (we actuallyony check the 1st 2 bytes as sufficient)
+    			if (fatBytes[510] == 0x55 && ((int)fatBytes[511] & 0xff) == 0xaa
+    					&& fatBytes[54] == 0x46 && fatBytes[55] == 0x41)
+    			{
+    				return true;
+    			}
+    		} catch (Exception e) { System.out.println(e); }
+    	} else {
+    		return true;
+    	}
+    	return false;
+    }
+
 }

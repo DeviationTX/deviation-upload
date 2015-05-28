@@ -9,7 +9,6 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
 
-import javax.swing.AbstractAction;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
@@ -33,15 +32,15 @@ public class DfuSendTab extends JPanel {
     private JTextField DFU_txtUsed;
     private JTabbedPane DFU_InfoTabbedPane;
     private JButton DFU_btnSend;
-    private DeviationUploadGUI gui;
+    private final DeviationUploadGUI gui;
+    private final FilesToSend fileList;
 
-    private FileInstaller fileInstaller;
     private DfuFile dfuFile;
 
     public DfuSendTab(DeviationUploadGUI gui) {
     	this.gui = gui;
         dfuFile = null;
-        fileInstaller = new FileInstaller(gui);
+        fileList = new FilesToSend();
         
         JPanel DFUPanel = this;
         GridBagLayout gbl_DFUPanel = new GridBagLayout();
@@ -86,8 +85,8 @@ public class DfuSendTab extends JPanel {
         gbc_DFUInfoPanel.gridy = 1;
         DFUPanel.add(DFU_InfoTabbedPane, gbc_DFUInfoPanel);
 
-        AbstractAction action = fileInstaller.getButtonAction("Send", "Install DFU onto transmitter", "Cancel DFU installation");
-        DFU_btnSend = new JButton(action);
+        DFU_btnSend = new JButton(new InstallButtonHandler(gui, fileList, "Send", "Install DFU onto transmitter", "Cancel DFU installation"));
+        DFU_btnSend.setText("Send");
         GridBagConstraints gbc_DFU_btnSend = new GridBagConstraints();
         gbc_DFU_btnSend.gridwidth = 3;
         gbc_DFU_btnSend.insets = new Insets(0, 0, 0, 5);
@@ -129,13 +128,13 @@ public class DfuSendTab extends JPanel {
                         }
                     }
                     DFU_txtFile.setText(fname);
-                    fileInstaller.clearFiles();
-                    fileInstaller.setLibraryDfus(null);
-                	fileInstaller.setFirmwareDfu(null);
+                    fileList.clearFiles();
+                    fileList.setLibraryDfus(null);
+                	fileList.setFirmwareDfu(null);
                     if(gui.getTxInfo().matchModel(type)) {
                         DFU_btnSend.setEnabled(true);
-                        fileInstaller.setFirmwareDfu(dfuFile);
-                        fileInstaller.setTotalBytes(size);
+                        fileList.setFirmwareDfu(dfuFile);
+                        fileList.setTotalBytes(size);
                     } else{
                         DFU_btnSend.setEnabled(false);
                         System.out.format("Error: Dfu Tx type '%s' does not match transmitter type '%s'%n",

@@ -11,7 +11,6 @@ import java.awt.event.ItemListener;
 import java.io.File;
 import java.util.List;
 
-import javax.swing.AbstractAction;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JFileChooser;
@@ -66,18 +65,18 @@ public class InstallTab extends JPanel {
     private JButton btnInstall;
     private JButton filesystemBtn;
 
-    private FileInstaller fileInstaller;
     private FileGroup zipFiles;
-    DeviationUploadGUI gui;
+    private final DeviationUploadGUI gui;
+    private final FilesToSend fileList;
 
     DfuFile fw;
     List<DfuFile> libs;
     public InstallTab(DeviationUploadGUI gui) {
         this.gui = gui;
         zipFiles = new FileGroup();
+        fileList = new FilesToSend();
         fw = null;
         libs = null;
-        fileInstaller = new FileInstaller(gui);
         
         GridBagLayout gbl_BinSendPanel = new GridBagLayout();
         gbl_BinSendPanel.columnWidths = new int[]{0, 45, 0, 0, 0};
@@ -257,8 +256,8 @@ public class InstallTab extends JPanel {
         txtLibUsed.setColumns(10);
         */
         
-        AbstractAction action = fileInstaller.getButtonAction("Install/Upgrade", "Install firmware and/or filesystem", "Cancel installation");
-        btnInstall = new JButton(action);
+        btnInstall = new JButton(new InstallButtonHandler(gui, fileList, "Install/Upgrade", "Install firmware and/or filesystem", "Cancel installation"));
+        btnInstall.setText("Install/Upgrade");
         //btnInstall.setEnabled(false);
 
         btnInstall.addActionListener(new ActionListener() {
@@ -372,13 +371,13 @@ public class InstallTab extends JPanel {
         txtFwSize.setText("");
         txtLibVersion.setText("");
         txtLibSize.setText("");
-        fileInstaller.clearFiles();
-        fileInstaller.setLibraryDfus(null);
-    	fileInstaller.setFirmwareDfu(null);
+        fileList.clearFiles();
+        fileList.setLibraryDfus(null);
+    	fileList.setFirmwareDfu(null);
     	long totalSize = 0;
         if (fw!= null) {
             txtFwVersion.setText(fw.type().version());
-           	fileInstaller.setFirmwareDfu(fw);
+           	fileList.setFirmwareDfu(fw);
             int size = 0;
             for (DfuFile.ImageElement elem : fw.imageElements()) {
                 size += elem.data().length;
@@ -389,7 +388,7 @@ public class InstallTab extends JPanel {
         if (Checkbox.INSTALLLIB.get().isSelected() && zipFiles.hasLibrary()) {
         	if (libs.size() > 0) {
         		txtLibVersion.setText(libs.get(0).type().version());
-                fileInstaller.setLibraryDfus(libs);
+                fileList.setLibraryDfus(libs);
         	} else if (fw != null) {
         		txtLibVersion.setText(fw.type().version());
         	} else {
@@ -411,14 +410,14 @@ public class InstallTab extends JPanel {
                 if (! Checkbox.REPLACEMODEL.get().isSelected() && file.name().matches("(?i:models/.*)"))
                 	continue;
                 size += file.size();
-                fileInstaller.addFile(file);
+                fileList.addFile(file);
             }
             txtLibSize.setText(String.valueOf(size / 1024) + " kb");
             totalSize += size;
         }
-        fileInstaller.formatRoot(Checkbox.FORMATROOT.get().isSelected());
-        fileInstaller.formatMedia(Checkbox.FORMATMEDIA.get().isSelected());
-        fileInstaller.setTotalBytes(totalSize);
+        fileList.formatRoot(Checkbox.FORMATROOT.get().isSelected());
+        fileList.formatMedia(Checkbox.FORMATMEDIA.get().isSelected());
+        fileList.setTotalBytes(totalSize);
         update_install_button();
     }
     private class FileChooserBtnListener implements ActionListener {
