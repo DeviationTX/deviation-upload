@@ -9,7 +9,7 @@ import javax.swing.JProgressBar;
 import javax.swing.SwingWorker;
 
 import deviation.filesystem.TxInterface;
-import deviation.filesystem.TxInterface.FatStatus;
+import deviation.filesystem.TxInterface.FSStatus;
 import deviation.DeviationUploader;
 import deviation.DfuDevice;
 import deviation.DfuFile;
@@ -17,8 +17,7 @@ import deviation.FileInfo;
 import deviation.Progress;
 
 class FileInstaller extends SwingWorker<String, Integer> implements Progress {
-	private final JProgressBar progressBar;
-	private MonitorUSB monitor;
+	private final DeviationUploadGUI gui;
 	private ButtonAction buttonAction;
 
 	private DfuFile firmwareDfu;
@@ -26,7 +25,6 @@ class FileInstaller extends SwingWorker<String, Integer> implements Progress {
 	private List<FileInfo> files;
 	private boolean format_root;
 	private boolean format_media;
-	private List<DfuDevice>  devs;
 	private long bytesTransferred;
 	private long totalBytes;
 
@@ -50,8 +48,8 @@ class FileInstaller extends SwingWorker<String, Integer> implements Progress {
 		}
 		public void actionPerformed(ActionEvent e) {
 			if (getValue(NAME).equals(normalLbl)) {
-				devs = monitor.GetDevices();
-				if (devs == null) {
+				DfuDevice dev = gui.getTxInterface().getDevice();
+				if (dev == null) {
 					return;
 				}
 				setCancelState(true);
@@ -71,9 +69,8 @@ class FileInstaller extends SwingWorker<String, Integer> implements Progress {
 			}
 		}
 	}
-	public FileInstaller(MonitorUSB monitor, JProgressBar progressBar) {
-		this.progressBar = progressBar;
-		this.monitor = monitor;
+	public FileInstaller(DeviationUploadGUI gui) {
+		this.gui = gui;
 		buttonAction = null;
 		firmwareDfu = null;
 		libraryDfus = new ArrayList<DfuFile>();
@@ -92,33 +89,32 @@ class FileInstaller extends SwingWorker<String, Integer> implements Progress {
 	public void formatMedia(boolean fmt) { format_media = fmt; }
 	public void setTotalBytes(long bytes) { totalBytes = bytes; }
 
-	private void updateRoot(List<DfuDevice> devs) {
+	private void updateRoot(TxInterface fs) {
 		if (! format_root && ! format_media && files.size() == 0)
 			return;
-		DfuDevice dev = devs.get(0);
+		DfuDevice dev =fs.getDevice(); //This will 
 		if (dev.open() != 0) {
 			System.out.println("Error: Unable to open device");
 			return;
 		}
 		dev.claim_and_set();
 
-		TxInterface fat = new TxInterface(dev, this);
 		try {
 			if (format_root) {
-				fat.Format(FatStatus.ROOT_FAT);
+				fs.Format(FSStatus.ROOT_FS);
 			} else {
-				fat.Init(FatStatus.ROOT_FAT);
+				fs.Init(FSStatus.ROOT_FS);
 			}
 			if (format_media) {
-				fat.Format(FatStatus.MEDIA_FAT);
+				fs.Format(FSStatus.MEDIA_FS);
 			} else {
-				fat.Init(FatStatus.MEDIA_FAT);
+				fs.Init(FSStatus.MEDIA_FS);
 			}
 		} catch (Exception e) { System.out.println(e); }
 		for (FileInfo file: files) {
-			fat.copyFile(file);
+			fs.copyFile(file);
 		}
-		fat.close();
+		fs.close();
 		dev.close();
 	}
     @Override
@@ -127,6 +123,7 @@ class FileInstaller extends SwingWorker<String, Integer> implements Progress {
     	for (Integer block : blocks) {
     		bytesTransferred += block;
     	}
+    	JProgressBar progressBar = gui.getProgressBar();
         int amount = progressBar.getMaximum() - progressBar.getMinimum();
         progressBar.setValue( ( int ) (progressBar.getMinimum() + ( amount * 1.0 * bytesTransferred / totalBytes)));
     }
@@ -135,13 +132,12 @@ class FileInstaller extends SwingWorker<String, Integer> implements Progress {
         try {
             if (get().equals("Finished")) {
                 System.out.println("Completed transfer");
-                progressBar.setValue(100);
+                gui.getProgressBar().setValue(100);
             }
         } catch (Exception e) {
             System.out.println("Completed failed");
-            progressBar.setValue(0);
+            gui.getProgressBar().setValue(0);
         }
-        monitor.ReleaseDevices();
         buttonAction.setCancelState(false);
     }
 	public void update(Integer block) {
@@ -152,18 +148,22 @@ class FileInstaller extends SwingWorker<String, Integer> implements Progress {
 	}
 	@Override
 	protected String doInBackground() throws Exception {
-		//List<DfuDevice> devs = monitor.GetDevices();  //ReleaseDevices is called in done()
+		TxInterface tx = gui.getTxInterface();
+		DfuDevice dev = tx.getDevice();  //ReleaseDevices is called in done()
+		if (dev.open() != 0) {
+			return "Failed";
+		}
 		bytesTransferred = 0;
 		if (firmwareDfu != null) {
-			DeviationUploader.sendDfuToDevice(devs, firmwareDfu, this);
+			DeviationUploader.sendDfuToDevice(dev, firmwareDfu, this);
 		}
 		if (libraryDfus != null && libraryDfus.size() > 0) {
 			for(DfuFile dfu : libraryDfus) {
-				DeviationUploader.sendDfuToDevice(devs, dfu, this);
+				DeviationUploader.sendDfuToDevice(dev, dfu, this);
 			}
 		}
-		updateRoot(devs);
-		
+		updateRoot(tx);
+		dev.close();
         return "Finished";
 	}
 

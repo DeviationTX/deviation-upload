@@ -9,6 +9,7 @@ import deviation.Dfu;
 import deviation.DfuDevice;
 import deviation.Progress;
 import deviation.Sector;
+import deviation.Sha;
 
 public class FlashIO implements BlockDevice
 {
@@ -17,13 +18,13 @@ public class FlashIO implements BlockDevice
     private final ByteBuffer rambuf;
     private final DfuDevice dev;
     private final boolean[] cached;
-    private final boolean[] changed;
+    private final String[] chksum;
     private final long startOffset;
     private final long memAddress;
     private final int sectorSize;
     private final boolean invert;
     private final int fsSectorSize;
-    private final Progress progress;
+    private Progress progress;
 
 
     public FlashIO(DfuDevice dev, long start_address, boolean invert, int fs_sector_size, Progress progress)
@@ -41,20 +42,26 @@ public class FlashIO implements BlockDevice
     	rambuf = ByteBuffer.wrap(ram);
         this.dev = dev;
         cached = new boolean[(mem_size + sectorSize - 1) / sectorSize];
-        changed = new boolean[(mem_size + sectorSize - 1) / sectorSize];
+        chksum = new String[(mem_size + sectorSize - 1) / sectorSize];
         this.invert = invert;
     }
     
+    public void setProgress(Progress progress) {
+    	this.progress = progress;
+    }
     public void close() throws IOException {
     	int sector_num;
-    	for (sector_num = 0; sector_num < changed.length; sector_num++) {
-            if (changed[sector_num]) {
+    	for (sector_num = 0; sector_num < cached.length; sector_num++) {
+            if (cached[sector_num]) {
             	byte [] data = Arrays.copyOfRange(ram, sector_num * sectorSize,  sector_num * sectorSize + sectorSize);
+            	if (chksum[sector_num] != null && chksum[sector_num].equals(Sha.md5(data))) {
+            		//Data hasn't changed, no need to write it out
+            		continue;
+            	}
                 if (invert) {
                     data = TxInterface.invert(data);
                 }
                 Dfu.sendToDevice(dev,  (int)(memAddress + sector_num * sectorSize), data, progress);
-                changed[sector_num] = false;
             }
     	}
     }
@@ -79,6 +86,7 @@ public class FlashIO implements BlockDevice
             }
             System.arraycopy(data, 0, ram, sector_num * sectorSize, data.length);
             cached[sector_num] = true;
+            chksum[sector_num] = Sha.md5(data);
         }
     }
     public void read(long devOffset, ByteBuffer dest) throws IOException {
@@ -112,8 +120,8 @@ public class FlashIO implements BlockDevice
         rambuf.position((int)start);
         rambuf.put(src);
         while (curSector <= lastSector) {
-            changed[curSector] = true;
-            curSector++;
+        	cached[curSector] = true;
+        	curSector++;
         }  
     }
 }

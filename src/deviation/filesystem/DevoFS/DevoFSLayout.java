@@ -39,16 +39,59 @@ public class DevoFSLayout {
 		try {
 			ByteBuffer buf = ByteBuffer.allocate(size);
 			dev.read(0, buf); //Read the entire FLASH memory
-			ByteBuffer data = alignData(buf);
+			ByteBuffer data = removeSectorBoundaries(buf);
 			while(data.hasRemaining()) {
 				if (! getNextEntry(data)) {
 					break;
 				}
 			}
-		} catch (Exception e) {System.out.println(e); }
+		} catch (Exception e) {}
 		return elems;
 	}
-	private ByteBuffer alignData(ByteBuffer buf) {
+	static void write(BlockDevice dev, DevoFSDirectory rootDir, List<DevoFSDirectoryEntry>elems) {
+		DevoFSLayout layout = new DevoFSLayout(null, dev, rootDir);
+		layout.write(elems);
+	}
+	public void write(List<DevoFSDirectoryEntry>elems) {
+		ByteBuffer buf = ByteBuffer.allocate(size);
+		Arrays.fill(buf.array(), (byte)0);
+		int nextDir = 1;
+		HashMap<DevoFSDirectory, Integer> mapDir = new HashMap<DevoFSDirectory, Integer>();
+		mapDir.put(dirMap.get(0),  0);
+		try {
+			for (DevoFSDirectoryEntry elem : elems) {
+				if (elem.isDirectory()) {
+					mapDir.put(elem.getDirectory(), nextDir++);
+				}
+			    DevoFSEntry.toDisk(buf, mapDir, elem);
+			}			
+			buf.limit(buf.position());
+			ByteBuffer align = addSectorBoundaries(buf);
+			align.position(0);
+			dev.write(0, align);
+		} catch (Exception e) {System.out.println(e); }
+	}
+	private ByteBuffer addSectorBoundaries(ByteBuffer buf) {
+		byte data[] = new byte [buf.capacity()];
+		int pos = 0;
+		buf.position(0);
+		byte nextSector = (byte)START_SECTOR;
+		while(pos < size && buf.hasRemaining()) {
+			data[pos] = nextSector;
+			int count = buf.remaining();
+			if (count > sectorSize -1) {
+				count = sectorSize-1;
+			}
+			buf.get(data, pos+1, count);
+			pos += count + 1;
+			nextSector = (byte)1;
+		}
+		if (pos < size) {
+			Arrays.fill(data, pos, size-1, (byte)0);
+		}
+		return ByteBuffer.wrap(data);
+	}
+	private ByteBuffer removeSectorBoundaries(ByteBuffer buf) {
 		byte data[] = new byte [buf.capacity()];
 		Arrays.fill(data,  (byte)0);
 		buf.position(0);

@@ -34,6 +34,12 @@ public final class DevoFSFileSystem extends AbstractFileSystem {
         rootDir = new DevoFSDirectory(this);
         elems = DevoFSLayout.parse(this, dev, rootDir);
     }
+    private DevoFSFileSystem(BlockDevice device) throws IOException {
+        super(false);
+        dev = device;
+        rootDir = new DevoFSDirectory(this);    	
+        elems = new ArrayList<DevoFSDirectoryEntry>();
+    }
     /**
      * Reads the file system structure from the specified {@code BlockDevice}
      * and returns a fresh {@code FatFileSystem} instance to read or modify
@@ -46,10 +52,16 @@ public final class DevoFSFileSystem extends AbstractFileSystem {
      *      not be parsed
      */
     public static DevoFSFileSystem read(BlockDevice device, boolean readOnly)
-            throws IOException {
-        
+            throws IOException
+    {        
         return new DevoFSFileSystem(device, readOnly);
     }
+    public static DevoFSFileSystem format(BlockDevice device)
+    		throws IOException
+    {
+    	return new DevoFSFileSystem(device);
+    }
+
     public DevoFSDirectory getRoot() {
     	return rootDir;
     }
@@ -59,6 +71,7 @@ public final class DevoFSFileSystem extends AbstractFileSystem {
      * @throws IOException on write error
      */
     public void flush() throws IOException {
+    	DevoFSLayout.write(dev, rootDir, elems);
     }
     /**
      * The free space of this file system.

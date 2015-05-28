@@ -1,31 +1,33 @@
 package deviation;
 
+import deviation.filesystem.FSType;
+
 public enum Transmitter {
-	DEVO_UNKNOWN("Unknown", "", 0, -1, -1, false, -1, -1, false) {
+	DEVO_UNKNOWN("Unknown", "", 0, FlashInfo.empty, FlashInfo.empty) {
 		public boolean modelMatch(String str) { return false; }
 	},
-	DEVO12("Devo 12", "DEVO-12", 12, 0, 512, true, 0x64080, 4*1024, false) {
+	DEVO12("Devo 12", "DEVO-12", 12, FlashInfo.InvFAT(0, 512), FlashInfo.FAT(0x64080, 4*1024)) {
 		public boolean modelMatch(String str) { return str.matches("DEVO-12.*") || str.matches(".*devo12.*") || str.equals("12"); }	
 	},
-	DEVO12E("Devo 12E", "DEVO-12E", 12, 54, 1024, true, -1, -1, false) {
+	DEVO12E("Devo 12E", "DEVO-12E", 12, FlashInfo.InvFAT(54, 1024), FlashInfo.empty) {
 		public boolean modelMatch(String str) { return str.matches("DEVO-12E.*") || str.matches(".*devo12e.*") || str.equals("12e"); }	
 	},
-	DEVOF12E("Devo F12E", "FPV-12E", 12, 0, 64, true, -1, -1, false) {
+	DEVOF12E("Devo F12E", "FPV-12E", 12, FlashInfo.InvDEVOFS(0, 64), FlashInfo.empty) {
 		public boolean modelMatch(String str) { return str.matches("DEVO-F12E.*") || str.matches(".*devof12e.*") || str.equals("f12e"); }	
 	},
-	DEVO10("Devo 10", "DEVO-10", 10, 54, 1024, true, -1, -1, false) {
+	DEVO10("Devo 10", "DEVO-10", 10, FlashInfo.InvFAT(54, 1024), FlashInfo.empty) {
 		public boolean modelMatch(String str) { return str.matches("DEVO-10.*") || str.matches(".*devo10.*") || str.equals("10"); }	
 	},
-	DEVO8("Devo 8", "DEVO-08", 8, 54, 1024, true, -1, -1, false) {
+	DEVO8("Devo 8", "DEVO-08", 8, FlashInfo.InvFAT(54, 1024), FlashInfo.empty) {
 		public boolean modelMatch(String str) { return str.matches("DEVO-8.*") || str.matches(".*devo8.*") || str.equals("8"); }	
 	},
-	DEVO7e("Devo 7e", "DEVO-7e", 7, 0, 512, true, -1, -1, false) {
+	DEVO7e("Devo 7e", "DEVO-7e", 7, FlashInfo.InvFAT(0, 512), FlashInfo.empty) {
 		public boolean modelMatch(String str) { return str.matches("DEVO-7E.*") || str.matches(".*devo7e.*") || str.equals("7e"); }	
 	},
-	DEVO6("Devo 6", "DEVO-06", 6, 54, 1024, true, -1, -1, false) {
+	DEVO6("Devo 6", "DEVO-06", 6, FlashInfo.InvFAT(54, 1024), FlashInfo.empty) {
 		public boolean modelMatch(String str) { return str.matches("DEVO-6.*") || str.matches(".*devo6.*") || str.equals("6"); }	
 	},
-  	DEVOF7("Devo F7", "DEVO-F7", 7, -1, -1, true, -1, -1, false) {
+  	DEVOF7("Devo F7", "DEVO-F7", 7, FlashInfo.InvDEVOFS(0, 64), FlashInfo.empty) {
 		public boolean modelMatch(String str) { return str.matches("DEVO-F7.*") || str.matches(".*devof7.*") || str.equals("f7"); }	
 	};
 /*
@@ -45,42 +47,32 @@ public enum Transmitter {
 	private String id;
 	private String name;
 	private int numChannels;
-	private int rootSectorOffset;
-	private int rootSectorCount;
-	private boolean rootInverted;
-	private int mediaSectorOffset;
-	private int mediaSectorCount;
-	private boolean mediaInverted;
+	private FlashInfo root;
+	private FlashInfo media;
 	private Transmitter(
 			String name,
 			String id,
 			int numChannels,
-			int rootSectorOffset,
-			int rootSectorCount,
-			boolean rootInverted,
-			int mediaSectorOffset,
-			int mediaSectorCount,
-			boolean mediaInverted)
+			FlashInfo root,
+			FlashInfo media)
 	{
 		this.name = name;
 		this.id = id;
 		this.numChannels = numChannels;
-		this.rootSectorOffset = rootSectorOffset;
-		this.rootSectorCount = rootSectorCount;
-		this.rootInverted = rootInverted;
-		this.mediaSectorOffset = mediaSectorOffset;
-		this.mediaSectorCount = mediaSectorCount;
-		this.mediaInverted = mediaInverted;
+		this.root = root;
+		this.media = media;
 	}
 	public String getName()           { return name; }
 	public String getId()             { return id; }
-	public int getRootSectorOffset()  { return rootSectorOffset; }
-    public int getRootSectorCount()   { return rootSectorCount; }
-    public boolean isRootInverted()   { return rootInverted; }
-    public boolean hasMediaFS()       { return mediaSectorOffset < 0 ? false : true; }
-    public int getMediaSectorOffset() { return mediaSectorOffset; }
-    public int getMediaSectorCount()  { return mediaSectorCount; }
-    public boolean isMediaInverted()  { return mediaInverted; }	
+	public int getRootSectorOffset()  { return root.sectorOffset; }
+    public int getRootSectorCount()   { return root.sectorCount; }
+    public FSType getRootFSType()     { return root.fsType; }
+    public boolean isRootInverted()   { return root.inverted; }
+    public boolean hasMediaFS()       { return media.sectorOffset < 0 ? false : true; }
+    public int getMediaSectorOffset() { return media.sectorOffset; }
+    public int getMediaSectorCount()  { return media.sectorCount; }
+    public FSType getMediaFSType()    { return media.fsType; }
+    public boolean isMediaInverted()  { return media.inverted; }	
 
 	public byte[] encode(long id1, long id2, long id3) {
 		switch(numChannels) {
@@ -177,4 +169,30 @@ public enum Transmitter {
         return convertToByteArray(a, 4);
 	}
 
+}
+
+class FlashInfo {
+	final public int sectorOffset;
+	final public int sectorCount;
+	final public boolean inverted;
+	final public FSType fsType;
+	FlashInfo (int offset, int count, boolean inverted, FSType type) {
+		this.sectorOffset = offset;
+		this.sectorCount = count;
+		this.inverted = inverted;
+		this.fsType = type;
+	}
+	final static FlashInfo empty = new FlashInfo(-1, -1, false, FSType.NONE);
+	static FlashInfo FAT(int offset, int count) {
+		return new FlashInfo(offset, count, false, FSType.FAT);
+	}
+	static FlashInfo InvFAT(int offset, int count) {
+		return new FlashInfo(offset, count, true, FSType.FAT);
+	}
+	static FlashInfo DEVOFS(int offset, int count) {
+		return new FlashInfo(offset, count, false, FSType.DEVOFS);
+	}
+	static FlashInfo InvDEVOFS(int offset, int count) {
+		return new FlashInfo(offset, count, true, FSType.DEVOFS);
+	}
 }

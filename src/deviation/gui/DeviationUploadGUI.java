@@ -16,7 +16,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Timer;
+import javax.swing.Timer;
 
 import javax.swing.JProgressBar;
 import javax.swing.JPanel;
@@ -28,7 +28,7 @@ import javax.swing.table.TableModel;
 import de.ailis.usb4java.libusb.LibUsb;
 import deviation.*;
 import deviation.filesystem.TxInterface;
-import deviation.filesystem.TxInterface.FatStatus;
+import deviation.filesystem.TxInterface.FSStatus;
 
 import javax.swing.JTextArea;
 
@@ -45,8 +45,9 @@ public class DeviationUploadGUI {
 
     private TxInfo txInfo;
     private MonitorUSB monitor;
-    private TxInterface.FatStatus fatStatus;
+    private TxInterface.FSStatus fsStatus;
     private List<DfuMemory> devMemory;
+    private TxInterface txInterface;
 
     private DfuSendTab DfuSendPanel;
     private InstallTab InstallPanel;
@@ -81,15 +82,15 @@ public class DeviationUploadGUI {
 	            };
 	    txInfo = new TxInfo(b);
          */
+    	txInterface = null;
         txInfo = new TxInfo();
         monitor = new MonitorUSB(this);
         //redirectSystemStreams();
         initialize();
         RefreshDevices(null);
         LibUsb.init(null);
-        Timer timer1 = new Timer();
-        
-        timer1.schedule(monitor, 0, 5000);
+        Timer timer1 = new Timer(5000, monitor);
+        timer1.start();
     }
 
     /**
@@ -221,30 +222,26 @@ public class DeviationUploadGUI {
         msgTextArea.setEditable(false);
 
     }
-    public void RefreshDevices(List<DfuDevice> devs) {
+    public void RefreshDevices(DfuDevice dev) {
         //Update USB Device list entries
-        if (devs == null) {
+        if (dev == null) {
             txInfo = new TxInfo();
             devMemory = new ArrayList<DfuMemory>();
-            fatStatus = FatStatus.NO_FAT;
+            fsStatus = FSStatus.NO_FS;
         } else {
-            txInfo = TxUtils.getTxInfo(devs.get(0));
-            fatStatus = TxUtils.getFatStatus(devs.get(0), txInfo.type());
+        	txInterface = new TxInterface(dev);
+            txInfo = TxUtils.getTxInfo(dev);
+            fsStatus = TxUtils.getFSStatus(dev, txInfo.type());
             devMemory = new ArrayList<DfuMemory>();
-            for (DfuInterface iface : devs.get(0).Interfaces()) {
+            for (DfuInterface iface : dev.Interfaces()) {
                 devMemory.add(iface.Memory());
             }
-            monitor.ReleaseDevices();
         }
         txtTransmitter.setText(TxInfo.typeToString(txInfo.type()));
         AbstractTableModel tableModel = (AbstractTableModel) table.getModel();
         tableModel.fireTableDataChanged();
         DfuSendPanel.refresh();
         InstallPanel.refresh();
-    }
-    public void RefreshDevices() {
-        List<DfuDevice> devs = monitor.GetDevices();
-        RefreshDevices(devs);
     }
     /*
 	private class SwingAction extends AbstractAction {
@@ -267,7 +264,8 @@ public class DeviationUploadGUI {
         });
     }
 
-    private void redirectSystemStreams() {
+    @SuppressWarnings("unused")
+	private void redirectSystemStreams() {
         OutputStream out = new OutputStream() {
             @Override
             public void write(int b) throws IOException {
@@ -292,5 +290,6 @@ public class DeviationUploadGUI {
     public MonitorUSB getMonitor() { return monitor; }
     public JProgressBar getProgressBar() { return progressBar; }
     public TxInfo getTxInfo() {return txInfo;}
-    public FatStatus getFatType() { return fatStatus; }
+    public FSStatus getFSType() { return fsStatus; }
+    public TxInterface getTxInterface() { return txInterface; }
 }

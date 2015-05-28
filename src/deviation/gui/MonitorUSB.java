@@ -1,53 +1,49 @@
 package deviation.gui;
 
-import java.util.List;
-import java.util.TimerTask;
-
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 import de.ailis.usb4java.libusb.DeviceList;
 import de.ailis.usb4java.libusb.LibUsb;
 import deviation.Dfu;
 import deviation.DfuDevice;
 
-public class MonitorUSB extends TimerTask{
+//This will execute in the Swing Event thread
+public class MonitorUSB implements ActionListener{
 
     String strObject;
-    Lock lock;
     DeviceList devices;
-    List<DfuDevice> dfuDevs;
+    DfuDevice dfuDev;
     DeviationUploadGUI gui;
 
     public MonitorUSB(DeviationUploadGUI gui){
         devices = null;
-        lock = new ReentrantLock();
-        dfuDevs = null;
+        dfuDev = null;
         this.gui = gui;
     }
 
-    public void run(){
+    public void actionPerformed(ActionEvent evt) {
         //Detect Plug/Unplug events
         boolean state_changed = false;
-        if (lock.tryLock()) {
+        if (DfuDevice.tryLock()) {
             try {
                 DeviceList devices = new DeviceList();
                 LibUsb.getDeviceList(null, devices);
-                List<DfuDevice> devs = Dfu.findDevices(devices);
-                if (devs.isEmpty()) {
-                    if (dfuDevs != null) {
+                DfuDevice dev = Dfu.findFirstDevice(devices);
+                if (dev != null) {
+                    if (dfuDev != null) {
                         LibUsb.freeDeviceList(this.devices, true);
-                        dfuDevs = null;
+                        dfuDev = null;
                         System.out.println("Unplug detected");
                         state_changed = true;
                         //Signal disconnect
                     }
                 } else {
-                    if(dfuDevs == null || dfuDevs.size() != devs.size() || ! dfuDevs.containsAll(devs)) {
-                        if (dfuDevs != null) {
+                    if(dfuDev == null || !dfuDev.equals(dev)) {
+                        if (dfuDev != null) {
                             LibUsb.freeDeviceList(this.devices, true);
                         }
-                        dfuDevs = devs;
+                        dfuDev = dev;
                         this.devices = devices;
                         System.out.println("Hotplug detected");
                         state_changed = true;
@@ -57,29 +53,12 @@ public class MonitorUSB extends TimerTask{
                     }
                 }
             } finally {
-                if (state_changed) {
-                    gui.RefreshDevices(dfuDevs);
-                }
-                if (! state_changed || dfuDevs == null) {
-                    lock.unlock();
-                }
+            	DfuDevice.unLock();
             }
             if (state_changed) {
                 //Must be done without holding the lock
-                gui.RefreshDevices();
+                gui.RefreshDevices(dfuDev);
             }
         }
-    }
-    public List<DfuDevice> GetDevices() {
-        // This will take the lock if successful
-        lock.lock();
-        if (dfuDevs == null) {
-            lock.unlock();
-            return null;
-        }
-        return dfuDevs;
-    }
-    public void ReleaseDevices() {
-        lock.unlock();
     }
 }

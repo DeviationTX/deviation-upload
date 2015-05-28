@@ -14,7 +14,6 @@ import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JProgressBar;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -42,7 +41,7 @@ public class DfuSendTab extends JPanel {
     public DfuSendTab(DeviationUploadGUI gui) {
     	this.gui = gui;
         dfuFile = null;
-        fileInstaller = new FileInstaller(gui.getMonitor(), gui.getProgressBar());
+        fileInstaller = new FileInstaller(gui);
         
         JPanel DFUPanel = this;
         GridBagLayout gbl_DFUPanel = new GridBagLayout();
@@ -133,7 +132,7 @@ public class DfuSendTab extends JPanel {
                     fileInstaller.clearFiles();
                     fileInstaller.setLibraryDfus(null);
                 	fileInstaller.setFirmwareDfu(null);
-                    if(true || gui.getTxInfo().matchModel(type)) {
+                    if(gui.getTxInfo().matchModel(type)) {
                         DFU_btnSend.setEnabled(true);
                         fileInstaller.setFirmwareDfu(dfuFile);
                         fileInstaller.setTotalBytes(size);
