@@ -30,7 +30,7 @@ public final class DevoFSDirectoryEntry
     DevoFSDirectoryEntry(DevoFSFileSystem root, DevoFSDirectory parent, String name) {
     	super(false);
     	this.parent = parent;
-    	fileName = name;    	
+    	fileName = name.toLowerCase();    	
     }
     DevoFSDirectoryEntry(DevoFSFileSystem root, DevoFSDirectory parent, String name, DevoFSDirectory dir) {
     	this(root, parent, name);
@@ -55,7 +55,7 @@ public final class DevoFSDirectoryEntry
     }
     
     public void setName(String newName) throws IOException {
-    	fileName = newName;
+    	fileName = newName.toLowerCase();
     }
     public void setLastModified(long lastModified) {
         checkWritable();

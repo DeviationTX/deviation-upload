@@ -12,8 +12,12 @@ public final class DevoFSFile extends AbstractFsObject implements FsFile {
     
     public DevoFSFile(ByteBuffer data) {
     	super(false);
-    	this.data = data.duplicate();
-    	size = data.capacity();
+    	if (data != null) {
+    		this.data = data.duplicate();
+    	} else {
+    		this.data = ByteBuffer.allocate(0);
+    	}
+    	size = this.data.capacity();
     }
     /**
      * Returns the length of this file in bytes. This is the length that

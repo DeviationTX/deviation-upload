@@ -62,9 +62,7 @@ public class DeviationUploadGUI {
                     try {
                         DeviationUploadGUI window = new DeviationUploadGUI();
                         window.frame.setVisible(true);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+                    } catch (Exception e) { e.printStackTrace(); }
                 }
             });
         } catch (Exception e) {}
@@ -233,7 +231,7 @@ public class DeviationUploadGUI {
             fsStatus = FSStatus.NO_FS;
         } else {
         	txInterface = new TxInterface(dev);
-            txInfo = TxInfo.getTxInfo(dev);
+            txInfo = dev.getTxInfo();
             fsStatus = txInterface.getFSStatus();
             devMemory = new ArrayList<DfuMemory>();
             for (DfuInterface iface : dev.Interfaces()) {

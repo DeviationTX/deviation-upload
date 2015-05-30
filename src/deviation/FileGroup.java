@@ -104,4 +104,16 @@ public class FileGroup {
     public boolean hasLibrary() {
     	return libraryZip() != "";
     }
+    public boolean hasProtocol() {
+    	for (FileInfo file : files) {
+    		String name = file.name();
+            if (! name.matches("/.*")) {
+                name = "/" + name;
+            }
+            if (name.matches("(?i:/protocol.*)")) {
+            	return true;
+            }
+    	}
+    	return false;
+    }
 }

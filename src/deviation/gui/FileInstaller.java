@@ -43,6 +43,7 @@ class FileInstaller extends SwingWorker<Boolean, Integer> implements Progress {
 			System.out.println("Error: Unable to open device");
 			return;
 		}
+		fs.setProgress(this);
 		dev.claim_and_set();
 
 		try {
@@ -56,7 +57,7 @@ class FileInstaller extends SwingWorker<Boolean, Integer> implements Progress {
 			} else {
 				fs.Init(FSStatus.MEDIA_FS);
 			}
-		} catch (Exception e) { System.out.println(e); }
+		} catch (Exception e) { e.printStackTrace(); }
 		for (FileInfo file: files) {
 			if (cancelled()) {
 				break;

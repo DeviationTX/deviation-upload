@@ -89,7 +89,7 @@ public final class DevoFSFileSystem extends AbstractFileSystem {
     				size -= elem.getFile().getLength();
     			}
     		}
-    	} catch(Exception e) {};
+    	} catch(Exception e) { e.printStackTrace(); };
     	return size;
     }
     /**
@@ -127,7 +127,7 @@ public final class DevoFSFileSystem extends AbstractFileSystem {
     }
     protected DevoFSDirectoryEntry findEntry(DevoFSDirectory parent, String name) {
     	for (DevoFSDirectoryEntry elem : elems) {
-    		if (elem.getParent() == parent && elem.getName() == name) {
+    		if (elem.getParent() == parent && elem.getName().equalsIgnoreCase(name)) {
     			return elem;
     		}
     	}
@@ -135,7 +135,7 @@ public final class DevoFSFileSystem extends AbstractFileSystem {
     }
     protected void removeEntry(DevoFSDirectory parent, String name) {
     	for (DevoFSDirectoryEntry elem : elems) {
-    		if (elem.getParent() == parent && elem.getName() == name) {
+    		if (elem.getParent() == parent && elem.getName().equalsIgnoreCase(name)) {
     			elems.remove(elem);
     			return;
     		}

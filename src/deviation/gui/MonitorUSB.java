@@ -7,6 +7,7 @@ import de.ailis.usb4java.libusb.DeviceList;
 import de.ailis.usb4java.libusb.LibUsb;
 import deviation.Dfu;
 import deviation.DfuDevice;
+import deviation.TxInfo;
 
 //This will execute in the Swing Event thread
 public class MonitorUSB implements ActionListener{
@@ -44,6 +45,7 @@ public class MonitorUSB implements ActionListener{
                             LibUsb.freeDeviceList(this.devices, true);
                         }
                         dfuDev = dev;
+                        dfuDev.setTxInfo(TxInfo.getTxInfo(dfuDev));
                         this.devices = devices;
                         System.out.println("Hotplug detected");
                         state_changed = true;

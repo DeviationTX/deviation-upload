@@ -49,7 +49,7 @@ public class DfuMemory {
         }
         public List<Sector> sectors() { return sectors;}
     };
-    List<SegmentParser> segments;
+    private List<SegmentParser> segments;
     String name;
     public DfuMemory(String str) {
         segments = new ArrayList<SegmentParser>();
@@ -67,6 +67,7 @@ public class DfuMemory {
             segments.add(new SegmentParser(segmentStrings[i], segmentStrings[i+1]));
         }
     }
+    public List<SegmentParser> segments() { return segments; }
     public String name() { return name; }
     public Sector find(int address)
     {

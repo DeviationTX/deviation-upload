@@ -13,6 +13,7 @@ public class DfuDevice
         private DeviceHandle handle;
         private List<DfuInterface> interfaces;
         private DfuInterface selected_interface;
+        private TxInfo txInfo;
         static final protected ReentrantLock lock = new ReentrantLock();
 
         public DfuDevice(Device dev) {
@@ -20,6 +21,7 @@ public class DfuDevice
             this.dev = dev;
             interfaces = new ArrayList<DfuInterface>();
             this.selected_interface = null;
+            this.txInfo = null;
         }
         public void AddInterface(InterfaceDescriptor intf, ConfigDescriptor cfg) {
             interfaces.add(new DfuInterface(dev, intf, cfg));    
@@ -120,6 +122,12 @@ public class DfuDevice
             }
             return false;
         }
+        public void setTxInfo(TxInfo txInfo) {
+        	this.txInfo = txInfo;
+        	// If this transmitter incorrectly reports the memory interface, override it
+        	txInfo.type().overrideSector(interfaces);
+        }
+        public TxInfo getTxInfo() { return txInfo; }
 /*
         public byte bConfigurationValue() { return intf.getUsbConfiguration().getUsbConfigurationDescriptor().bConfigurationValue();}
 */
