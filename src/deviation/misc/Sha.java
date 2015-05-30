@@ -1,4 +1,4 @@
-package deviation;
+package deviation.misc;
 
 import java.security.*;
 public class Sha {
@@ -7,7 +7,7 @@ public class Sha {
     		MessageDigest md = MessageDigest.getInstance(method);
     		md.update(data);
     		return bytesToHex(md.digest());
-    	} catch (Exception e) { System.out.println(e); }
+    	} catch (Exception e) { e.printStackTrace(); }
     	return null;
     }
     public static String hash256(byte data[]) {

@@ -37,7 +37,7 @@ public class TxInterface {
         rootBlockDev = null;
         this.dev = dev;
         //this.progress = progress;
-		TxInfo txInfo = TxInfo.getTxInfo(dev);
+		TxInfo txInfo = dev.getTxInfo();
 		Transmitter tx = txInfo.type();
         this.model = tx;
     	if (tx == Transmitter.DEVO_UNKNOWN)
@@ -62,7 +62,7 @@ public class TxInterface {
     public void Format(FSStatus type) throws IOException {
         if (type == FSStatus.ROOT_FS || type == FSStatus.ROOT_AND_MEDIA_FS) {
         	dev.SelectInterface(rootIface);
-        	rootBlockDev.markAllCached();
+        	//rootBlockDev.markAllCached();
         	if (model.getRootFSType() == FSType.FAT) {
         		rootFs = SuperFloppyFormatter.get(rootBlockDev).format();
         	} else {
@@ -73,7 +73,7 @@ public class TxInterface {
         if (type == FSStatus.MEDIA_FS || type == FSStatus.ROOT_AND_MEDIA_FS) {
             if (model.hasMediaFS()) {
             	dev.SelectInterface(mediaIface);
-            	mediaBlockDev.markAllCached();
+            	//mediaBlockDev.markAllCached();
             	if (model.getRootFSType() == FSType.FAT) {
             		mediaFs = SuperFloppyFormatter.get(mediaBlockDev).format();
             	} else {
@@ -128,7 +128,7 @@ public class TxInterface {
             System.out.println(entry.getName());
         }
         } catch (IOException e) {
-            System.out.println(e);
+            e.printStackTrace();
         }
     }
     public void copyFile(FileInfo file) {
@@ -146,14 +146,14 @@ public class TxInterface {
     			dev.SelectInterface(rootIface);
     			rootFs.close();
     			rootBlockDev.close();
-    		} catch(Exception e) {}
+    		} catch(Exception e) { e.printStackTrace(); }
     	}
     	if (mediaFs != null && mediaFs != rootFs) {
     		try {
     			dev.SelectInterface(mediaIface);
     			mediaFs.close();
     			mediaBlockDev.close();
-    		} catch (Exception e) {}
+    		} catch (Exception e) { e.printStackTrace(); }
     	}
     }
 
@@ -165,14 +165,28 @@ public class TxInterface {
         }
         return data;
     }
-    private boolean DetectFS(DfuInterface iface) throws IOException {
+    private boolean DetectFS(FSStatus status) throws IOException {
+    	DfuInterface iface;
+    	FlashIO blkdev;
+    	FSType type;
+    	if (status == FSStatus.ROOT_FS) {
+    		iface = rootIface;
+    		blkdev = rootBlockDev;
+    		type = model.getRootFSType();
+    	} else if (status == FSStatus.MEDIA_FS) {
+    		iface = mediaIface;
+    		blkdev = mediaBlockDev;
+    		type = model.getMediaFSType();
+    	} else {
+    		throw new IOException();
+    	}
     	dev.SelectInterface(iface);
         if (dev.open() != 0) {
         	throw new IOException();
         }
         dev.claim_and_set();
         Dfu.setIdle(dev);
-    	boolean ret = FSUtils.DetectFS(mediaBlockDev, model);
+    	boolean ret = FSUtils.DetectFS(blkdev, type);
     	dev.close();
     	return ret;
     }
@@ -186,20 +200,18 @@ public class TxInterface {
     
         if (model.hasMediaFS()) {
         	try {
-        		has_media = DetectFS(mediaIface);
+        		has_media = DetectFS(FSStatus.MEDIA_FS);
         	} catch (Exception e){
-        		System.out.println("Error: Unable to open device");
+        		System.out.println("Error: Unable to open media device");
         		return FSStatus.NO_FS;
         	}
         }
-    	if (model.getRootFSType() == FSType.FAT) {
-           	try {
-        		has_root = DetectFS(rootIface);
-        	} catch (Exception e){
-        		System.out.println("Error: Unable to open device");
-        		return FSStatus.NO_FS;
-        	}
-    	}
+       	try {
+       		has_root = DetectFS(FSStatus.ROOT_FS);
+       	} catch (Exception e){
+       		System.out.println("Error: Unable to open root device");
+       		return FSStatus.NO_FS;
+       	}
         //IOUtil.writeFile("fatroot", fatRootBytes);
         if (has_media && has_root) {
             status = FSStatus.ROOT_AND_MEDIA_FS;

@@ -9,7 +9,6 @@ import de.waldheinz.fs.FsDirectory;
 import de.waldheinz.fs.FsDirectoryEntry;
 import de.waldheinz.fs.FsFile;
 import deviation.FileInfo;
-import deviation.Transmitter;
 
 public class FSUtils {
 	public static void copyFile(FileSystem fs, FileInfo file) {
@@ -42,10 +41,11 @@ public class FSUtils {
             			System.err.println("Couldn't create directory '" + subdir);
             			return;
             		}
+            		fs_entry.setLastModified(0); //Directories get an epoch date
             	}
             	fsdir = fs_entry.getDirectory();
             } catch (Exception e) {
-            	System.err.println("Unexpected error: " + e.getMessage());
+            	e.printStackTrace();
             	return;
             }
         }
@@ -67,27 +67,28 @@ public class FSUtils {
 			byteBuffer.put(file.data());
 			byteBuffer.flip();
 			fs_file.write(0, byteBuffer);
+			fs_entry.setLastModified(file.time());
 		} catch (Exception e) {
-        	System.err.println("Unexpected error: " + e.getMessage());
+			e.printStackTrace();
         	return;
 		}
 	}
-    public static boolean DetectFS(BlockDevice blkDev, Transmitter tx)
+    public static boolean DetectFS(BlockDevice blkDev, FSType type)
     {
-    	if (tx.getMediaFSType() == FSType.FAT) {
+    	if (type == FSType.FAT) {
     		try {
     			ByteBuffer buf = ByteBuffer.allocate(0x200);
     			blkDev.read(0,  buf);
     			byte fatBytes[] = buf.array();
         		//Magic bytes indicating FAT:
         		//end of sector (510,511) must be 0x55aa
-        		//Fat type (54,55,56,57,58) must be FAT16 (we actuallyony check the 1st 2 bytes as sufficient)
+        		//Fat type (54,55,56,57,58) must be FAT16 (we actually only check the 1st 2 bytes as sufficient)
     			if (fatBytes[510] == 0x55 && ((int)fatBytes[511] & 0xff) == 0xaa
     					&& fatBytes[54] == 0x46 && fatBytes[55] == 0x41)
     			{
     				return true;
     			}
-    		} catch (Exception e) { System.out.println(e); }
+    		} catch (Exception e) { e.printStackTrace(); }
     	} else {
     		return true;
     	}

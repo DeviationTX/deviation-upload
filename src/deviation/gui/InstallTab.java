@@ -41,6 +41,7 @@ public class InstallTab extends JPanel {
     private enum Checkbox {
     	FORMATROOT ("Format Root"),
     	FORMATMEDIA ("Format Media"),
+    	INSTALLPROTO ("Install Protocols"),
     	INSTALLLIB ("Install Library"),
     	REPLACETX ("Replace tx.ini"),
     	REPLACEHW ("Replace hardware.ini"),
@@ -339,6 +340,9 @@ public class InstallTab extends JPanel {
         if (zipFiles.hasLibrary()) {
         	Checkbox.INSTALLLIB.set(true);
         }
+        if (zipFiles.hasProtocol()) {
+        	Checkbox.INSTALLPROTO.set(true);
+        }
         update_checkboxes();
     }
     private void update_checkboxes() {
@@ -385,7 +389,9 @@ public class InstallTab extends JPanel {
             txtFwSize.setText(String.valueOf(size / 1024) + " kb");
             totalSize += size;
         }
-        if (Checkbox.INSTALLLIB.get().isSelected() && zipFiles.hasLibrary()) {
+        boolean libInstall = Checkbox.INSTALLLIB.get().isSelected() && zipFiles.hasLibrary();
+        boolean protoInstall = Checkbox.INSTALLPROTO.get().isSelected() && zipFiles.hasLibrary();
+        if (libInstall || protoInstall) {
         	if (libs.size() > 0) {
         		txtLibVersion.setText(libs.get(0).type().version());
                 fileList.setLibraryDfus(libs);
@@ -397,10 +403,12 @@ public class InstallTab extends JPanel {
         	}
             
             int size = 0;
-            for (DfuFile fsDfu : libs) {
-                for (DfuFile.ImageElement elem : fsDfu.imageElements()) {
-                    size += elem.data().length;
-                }
+            if (libInstall) {
+            	for (DfuFile fsDfu : libs) {
+            		for (DfuFile.ImageElement elem : fsDfu.imageElements()) {
+            			size += elem.data().length;
+            		}
+            	}
             }
             for (FileInfo file : zipFiles.GetFilesystemFiles()) {
                 if (! Checkbox.REPLACETX.get().isSelected() && file.name().equalsIgnoreCase("tx.ini"))
@@ -408,6 +416,10 @@ public class InstallTab extends JPanel {
                 if (! Checkbox.REPLACEHW.get().isSelected() && file.name().equalsIgnoreCase("hardware.ini"))
                   	continue;
                 if (! Checkbox.REPLACEMODEL.get().isSelected() && file.name().matches("(?i:models/.*)"))
+                	continue;
+                if (! protoInstall && file.name().matches("(?i:protocol/.*)"))
+                	continue;
+                if (! libInstall && ! file.name().matches("(?i:protocol/.*)"))
                 	continue;
                 size += file.size();
                 fileList.addFile(file);

@@ -9,15 +9,18 @@ public class TxInfo {
     private long id2;
     private long id3;
     private Transmitter type;
+    private final byte identifier[];
     public TxInfo() {
         model = null;
         type = Transmitter.DEVO_UNKNOWN;
         id1 = 0;
         id2 = 0;
         id3 = 0;
+        identifier = null;
     }
     public TxInfo(byte [] data)
     {
+    	identifier = data;
         model = new String(Arrays.copyOfRange(data, 0, 32));
         type = Transmitter.DEVO_UNKNOWN;
         txloop:
@@ -42,6 +45,7 @@ public class TxInfo {
     public long id3() { return id3;}
     public Transmitter type() { return type;}
     public byte [] encodeId() { return type.encode(id1,  id2,  id3); }
+    public byte [] getIdentifier() { return identifier; }
     public boolean matchModel(Transmitter t)
     {
         if (type == Transmitter.DEVO_UNKNOWN || type != t) {

@@ -142,7 +142,7 @@ public class DfuSendTab extends JPanel {
                                 TxInfo.typeToString(gui.getTxInfo().type()));
                     }
                 } catch (IOException ex) {
-                    System.err.println("Caught IOException: " + ex.getMessage());
+                    ex.printStackTrace();
                 }
 
             }

@@ -16,7 +16,7 @@ public class DeviationVersion
                 name    = p.getProperty("product.name", "Unknown");
             }
         } catch (Exception e) {
-            System.err.println(e.getMessage());
+            e.printStackTrace();
         }
     }
     public String name() { return name; }

@@ -1,4 +1,4 @@
-package deviation;
+package deviation.misc;
 public class Crc {
     static public long Crc32(byte [] data, long crc)
     {

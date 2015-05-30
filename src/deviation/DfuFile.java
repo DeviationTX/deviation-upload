@@ -3,6 +3,8 @@ package deviation;
 import java.io.IOException;
 import java.util.*;
 
+import deviation.misc.Crc;
+
 public class DfuFile {
     public static class ImageElement {
         private String name;

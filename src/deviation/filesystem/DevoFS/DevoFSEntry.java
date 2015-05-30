@@ -100,6 +100,8 @@ public class DevoFSEntry {
 				elem.getFile().read(0, buf);
 				buf.limit(buf.capacity());
 			}
-		} catch (Exception e) { System.out.println(e); }
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 }

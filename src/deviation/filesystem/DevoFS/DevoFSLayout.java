@@ -29,7 +29,7 @@ public class DevoFSLayout {
 		try {
 			sectorSize = dev.getSectorSize();
 			size = (int)dev.getSize();
-		} catch (Exception e) {}
+		} catch (Exception e) { e.printStackTrace(); }
 	}
 	static List<DevoFSDirectoryEntry> parse(DevoFSFileSystem root, BlockDevice dev, DevoFSDirectory rootDir) {
 		DevoFSLayout layout = new DevoFSLayout(root, dev, rootDir);
@@ -45,7 +45,7 @@ public class DevoFSLayout {
 					break;
 				}
 			}
-		} catch (Exception e) {}
+		} catch (Exception e) { e.printStackTrace(); }
 		return elems;
 	}
 	static void write(BlockDevice dev, DevoFSDirectory rootDir, List<DevoFSDirectoryEntry>elems) {
@@ -69,7 +69,7 @@ public class DevoFSLayout {
 			ByteBuffer align = addSectorBoundaries(buf);
 			align.position(0);
 			dev.write(0, align);
-		} catch (Exception e) {System.out.println(e); }
+		} catch (Exception e) { e.printStackTrace(); }
 	}
 	private ByteBuffer addSectorBoundaries(ByteBuffer buf) {
 		byte data[] = new byte [buf.capacity()];

@@ -1,6 +1,9 @@
 package deviation;
 
+import java.util.List;
+
 import deviation.filesystem.FSType;
+import deviation.misc.Crc;
 
 public enum Transmitter {
 	DEVO_UNKNOWN("Unknown", "", 0, FlashInfo.empty, FlashInfo.empty) {
@@ -14,6 +17,12 @@ public enum Transmitter {
 	},
 	DEVOF12E("Devo F12E", "FPV-12E", 12, FlashInfo.InvDEVOFS(0, 64), FlashInfo.empty) {
 		public boolean modelMatch(String str) { return str.matches("DEVO-F12E.*") || str.matches(".*devof12e.*") || str.equals("f12e"); }	
+		public void overrideSector(List<DfuInterface> interfaces) {
+			List <Sector> sectors = interfaces.get(1).Memory().segments().get(0).sectors();
+			interfaces.get(2).Memory().segments().clear(); // Remove interface 2
+			sectors.clear();
+			sectors.add(new Sector(0, 0x10000-1, 0x1000, 16, true, true, true));
+		}
 	},
 	DEVO10("Devo 10", "DEVO-10", 10, FlashInfo.InvFAT(54, 1024), FlashInfo.empty) {
 		public boolean modelMatch(String str) { return str.matches("DEVO-10.*") || str.matches(".*devo10.*") || str.equals("10"); }	
@@ -21,8 +30,15 @@ public enum Transmitter {
 	DEVO8("Devo 8", "DEVO-08", 8, FlashInfo.InvFAT(54, 1024), FlashInfo.empty) {
 		public boolean modelMatch(String str) { return str.matches("DEVO-8.*") || str.matches(".*devo8.*") || str.equals("8"); }	
 	},
-	DEVO7e("Devo 7e", "DEVO-7e", 7, FlashInfo.InvFAT(0, 512), FlashInfo.empty) {
-		public boolean modelMatch(String str) { return str.matches("DEVO-7E.*") || str.matches(".*devo7e.*") || str.equals("7e"); }	
+	DEVO7e("Devo 7e", "DEVO-7E", 7, FlashInfo.InvFAT(0, 512), FlashInfo.empty) {
+		public boolean modelMatch(String str) { return str.matches("DEVO-7E.*") || str.matches(".*devo7e.*") || str.equals("7e"); }
+		public void overrideSector(List<DfuInterface> interfaces) {
+			List <Sector> sectors = interfaces.get(1).Memory().segments().get(0).sectors();
+			interfaces.get(2).Memory().segments().clear(); // Remove interface 2
+			sectors.clear();
+			sectors.add(new Sector(0, 0x20000-1, 0x1000, 32, true, true, true));
+			sectors.add(new Sector(0x20000, 0x200000-1, 0x10000, 30, true, true, true));
+		}
 	},
 	DEVO6("Devo 6", "DEVO-06", 6, FlashInfo.InvFAT(54, 1024), FlashInfo.empty) {
 		public boolean modelMatch(String str) { return str.matches("DEVO-6.*") || str.matches(".*devo6.*") || str.equals("6"); }	
@@ -72,7 +88,8 @@ public enum Transmitter {
     public int getMediaSectorOffset() { return media.sectorOffset; }
     public int getMediaSectorCount()  { return media.sectorCount; }
     public FSType getMediaFSType()    { return media.fsType; }
-    public boolean isMediaInverted()  { return media.inverted; }	
+    public boolean isMediaInverted()  { return media.inverted; }
+    public void overrideSector(List<DfuInterface> interfaces) {}
 
 	public byte[] encode(long id1, long id2, long id3) {
 		switch(numChannels) {
