@@ -14,7 +14,7 @@ public class DfuMemory {
         public SegmentParser(String addressStr, String sectorStr) {
             sectors = new ArrayList<Sector>();
             
-            int address = (int)Long.decode(addressStr).longValue(); //Note:  because 'int' is signed, you can't address more than 0x7FFFFFFF
+            long address = Long.decode(addressStr).longValue();
             for (String sector : sectorStr.split(",")) {
                 Matcher m = Pattern.compile("(\\d+)\\*(\\d+)([BKM])([abcdefg])").matcher(sector);
                 if (m.matches()) {
@@ -69,7 +69,7 @@ public class DfuMemory {
     }
     public List<SegmentParser> segments() { return segments; }
     public String name() { return name; }
-    public Sector find(int address)
+    public Sector find(long address)
     {
         for(SegmentParser segment : segments) {
             for (Sector sector: segment.sectors()) {
@@ -93,9 +93,9 @@ public class DfuMemory {
         return address;
     }
     
-    public int contiguousSize(int address) {
+    public long contiguousSize(int address) {
         for(SegmentParser segment : segments) {
-            int end = 0;
+            long end = 0;
             boolean ok = false;
             for (Sector sector: segment.sectors()) {
                 end = sector.end();

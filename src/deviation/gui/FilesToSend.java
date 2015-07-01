@@ -10,8 +10,7 @@ public class FilesToSend {
 	private DfuFile firmwareDfu;
 	private List<DfuFile> libraryDfus;
 	private List<FileInfo> files;
-	private boolean formatRoot;
-	private boolean formatMedia;
+	private boolean format;
 	private long totalBytes;
 
 	
@@ -19,8 +18,7 @@ public class FilesToSend {
         libraryDfus = new ArrayList<DfuFile>();
         firmwareDfu = null;
         files = new ArrayList<FileInfo>();
-        formatRoot = false;
-        formatMedia = false;
+        format = false;
         totalBytes = 0;
 	}
 	
@@ -32,10 +30,8 @@ public class FilesToSend {
 	public void addFile(FileInfo file) { files.add(file); }
 	public List<FileInfo> getFiles() { return files; }
 
-	public void formatRoot(boolean fmt) { formatRoot = fmt; }
-	public boolean formatRoot() { return formatRoot; }
-	public void formatMedia(boolean fmt) { formatMedia = fmt; }
-	public boolean formatMedia() { return formatMedia; }
+	public void    format(boolean fmt) { format = fmt; }
+	public boolean format() { return format; }
 	public void setTotalBytes(long bytes) { totalBytes = bytes; }
 	public long getTotalBytes() { return totalBytes; }
 

@@ -21,7 +21,6 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 import deviation.*;
 import deviation.DevoDetect.Firmware;
-import deviation.filesystem.TxInterface.FSStatus;
 
 public class InstallTab extends JPanel {
     /**
@@ -39,8 +38,7 @@ public class InstallTab extends JPanel {
     private JTextField txtLibSize;
     //private JTextField txtLibUsed;
     private enum Checkbox {
-    	FORMATROOT ("Format Root"),
-    	FORMATMEDIA ("Format Media"),
+    	FORMAT ("Format"),
     	INSTALLPROTO ("Install Protocols"),
     	INSTALLLIB ("Install Library"),
     	REPLACETX ("Replace tx.ini"),
@@ -287,6 +285,7 @@ public class InstallTab extends JPanel {
         
         reset_checkboxes();
     }
+    public FilesToSend getFilesToSend(){ return fileList; }
     public void refresh() {
     	reset_checkboxes();
     }
@@ -325,18 +324,11 @@ public class InstallTab extends JPanel {
         if (gui.getTxInfo().type() == Transmitter.DEVO_UNKNOWN || (fw != null && fw.type().firmware() != Firmware.DEVIATION)) {
             return;
         }
-        boolean chkboxval = (gui.getFSType() == FSStatus.NO_FS || gui.getFSType() == FSStatus.MEDIA_FS);
-        Checkbox.FORMATROOT.set(chkboxval);
+        boolean chkboxval = (! gui.getFSStatus().isFormatted());
+        Checkbox.FORMAT.set(chkboxval);
         Checkbox.REPLACETX.set(chkboxval);
         Checkbox.REPLACEHW.set(chkboxval);
         Checkbox.REPLACEMODEL.set(chkboxval);
-        if (gui.getTxInfo().type().hasMediaFS()) {
-            if (gui.getFSType() == FSStatus.NO_FS || gui.getFSType() == FSStatus.ROOT_FS) {
-                Checkbox.FORMATMEDIA.set(true);
-            } else {
-                Checkbox.FORMATMEDIA.set(false);
-            }
-        }
         if (zipFiles.hasLibrary()) {
         	Checkbox.INSTALLLIB.set(true);
         }
@@ -346,7 +338,7 @@ public class InstallTab extends JPanel {
         update_checkboxes();
     }
     private void update_checkboxes() {
-    	if (Checkbox.FORMATROOT.get().isSelected()) {
+    	if (Checkbox.FORMAT.get().isSelected()) {
     		Checkbox.REPLACETX.set(true);
     		Checkbox.REPLACEHW.set(true);
     		Checkbox.REPLACEMODEL.set(true);
@@ -427,8 +419,7 @@ public class InstallTab extends JPanel {
             txtLibSize.setText(String.valueOf(size / 1024) + " kb");
             totalSize += size;
         }
-        fileList.formatRoot(Checkbox.FORMATROOT.get().isSelected());
-        fileList.formatMedia(Checkbox.FORMATMEDIA.get().isSelected());
+        fileList.format(Checkbox.FORMAT.get().isSelected());
         fileList.setTotalBytes(totalSize);
         update_install_button();
     }

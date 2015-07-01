@@ -22,13 +22,15 @@ import javax.swing.JProgressBar;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableModel;
 
 import de.ailis.usb4java.libusb.LibUsb;
 import deviation.*;
 import deviation.filesystem.TxInterface;
-import deviation.filesystem.TxInterface.FSStatus;
+import deviation.filesystem.FSStatus;
 
 import javax.swing.JTextArea;
 
@@ -45,12 +47,13 @@ public class DeviationUploadGUI {
 
     private TxInfo txInfo;
     private MonitorUSB monitor;
-    private TxInterface.FSStatus fsStatus;
+    private FSStatus fsStatus;
     private List<DfuMemory> devMemory;
     private TxInterface txInterface;
 
     private DfuSendTab DfuSendPanel;
     private InstallTab InstallPanel;
+    private FileMgrTab FileMgrPanel;
 
 /**
      * Launch the application.
@@ -176,7 +179,7 @@ public class DeviationUploadGUI {
         gbc_table.gridy = 1;
         panel.add(tblScroll, gbc_table);
 
-        JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
+        final JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
         GridBagConstraints gbc_tabbedPane = new GridBagConstraints();
         gbc_tabbedPane.insets = new Insets(0, 0, 5, 0);
         gbc_tabbedPane.fill = GridBagConstraints.BOTH;
@@ -210,13 +213,27 @@ public class DeviationUploadGUI {
         tabbedPane.addTab("DFU", null, DfuSendPanel, null);
         tabbedPane.setEnabledAt(1, true);
 
+        FileMgrPanel = new FileMgrTab(this);
+        tabbedPane.addTab("File Manager", null, FileMgrPanel, null);
+        tabbedPane.setEnabledAt(2, true); 
+        
         JPanel BinSendPanel = new JPanel();
         tabbedPane.addTab("Bin-Send", null, BinSendPanel, null);
-        tabbedPane.setEnabledAt(2, false);
+        tabbedPane.setEnabledAt(3, false);
+        
         
         //JPanel BinFetchPanel = new JPanel();
         //tabbedPane.addTab("Bin-Fetch", null, BinFetchPanel, null);
         //tabbedPane.setEnabledAt(2, false);
+        tabbedPane.addChangeListener(new ChangeListener() {
+        	public void stateChanged(ChangeEvent e) {
+        		int index = tabbedPane.getSelectedIndex();
+        		System.out.println("Tab: " + index);
+        		if (index == 2) {
+        			FileMgrPanel.updateFileList();
+        		}
+        	}
+        });
 
         msgTextArea = new JTextArea();
         msgTextArea.setRows(8);
@@ -228,7 +245,8 @@ public class DeviationUploadGUI {
         if (dev == null) {
             txInfo = new TxInfo();
             devMemory = new ArrayList<DfuMemory>();
-            fsStatus = FSStatus.NO_FS;
+            fsStatus = FSStatus.unformatted();
+            txInterface = null;
         } else {
         	txInterface = new TxInterface(dev);
             txInfo = dev.getTxInfo();
@@ -243,6 +261,7 @@ public class DeviationUploadGUI {
         tableModel.fireTableDataChanged();
         DfuSendPanel.refresh();
         InstallPanel.refresh();
+        FileMgrPanel.updateTx();
     }
     /*
 	private class SwingAction extends AbstractAction {
@@ -291,7 +310,8 @@ public class DeviationUploadGUI {
     public MonitorUSB getMonitor() { return monitor; }
     public JProgressBar getProgressBar() { return progressBar; }
     public TxInfo getTxInfo() {return txInfo;}
-    public FSStatus getFSType() { return fsStatus; }
+    public FSStatus getFSStatus() { return fsStatus; }
     public TxInterface getTxInterface() { return txInterface; }
+    public InstallTab getInstallTab() { return InstallPanel; }
     
 }

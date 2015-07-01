@@ -45,12 +45,12 @@ public class FlashIO implements BlockDevice
         for (Sector sector: sectors) {
         	Range.createSequentialRanges(sectorMap, sector.start(), sector.size(), sector.count());
         }
-        int mem_size = 1 + sectorMap.get(sectorMap.size()-1).end() - sectorMap.get(0).start();
+        long mem_size = 1 + sectorMap.get(sectorMap.size()-1).end() - sectorMap.get(0).start();
         int sector_count = sectorMap.size();
         cached = new boolean[sector_count];
         chksum = new String[sector_count];
         
-    	ram = new byte[mem_size];
+    	ram = new byte[(int)mem_size];
     	rambuf = ByteBuffer.wrap(ram);
         this.dev = dev;
         this.invert = invert;
@@ -62,18 +62,18 @@ public class FlashIO implements BlockDevice
     public void close() throws IOException {
     	int sector_num;
     	for (sector_num = 0; sector_num < cached.length; sector_num++) {
-    		if (progress.cancelled())
+    		if (progress != null && progress.cancelled())
     			break;
             if (cached[sector_num]) {
             	Range range = sectorMap.get(sector_num);
-            	byte [] data = Arrays.copyOfRange(ram, range.start() - (int)memAddress,  1 + range.end() - (int)memAddress);
+            	byte [] data = Arrays.copyOfRange(ram, (int)(range.start() - memAddress),  (int)(1 + range.end() - memAddress));
             	String newchksum = Sha.md5(data);
             	System.out.format("0x%08x Read: %s Write: %s\n", range.start(), chksum[sector_num], newchksum);
             	if (chksum[sector_num] != null && chksum[sector_num].equals(newchksum)) {
             		//Data hasn't changed, no need to write it out
             		continue;
             	}
-            	dump(Integer.toHexString(range.start()), data);
+            	dump(Long.toHexString(range.start()), data);
                 if (invert) {
                     data = TxInterface.invert(data);
                 }
@@ -112,11 +112,11 @@ public class FlashIO implements BlockDevice
     	Range range = sectorMap.get(sector_num);
         System.out.format(("Cache of 0x%08x : %d%n"), range.start(), cached[sector_num] ? 1 : 0);
         if (! cached[sector_num]) {
-            byte[] data = Dfu.fetchFromDevice(dev, range.start(), range.size());
+            byte[] data = Dfu.fetchFromDevice(dev, range.start(), (int)range.size());
             if (invert) {
                 data = TxInterface.invert(data);
             }
-            System.arraycopy(data, 0, ram, range.start() - (int)memAddress, data.length);
+            System.arraycopy(data, 0, ram, (int)(range.start() - memAddress), data.length);
             cached[sector_num] = true;
             chksum[sector_num] = Sha.md5(data);
         }

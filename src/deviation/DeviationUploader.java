@@ -14,6 +14,7 @@ import deviation.filesystem.FileDisk2;
 import deviation.filesystem.TxInterface;
 import deviation.filesystem.DevoFS.DevoFSFileSystem;
 import deviation.gui.DeviationUploadGUI;
+import deviation.gui.DnDFrame;
 
 import org.apache.commons.cli.*;
 public class DeviationUploader
@@ -133,7 +134,7 @@ public class DeviationUploader
     		}
     	}
         if (length == 0) {
-            length = dev.Memory().contiguousSize(address);
+            length = (int)dev.Memory().contiguousSize(address);
         }
         if (dev.open() != 0) {
             System.out.println("Error: Unable to open device");
@@ -418,6 +419,7 @@ public class DeviationUploader
     public static void main(String[] args)
     {
         if (args.length == 0) {
+        	//DnDFrame.main(null);
             DeviationUploadGUI.main(null);
             while(true) {}
         }
