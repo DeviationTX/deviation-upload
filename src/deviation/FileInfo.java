@@ -26,4 +26,8 @@ public class FileInfo {
         owner = null;
         this.data = data;        
     }
+    public FileInfo(String name, int size) {
+    	this.size = size;
+    	this.name = name;
+    }
 }

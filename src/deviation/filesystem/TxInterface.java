@@ -1,7 +1,9 @@
 package deviation.filesystem;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import de.waldheinz.fs.FileSystem;
 import de.waldheinz.fs.FsDirectory;
@@ -19,8 +21,6 @@ import deviation.filesystem.DevoFS.DevoFSFileSystem;
 
 public class TxInterface {
     
-    public enum FSStatus {NO_FS, ROOT_FS, MEDIA_FS, ROOT_AND_MEDIA_FS};
-
     DfuDevice dev;
     FlashIO rootBlockDev;
     FlashIO mediaBlockDev;
@@ -45,9 +45,12 @@ public class TxInterface {
         if (tx.hasMediaFS()) {
     		mediaIface = dev.SelectInterfaceByAddr(tx.getMediaSectorOffset() * SECTOR_SIZE);
         	mediaBlockDev = new FlashIO(dev, tx.getMediaSectorOffset() * SECTOR_SIZE, tx.isMediaInverted(), SECTOR_SIZE, null);
-        	dev.close();
+        	//dev.close();
         }
 		rootIface = dev.SelectInterfaceByAddr(tx.getRootSectorOffset() * SECTOR_SIZE);
+		if (rootIface == null) {
+			System.out.println("Could not identify any memory region for rootFS");
+		}
         rootBlockDev = new FlashIO(dev, tx.getRootSectorOffset() * SECTOR_SIZE, tx.isRootInverted(), SECTOR_SIZE, null);
     	
     }
@@ -59,8 +62,8 @@ public class TxInterface {
     }
     public DfuDevice getDevice() { return dev; }
     public boolean hasSeparateMediaDrive() { return mediaBlockDev == null ? false : true; }
-    public void Format(FSStatus type) throws IOException {
-        if (type == FSStatus.ROOT_FS || type == FSStatus.ROOT_AND_MEDIA_FS) {
+    public void Format(FSStatus status) throws IOException {
+        if (! status.isRootFormatted()) {
         	dev.SelectInterface(rootIface);
         	//rootBlockDev.markAllCached();
         	if (model.getRootFSType() == FSType.FAT) {
@@ -70,7 +73,7 @@ public class TxInterface {
         	}
             mediaFs = rootFs;
         }
-        if (type == FSStatus.MEDIA_FS || type == FSStatus.ROOT_AND_MEDIA_FS) {
+        if (! status.isMediaFormatted()) {
             if (model.hasMediaFS()) {
             	dev.SelectInterface(mediaIface);
             	//mediaBlockDev.markAllCached();
@@ -82,8 +85,8 @@ public class TxInterface {
             }
         }
     }
-    public void Init(FSStatus type) throws IOException {
-        if (type == FSStatus.ROOT_FS || type == FSStatus.ROOT_AND_MEDIA_FS) {
+    public void Init(FSStatus status) throws IOException {
+        if (status.isRootFormatted()) {
         	dev.SelectInterface(rootIface);
         	if (model.getRootFSType() == FSType.FAT) {
         		rootFs = FatFileSystem.read(rootBlockDev, false);
@@ -92,17 +95,45 @@ public class TxInterface {
         	}
             mediaFs = rootFs;
         }
-        if (type == FSStatus.MEDIA_FS || type == FSStatus.ROOT_AND_MEDIA_FS) {
-            if (model.hasMediaFS()) {
-            	dev.SelectInterface(mediaIface);
-            	if (model.getRootFSType() == FSType.FAT) {
-            		mediaFs = FatFileSystem.read(mediaBlockDev, false);
-            	} else {
-            		mediaFs = DevoFSFileSystem.read(mediaBlockDev, false);
-            	}
+        if (status.hasMediaFS()) {
+            dev.SelectInterface(mediaIface);
+            if (model.getRootFSType() == FSType.FAT) {
+            	mediaFs = FatFileSystem.read(mediaBlockDev, false);
+            } else {
+            	mediaFs = DevoFSFileSystem.read(mediaBlockDev, false);
             }
         }
     }
+    private static List<FileInfo> readDirRecur(String parent, FsDirectory dir) throws IOException {
+    	List <FileInfo>files = new ArrayList<FileInfo>();
+        Iterator<FsDirectoryEntry> itr = dir.iterator();
+    	while(itr.hasNext()) {
+    		FsDirectoryEntry entry = itr.next();
+    		if (entry.isDirectory()) {
+    			if (entry.getName().equals(".") || entry.getName().equals(".."))
+    				continue;
+    			System.out.format("DIR: %s\n", entry.getName());
+    			files.addAll(readDirRecur(parent + entry.getName() + "/", entry.getDirectory()));
+    		} else {
+    			files.add(new FileInfo(parent + entry.getName(), (int)entry.getFile().getLength()));
+    			System.out.format("FILE: %s (%d)\n", entry.getName(), entry.getFile().getLength());
+    		}
+    	}
+    	return files;
+    }
+    public List <FileInfo> readAllDirs() {
+    	List<FileInfo> files = new ArrayList<FileInfo>();
+    	try {
+    		FsDirectory dir = rootFs.getRoot();
+    		files.addAll(readDirRecur("", dir));
+    		if (model.hasMediaFS()) {
+    			dir = mediaFs.getRoot();
+    			files.addAll(readDirRecur("media/", dir));
+    		}
+    	} catch (Exception e) { e.printStackTrace(); }
+    	return files;
+    }
+    
     public void readDir(String dirStr) {
         if (! dirStr.matches("/.*")) {
             dirStr = "/" + dirStr;
@@ -140,6 +171,14 @@ public class TxInterface {
         }
     	FSUtils.copyFile(fs,  file);
     }
+    public void open() {
+		if (dev.open() != 0) {
+			System.out.println("Error: Unable to open device");
+			return;
+		}
+		dev.claim_and_set();    	
+    }
+
     public void close() {
     	if (rootFs != null) {
     		try {
@@ -155,6 +194,7 @@ public class TxInterface {
     			mediaBlockDev.close();
     		} catch (Exception e) { e.printStackTrace(); }
     	}
+    	dev.close();
     }
 
     public static byte[] invert(byte[] data) {
@@ -165,7 +205,7 @@ public class TxInterface {
         }
         return data;
     }
-    private boolean DetectFS(FSStatus status) throws IOException {
+    private boolean DetectFS(int status) throws IOException {
     	DfuInterface iface;
     	FlashIO blkdev;
     	FSType type;
@@ -193,9 +233,8 @@ public class TxInterface {
     public FSStatus getFSStatus() {
         boolean has_root = false;
         boolean has_media = false;
-        FSStatus status = FSStatus.NO_FS;
         if (model == Transmitter.DEVO_UNKNOWN) {
-            return status;
+    		return FSStatus.unformatted();
         }
     
         if (model.hasMediaFS()) {
@@ -203,24 +242,17 @@ public class TxInterface {
         		has_media = DetectFS(FSStatus.MEDIA_FS);
         	} catch (Exception e){
         		System.out.println("Error: Unable to open media device");
-        		return FSStatus.NO_FS;
+        		return FSStatus.unformatted();
         	}
         }
        	try {
        		has_root = DetectFS(FSStatus.ROOT_FS);
        	} catch (Exception e){
        		System.out.println("Error: Unable to open root device");
-       		return FSStatus.NO_FS;
+    		return FSStatus.unformatted();
        	}
         //IOUtil.writeFile("fatroot", fatRootBytes);
-        if (has_media && has_root) {
-            status = FSStatus.ROOT_AND_MEDIA_FS;
-        } else if (has_media) {
-            status = FSStatus.MEDIA_FS;
-        } else if  (has_root) {
-            status = FSStatus.ROOT_FS;
-        }
-        return status;
+		return new FSStatus(model, has_root, has_media);
     }
 
 }

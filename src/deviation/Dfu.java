@@ -91,7 +91,7 @@ public final class Dfu
                                 dfu_timeout );
     }
 
-    public static int dfuseSpecialCommand(DfuDevice dev, int address, int command) {
+    public static int dfuseSpecialCommand(DfuDevice dev, long address, int command) {
         byte [] buf = new byte[5];
         int ret;
         DfuStatus status;
@@ -340,7 +340,7 @@ public final class Dfu
         }
         return 0;
     }
-    public static byte [] fetchFromDevice(DfuDevice dev, int address, int requested_length)
+    public static byte [] fetchFromDevice(DfuDevice dev, long address, int requested_length)
     {
         int xfer_size = 1024;
         int total_bytes = 0;
@@ -380,11 +380,11 @@ public final class Dfu
         }
         return data.toByteArray();
     }
-    public static int sendToDevice(DfuDevice dev, int address, byte[] data,  Progress progress)
+    public static int sendToDevice(DfuDevice dev, long address, byte[] data,  Progress progress)
     {
         int xfer_size = 1024;
         // ensure the entire data rangeis writeable
-        int sector_address = address;
+        long sector_address = address;
         setIdle(dev);
         while (true) {
             Sector sector = dev.Memory().find(sector_address);
@@ -408,11 +408,11 @@ public final class Dfu
         }
         while (true) {
             Sector sector = dev.Memory().find(sector_address);
-            int sector_size = sector.size();
-            int sector_index = (sector_address - sector.start()) / sector_size;
-            int sector_start = sector.start() + sector_index * sector_size;
+            long sector_size = sector.size();
+            long sector_index = (sector_address - sector.start()) / sector_size;
+            long sector_start = sector.start() + sector_index * sector_size;
             if (progress != null) {
-                progress.update(data.length > sector_size ? sector_size : data.length);
+                progress.update((int)(data.length > sector_size ? sector_size : data.length));
                 if (progress.cancelled()) {
                     System.out.format("Cancelled at address 0x%x%n", sector_address);
                     return -1;
@@ -439,14 +439,14 @@ public final class Dfu
             while (sector_address < sector_start + sector_size) {
                 if (xfer_size > sector_start + sector_size - sector_address) {
                     //Need to transfer less than the xfer_size
-                    xfer  = sector_start + sector_size - sector_address;
+                    xfer  = (int)(sector_start + sector_size - sector_address);
                     if (dfuseSpecialCommand(dev, sector_address, DFUSE_SET_ADDRESS) != 0) {
                         System.out.format("Error: Write failed to set address: 0x%x%n", sector_address);
                         return -1;
                     }
                     transaction = 2;
                 }
-                int offset = sector_address - address;
+                int offset = (int)(sector_address - address);
                 //System.out.format("Writing array at 0x%x (length: %d) dest: %x%n", sector_address, xfer, (transaction-2)*xfer + address);
                 byte[] buf = Arrays.copyOfRange(data, offset, offset + xfer);
                 

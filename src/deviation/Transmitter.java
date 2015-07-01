@@ -11,6 +11,12 @@ public enum Transmitter {
 	},
 	DEVO12("Devo 12", "DEVO-12", 12, FlashInfo.InvFAT(0, 512), FlashInfo.FAT(0x64080, 4*1024)) {
 		public boolean modelMatch(String str) { return str.matches("DEVO-12.*") || str.matches(".*devo12.*") || str.equals("12"); }	
+		public void overrideSector(List<DfuInterface> interfaces) {
+			List <Sector> sectors = interfaces.get(1).Memory().segments().get(0).sectors();
+			//interfaces.get(2).Memory().segments().clear(); // Remove interface 2
+			sectors.clear();
+			sectors.add(new Sector(0, 0x200000-1, 0x1000, 0x200, true, true, true));
+		}
 	},
 	DEVO12E("Devo 12E", "DEVO-12E", 12, FlashInfo.InvFAT(54, 1024), FlashInfo.empty) {
 		public boolean modelMatch(String str) { return str.matches("DEVO-12E.*") || str.matches(".*devo12e.*") || str.equals("12e"); }	
@@ -80,12 +86,12 @@ public enum Transmitter {
 	}
 	public String getName()           { return name; }
 	public String getId()             { return id; }
-	public int getRootSectorOffset()  { return root.sectorOffset; }
+	public long getRootSectorOffset()  { return root.sectorOffset; }
     public int getRootSectorCount()   { return root.sectorCount; }
     public FSType getRootFSType()     { return root.fsType; }
     public boolean isRootInverted()   { return root.inverted; }
     public boolean hasMediaFS()       { return media.sectorOffset < 0 ? false : true; }
-    public int getMediaSectorOffset() { return media.sectorOffset; }
+    public long getMediaSectorOffset() { return media.sectorOffset; }
     public int getMediaSectorCount()  { return media.sectorCount; }
     public FSType getMediaFSType()    { return media.fsType; }
     public boolean isMediaInverted()  { return media.inverted; }

@@ -1,14 +1,14 @@
 package deviation;
 
 public class Sector {
-        private int start;
-        private int end;
-        private int size;
+        private long start;
+        private long end;
+        private long size;
         private int count;
         private boolean readable;
         private boolean erasable;
         private boolean writable;
-        public Sector(int start, int end, int size, int count, boolean readable, boolean erasable, boolean writable) {
+        public Sector(long start, long end, long size, int count, boolean readable, boolean erasable, boolean writable) {
             this.start = start;
             this.end   = end;
             this.size  = size;
@@ -17,9 +17,9 @@ public class Sector {
             this.erasable = erasable;
             this.writable = writable;
         }
-        public int start() { return start; }
-        public int end()   { return end; }
-        public int size()  { return size; }
+        public long start() { return start; }
+        public long end()   { return end; }
+        public long size()  { return size; }
         public int count()  { return count; }
         public boolean erasable() { return erasable; }
         public boolean writable() { return writable; }
