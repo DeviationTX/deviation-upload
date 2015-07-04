@@ -17,7 +17,7 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.Timer;
-
+import javax.swing.UIManager;
 import javax.swing.JProgressBar;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
@@ -75,6 +75,15 @@ public class DeviationUploadGUI {
      * Create the application.
      */
     public DeviationUploadGUI() {
+        try {
+            // Set System L&F
+        	UIManager.setLookAndFeel(
+        			UIManager.getSystemLookAndFeelClassName());
+        } 
+        catch (Exception e) {
+       // handle exception
+        }
+
         /*
 	    byte[] b = new byte[] { 
 	            0, 0, 0, 0, 0, 0, 0, 0, 'D', 'E', 'V', 'O', '-', '0', '8', 0,
@@ -103,7 +112,7 @@ public class DeviationUploadGUI {
     private void initialize() {
     	DeviationVersion ver = new DeviationVersion();
         frame = new JFrame();
-        frame.setBounds(100, 100, 590, 480);
+        frame.setBounds(100, 100, 640, 600);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setTitle(ver.name() + " - " + ver.version());
         GridBagLayout gridBagLayout = new GridBagLayout();
