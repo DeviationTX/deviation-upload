@@ -1,0 +1,24 @@
+This code is to a large extent a direct port of the 'dfu-util' code to java.
+
+This would have been a much bigger ordeal without the work those folks have
+spent developing dfu and dfuse support.
+
+Note that this code only supports the DFuSe protocol, and onlythe Walkera
+flavor of that.  It is not intended to be a generalized dfu upload/download
+tool, but instead is targetted only at communicating with Walkera transmitters.
+
+
+Upgrading the jar files:
+download official release from:
+
+http://kayahr.github.io/usb4java/index.html and unzip
+
+usb4java:
+export VERSION=1.0.0; mvn install:install-file -Dfile=usb4java-$VERSION/lib/usb4java-$VERSION.jar -DgroupId=de-ailis -DartifactId=usb4java -Dversion=$VERSION -Dpackaging=jar -DlocalRepositoryPath=libs -DcreateChecksum=true
+
+javax-usb:
+export VERSION=1.0.2; mvn install:install-file -Dfile=usb4java-1.0.0/lib/usb-api-$VERSION.jar -DgroupId=javax -DartifactId=javax-usb -Dversion=$VERSION -Dpackaging=jar -DlocalRepositoryPath=libs -DcreateChecksum=true
+
+http://code.google.com/p/fat32-lib/
+fat32-lib:
+EXPORT VERSION=0.6.2; mvn install:install-file -Dfile=fat32-lib-$VERSION.jar -DgroupId=de-waldheinz -DartifactId=fat32-lib -Dversion=$VERSION -Dpackaging=jar -DlocalRepositoryPath=libs -DcreateChecksum=true
