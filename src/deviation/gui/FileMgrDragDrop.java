@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -17,14 +18,18 @@ import javax.swing.DropMode;
 import javax.swing.JComponent;
 import javax.swing.JTree;
 import javax.swing.TransferHandler;
+import javax.swing.table.TableModel;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 
 import org.jdesktop.swingx.JXTreeTable;
+import org.jdesktop.swingx.treetable.TreeTableModel;
 
 import deviation.FileInfo;
+import deviation.IOUtil;
 import deviation.filesystem.TxInterface;
+import deviation.gui.treemodel.FilesToSendModel;
 
 /* This class is currently unused because Java does not seem to provide a hook
  * to get the data on drop as opposed to on start of drag.
@@ -34,10 +39,17 @@ import deviation.filesystem.TxInterface;
  * We want an interface like 7-zip where the file is generated only on drop
  * completion
  */
-public class FileMgrDrag {
-	public static void setupDrag(DeviationUploadGUI gui, JXTreeTable tree) {
-		tree.setDragEnabled(true);
-		tree.setDropMode(DropMode.INSERT);
+public class FileMgrDragDrop {
+	public static final int DRAG = 0x01;
+	public static final int DROP = 0x02;
+	public static final int DRAGDROP = 0x03;
+	public static void setup(DeviationUploadGUI gui, JXTreeTable tree, int mode) {
+		if ((mode & DRAG) != 0) {
+			tree.setDragEnabled(true);
+		}
+		if ((mode & DROP) != 0) {
+			tree.setDropMode(DropMode.ON_OR_INSERT);
+		}
 		tree.setTransferHandler(new TreeTransferHandler(gui));
 	}
 
@@ -103,7 +115,7 @@ public class FileMgrDrag {
 			if(!support.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
 				return false;
 			}
-			return false;
+			return true;
 		}
 
 		protected Transferable createTransferable(JComponent c) {
@@ -173,9 +185,77 @@ public class FileMgrDrag {
 			if(!canImport(support)) {
 				return false;
 			}
+			JXTreeTable tree = (JXTreeTable)support.getComponent();
+			JXTreeTable.DropLocation dropLocation =
+					(JXTreeTable.DropLocation)support.getDropLocation();
+
+
+			Transferable transferable = support.getTransferable();
+
+			List transferData;
+			try {
+				transferData = (List)transferable.getTransferData(
+						DataFlavor.javaFileListFlavor);
+			} catch (IOException e) {
+				e.printStackTrace();
+				return false;
+			} catch (UnsupportedFlavorException e) {
+				e.printStackTrace();
+				return false;
+			}
+
+			int row = dropLocation.getRow();
+			boolean isInsert = dropLocation.isInsertRow();
+			if (row == -1) {
+				return false;
+			}
+			TreePath path = tree.getPathForRow(row);
+			Object node = path.getLastPathComponent();
+			String parentDir;
+			if (node instanceof deviation.FileInfo) {
+				FileInfo file = (FileInfo)node;
+				parentDir = file.parentDir();
+			} else {
+				if (isInsert) {
+					String[]filedir = ((String)node).split("/");
+					if (filedir.length > 1) {
+						filedir = Arrays.copyOfRange(filedir, 0, filedir.length-1);
+					} else {
+						filedir = new String[0];
+					}
+					parentDir = String.join("/", filedir);
+				} else {
+					parentDir = (String)node;
+				}
+			}
+			FilesToSendModel txModel = (FilesToSendModel)tree.getTreeTableModel();
+			List<FileInfo> files = txModel.getFiles();
+			for (Object obj: transferData) {
+				File f = (File)obj;
+				
+		        byte[] data;
+		        try {
+		            data = IOUtil.readFile(f.getPath());
+		            String fname = parentDir.equals("") ? f.getName() : parentDir + "/" + f.getName();
+		        	files.add(new FileInfo(fname.toUpperCase(), data));
+		        } catch (IOException e) {
+		            e.printStackTrace();
+		        }
+			}
+			txModel.update(files);
+/*
+			DefaultMutableTreeNode newNode = 
+					new DefaultMutableTreeNode(transferData);
+			DefaultMutableTreeNode parentNode =
+					(DefaultMutableTreeNode)path.getLastPathComponent();
+			model.insertNodeInto(newNode, parentNode, childIndex);
+
+			TreePath newPath = path.pathByAddingChild(newNode);
+			tree.makeVisible(newPath);
+			tree.scrollRectToVisible(tree.getPathBounds(newPath));
+*/
 			return true;
 		}
-
 		public String toString() {
 			return getClass().getName();
 		}
