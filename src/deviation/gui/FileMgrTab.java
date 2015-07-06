@@ -41,11 +41,13 @@ import javax.swing.TransferHandler;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.MutableTreeNode;
 import javax.swing.tree.TreeCellRenderer;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 
 import org.jdesktop.swingx.JXTreeTable;
+import org.jdesktop.swingx.treetable.MutableTreeTableNode;
 
 import deviation.DeviationUploader;
 import deviation.FileInfo;
@@ -132,7 +134,7 @@ public class FileMgrTab extends JPanel {
        txModel = new FilesToSendModel(null);
         //create the tree by passing in the root node
         txTree = new JXTreeTable(txModel);
-        //FileMgrDrag.setupDrag(gui, txTree);
+        FileMgrDragDrop.setup(gui, txTree, FileMgrDragDrop.DROP);
         JScrollPane scrollpane = new JScrollPane(txTree);
         GridBagConstraints gbc_FM_txTree = new GridBagConstraints();
         gbc_FM_txTree.insets = new Insets(0, 0, 5, 5);
@@ -230,8 +232,13 @@ public class FileMgrTab extends JPanel {
                 }
         	} else if (buttonType == FileBtn.DELETE) {
         		//Delete files here
+        		List <FileInfo> txFiles = txModel.getFiles();
+        		for (FileInfo file: files) {
+        			txFiles.remove(file);
+        		}
         		ShowSyncDialog();
         		syncBtn.setEnabled(true);
+        		txModel.refresh();
         	}
         }
 	}

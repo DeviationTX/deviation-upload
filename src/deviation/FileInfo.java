@@ -1,6 +1,9 @@
 package deviation;
 
+import java.util.Arrays;
 import java.util.zip.ZipEntry;
+
+import org.apache.commons.lang3.StringUtils;
 
 public class FileInfo {
     private int size;
@@ -16,6 +19,17 @@ public class FileInfo {
     	String[]filepath = name.split("/");
     	return filepath[filepath.length-1];
     }
+	public String parentDir() {
+		String[]filepath = name.split("/");
+		String[]filedir;
+		if (filepath.length > 1) {
+			filedir = Arrays.copyOfRange(filepath, 0, filepath.length-1);
+		} else {
+			filedir = new String[0];
+		}
+
+		return String.join("/", filedir);
+	}
     public long Crc() {return Crc; }
     public long time() { return time; }
     public byte[] data() { return data; }
@@ -34,5 +48,10 @@ public class FileInfo {
     public FileInfo(String name, int size) {
     	this.size = size;
     	this.name = name;
+    }
+    public FileInfo(String name, byte[] data) {
+    	this.size = data.length;
+    	this.name = name;
+    	this.data = data;
     }
 }

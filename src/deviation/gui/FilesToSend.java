@@ -28,6 +28,7 @@ public class FilesToSend {
 	public List<DfuFile> getLibraryDfus() { return libraryDfus; }
 	public void clearFiles() { files.clear(); }
 	public void addFile(FileInfo file) { files.add(file); }
+	public void removeFile(FileInfo file) { files.remove(file); }
 	public List<FileInfo> getFiles() { return files; }
 
 	public void    format(boolean fmt) { format = fmt; }

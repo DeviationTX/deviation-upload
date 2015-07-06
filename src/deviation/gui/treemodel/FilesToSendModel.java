@@ -6,8 +6,11 @@ import java.util.Comparator;
 import java.util.List;
 
 import javax.swing.event.TreeModelListener;
+import javax.swing.tree.TreePath;
 
 import org.jdesktop.swingx.treetable.AbstractTreeTableModel;
+import org.jdesktop.swingx.treetable.MutableTreeTableNode;
+import org.jdesktop.swingx.treetable.TreeTableNode;
 
 import deviation.FileInfo;
 import deviation.gui.FilesToSend;
@@ -25,6 +28,7 @@ public class FilesToSendModel extends AbstractTreeTableModel {
 		}
 		sort();
 	}
+	public List <FileInfo> getFiles() { return files; }
 	public void refresh() {
 		System.out.println("Firing Root");
 		super.modelSupport.fireNewRoot();
