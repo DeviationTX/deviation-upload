@@ -12,6 +12,7 @@ public class FileInfo {
     private byte[]data;
     private long time;
     private long Crc;
+    private boolean deleted;
 
     public int size() { return size; }
     public String name() { return name; }
@@ -36,6 +37,8 @@ public class FileInfo {
     public void setData(byte []data) { this.data = data; }
     public void setOwner(String owner) { this.owner = owner; }
     public String owner() { return owner; }
+    public boolean deleted() { return deleted; }
+    public void setDeleted() { deleted = true; }
 
     public FileInfo(ZipEntry ze, byte[] data) {
         size = (int)ze.getSize();
@@ -53,5 +56,14 @@ public class FileInfo {
     	this.size = data.length;
     	this.name = name;
     	this.data = data;
+    }
+    public FileInfo(FileInfo file) {
+    	this.size = file.size;
+    	this.name = file.name;
+    	this.owner = file.owner;
+    	this.data = file.data;
+    	this.time = file.time;
+    	this.Crc = file.Crc;
+    	this.deleted = file.deleted;
     }
 }

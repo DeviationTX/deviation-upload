@@ -61,6 +61,9 @@ public class FilesToSendModel extends AbstractTreeTableModel {
 		
 		for (int i = 0; i < files.size(); i++) {
 			FileInfo file = files.get(i);
+			if (file.deleted()) {
+				continue;
+			}
 			if (fileMatchesDir(file, dir)) {
 				seen = true;
 				String name = file.name();
