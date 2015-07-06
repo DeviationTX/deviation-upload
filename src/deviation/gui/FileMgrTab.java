@@ -234,13 +234,16 @@ public class FileMgrTab extends JPanel {
         		//Delete files here
         		List <FileInfo> txFiles = txModel.getFiles();
         		for (FileInfo file: files) {
-        			txFiles.remove(file);
+        			file.setDeleted();
         		}
-        		ShowSyncDialog();
-        		syncBtn.setEnabled(true);
         		txModel.refresh();
+        		LocalFilesChanged();
         	}
         }
+	}
+	public void LocalFilesChanged() {
+		ShowSyncDialog();
+		syncBtn.setEnabled(true);
 	}
 	private void ShowSyncDialog() {
 		UploaderPreferences prefs = new UploaderPreferences();
@@ -262,6 +265,14 @@ public class FileMgrTab extends JPanel {
 			super();
 		}
 		public void actionPerformed(ActionEvent e) {
+			FilesToSend files = new FilesToSend();
+			for (FileInfo file: txModel.getFiles()) {
+				if (file.deleted() || file.data() != null) {
+					files.addFile(file);
+				}
+			}
+			FileInstaller installer = new FileInstaller(gui, files);
+			installer.execute();
 			syncBtn.setEnabled(false);
 		}
 	}

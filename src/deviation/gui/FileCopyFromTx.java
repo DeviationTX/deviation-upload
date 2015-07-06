@@ -57,6 +57,7 @@ public class FileCopyFromTx extends SwingWorker<Boolean, Integer> implements Pro
 			fs.Init(gui.getFSStatus());
 		} catch (Exception e) { e.printStackTrace(); }
 		for (FileInfo file: files) {
+			file = new FileInfo(file); //Make a separate copy to fill with data
 			fs.fillFileData(file);
 			File f = new File(destDir.resolve(file.name()).toUri());
 			try {

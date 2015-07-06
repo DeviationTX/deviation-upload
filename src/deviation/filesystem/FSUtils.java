@@ -67,6 +67,9 @@ public class FSUtils {
 		try {
 			fs_entry = fsdir.getEntry(filename);
 			if (fs_entry == null) {
+				if (file.deleted()) {
+					return;
+				}
 				fs_entry = fsdir.addFile(filename);
 				if (fs_entry == null) {
 					System.err.println("Failed to create file '" + file.name());
@@ -75,6 +78,10 @@ public class FSUtils {
 			}
 			if (! fs_entry.isFile()) {
 				System.err.println(file.name() + " exists but is not a file");
+				return;
+			}
+			if (file.deleted()) {
+				fsdir.remove(fs_entry.getName());
 				return;
 			}
 			FsFile fs_file = fs_entry.getFile();

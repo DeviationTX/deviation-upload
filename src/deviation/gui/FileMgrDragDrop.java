@@ -138,6 +138,7 @@ public class FileMgrDragDrop {
 									fs.Init(gui.getFSStatus());
 								}
 							} catch (Exception e) { e.printStackTrace(); }
+							fileinfo = new FileInfo(fileinfo);
 							fs.fillFileData(fileinfo);
 							fs.close();
 						}
@@ -243,17 +244,7 @@ public class FileMgrDragDrop {
 		        }
 			}
 			txModel.update(files);
-/*
-			DefaultMutableTreeNode newNode = 
-					new DefaultMutableTreeNode(transferData);
-			DefaultMutableTreeNode parentNode =
-					(DefaultMutableTreeNode)path.getLastPathComponent();
-			model.insertNodeInto(newNode, parentNode, childIndex);
-
-			TreePath newPath = path.pathByAddingChild(newNode);
-			tree.makeVisible(newPath);
-			tree.scrollRectToVisible(tree.getPathBounds(newPath));
-*/
+			gui.getFileMgrTab().LocalFilesChanged();
 			return true;
 		}
 		public String toString() {

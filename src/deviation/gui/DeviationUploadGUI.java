@@ -322,6 +322,7 @@ public class DeviationUploadGUI {
     public FSStatus getFSStatus() { return fsStatus; }
     public TxInterface getTxInterface() { return txInterface; }
     public InstallTab getInstallTab() { return InstallPanel; }
+    public FileMgrTab getFileMgrTab() { return FileMgrPanel; }
     public JFrame getFrame() { return frame; }
     
 }
