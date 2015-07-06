@@ -73,7 +73,7 @@ public class FlashIO implements BlockDevice
             		//Data hasn't changed, no need to write it out
             		continue;
             	}
-            	dump(Long.toHexString(range.start()), data);
+            	//dump(Long.toHexString(range.start()), data);
                 if (invert) {
                     data = TxInterface.invert(data);
                 }

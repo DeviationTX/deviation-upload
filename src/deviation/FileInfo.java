@@ -12,9 +12,14 @@ public class FileInfo {
 
     public int size() { return size; }
     public String name() { return name; }
+    public String baseName() {
+    	String[]filepath = name.split("/");
+    	return filepath[filepath.length-1];
+    }
     public long Crc() {return Crc; }
     public long time() { return time; }
     public byte[] data() { return data; }
+    public void setData(byte []data) { this.data = data; }
     public void setOwner(String owner) { this.owner = owner; }
     public String owner() { return owner; }
 

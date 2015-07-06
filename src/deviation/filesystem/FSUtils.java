@@ -11,7 +11,7 @@ import de.waldheinz.fs.FsFile;
 import deviation.FileInfo;
 
 public class FSUtils {
-	public static void copyFile(FileSystem fs, FileInfo file) {
+	public static FsDirectory getFileDirectory(FileSystem fs, FileInfo file, boolean create) {
 		String[]filepath = file.name().toUpperCase().split("/");
 		String filename = filepath[filepath.length-1];
 		
@@ -27,7 +27,7 @@ public class FSUtils {
 			fsdir = fs.getRoot();
 		} catch (Exception e) {
 			System.err.println("Couldn't get root dir: " + e.getMessage());
-			return;
+			return null;
 		}
         for (String subdir : filedir) {
             if (subdir.equals("")) {
@@ -36,19 +36,34 @@ public class FSUtils {
             try {
             	fs_entry = fsdir.getEntry(subdir);
             	if (fs_entry == null) {
+            		if (! create) {
+            			return null;
+            		}
             		fs_entry = fsdir.addDirectory(subdir);
             		if (fs_entry == null) {
             			System.err.println("Couldn't create directory '" + subdir);
-            			return;
+            			return null;
             		}
             		fs_entry.setLastModified(0); //Directories get an epoch date
             	}
             	fsdir = fs_entry.getDirectory();
             } catch (Exception e) {
             	e.printStackTrace();
-            	return;
+            	return null;
             }
         }
+		return fsdir;
+	}
+	public static FsDirectory getFileDirectory(FileSystem fs, FileInfo file) {
+		return getFileDirectory(fs, file, false);
+	}
+	public static void copyFile(FileSystem fs, FileInfo file) {
+    	FsDirectoryEntry fs_entry;
+		String filename = file.baseName().toUpperCase();
+		FsDirectory fsdir = getFileDirectory(fs, file, true);
+		if (fsdir == null) {
+			return;
+		}
 		try {
 			fs_entry = fsdir.getEntry(filename);
 			if (fs_entry == null) {
@@ -72,6 +87,24 @@ public class FSUtils {
 			e.printStackTrace();
         	return;
 		}
+	}
+	public static void fillFileData(FileSystem fs, FileInfo file) {
+		FsDirectory fsdir = getFileDirectory(fs, file);
+		if (fsdir == null) {
+			return;
+		}
+		String filename = file.baseName().toUpperCase();
+		try {
+			FsDirectoryEntry fs_entry;
+			fs_entry = fsdir.getEntry(filename);
+			if (fs_entry == null) {
+				return;
+			}
+			FsFile fs_file = fs_entry.getFile();
+			ByteBuffer data = ByteBuffer.allocate(file.size());
+			fs_file.read(0, data);
+			file.setData(data.array());
+		} catch (Exception e) { e.printStackTrace(); }
 	}
     public static boolean DetectFS(BlockDevice blkDev, FSType type)
     {
