@@ -98,7 +98,7 @@ public class FilesToSendModel extends AbstractTreeTableModel {
     public int getChildCount(Object parent) {
     	String dir = (parent instanceof String) ? (String)parent : "";
     	List<Object> entries = getDirList(dir);
-    	System.out.format("getChildCount for '%s' returned %d\n", dir, entries.size());
+    	//System.out.format("getChildCount for '%s' returned %d\n", dir, entries.size());
     	return entries.size();
     }
 
@@ -116,6 +116,9 @@ public class FilesToSendModel extends AbstractTreeTableModel {
     }
     @Override
     public Object getValueAt(Object node, int column) {
+		if (column == -1) { 
+			return node;
+		}
     	if (node instanceof FileInfo) {
     		if (column == 0) {
     			String name = ((FileInfo)node).name();

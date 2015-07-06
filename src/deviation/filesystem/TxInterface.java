@@ -171,6 +171,15 @@ public class TxInterface {
         }
     	FSUtils.copyFile(fs,  file);
     }
+    public void fillFileData(FileInfo file) {
+    	FileSystem fs = (file.name().matches("(?i:media/.*)")) ? mediaFs : rootFs;
+        if (fs == rootFs) {
+        	dev.SelectInterface(rootIface);
+        } else {
+        	dev.SelectInterface(mediaIface);
+        }
+        FSUtils.fillFileData(fs, file);
+    }
     public void open() {
 		if (dev.open() != 0) {
 			System.out.println("Error: Unable to open device");
