@@ -34,7 +34,7 @@ public class FileInfo {
     public long Crc() {return Crc; }
     public long time() { return time; }
     public byte[] data() { return data; }
-    public void setData(byte []data) { this.data = data; }
+    public void setData(byte []data) { this.data = data; size = data.length; }
     public void setOwner(String owner) { this.owner = owner; }
     public String owner() { return owner; }
     public boolean deleted() { return deleted; }
