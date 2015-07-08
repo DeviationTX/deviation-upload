@@ -1,5 +1,7 @@
 package deviation.gui;
 
+import java.awt.BorderLayout;
+import java.awt.Desktop;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Image;
@@ -9,6 +11,10 @@ import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -29,6 +35,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
+import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -46,8 +53,12 @@ import javax.swing.tree.TreeCellRenderer;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+import org.fife.ui.rtextarea.RTextScrollPane;
 import org.jdesktop.swingx.JXTreeTable;
 import org.jdesktop.swingx.treetable.MutableTreeTableNode;
+import org.jdesktop.swingx.treetable.TreeTableNode;
 
 import deviation.DeviationUploader;
 import deviation.FileInfo;
@@ -135,6 +146,7 @@ public class FileMgrTab extends JPanel {
         //create the tree by passing in the root node
         txTree = new JXTreeTable(txModel);
         FileMgrDragDrop.setup(gui, txTree, FileMgrDragDrop.DROP);
+        txTree.addMouseListener(new TreeMouseListener());
         JScrollPane scrollpane = new JScrollPane(txTree);
         GridBagConstraints gbc_FM_txTree = new GridBagConstraints();
         gbc_FM_txTree.insets = new Insets(0, 0, 5, 5);
@@ -274,6 +286,73 @@ public class FileMgrTab extends JPanel {
 			FileInstaller installer = new FileInstaller(gui, files);
 			installer.execute();
 			syncBtn.setEnabled(false);
+		}
+	}
+	public void ShowTextEditorDialog(FileInfo file) {
+		TextEditor edit = new TextEditor(file);
+		edit.addWindowListener(new WindowAdapter() 
+		{
+			  public void windowClosed(WindowEvent e)
+			  {
+				  TextEditor edit = (TextEditor)e.getWindow();
+				  if (edit.changed()) {
+					  FileInfo fileinfo = edit.getFileInfo();
+					  List<FileInfo>files = txModel.getFiles();
+					  for(FileInfo f: files) {
+						  if (f.name().equals(fileinfo.name())) {
+							  f.setData(fileinfo.data());
+							  LocalFilesChanged();
+						  }
+					  }
+				  }
+			  }
+		});
+		edit.setVisible(true);
+	   }
+
+	private class TreeMouseListener extends MouseAdapter {
+		@Override
+		public void mouseClicked(final MouseEvent e) {
+			if (e.getClickCount() != 2) {
+				return;
+			}
+
+			final int rowIndex = txTree.rowAtPoint(e.getPoint());
+
+			if (rowIndex < 0) {
+				return;
+			}
+
+			final Object obj = txTree.getPathForRow(rowIndex).getLastPathComponent();
+			if (obj instanceof FileInfo) {
+				FileInfo fileinfo = (FileInfo)obj;
+				File file = null;
+				System.out.format("Double click on: %s\n", fileinfo.name());
+				fileinfo = new FileInfo(fileinfo);
+				TxInterface fs =gui.getTxInterface();
+				fs.open();
+				try {
+					fs.Init(gui.getFSStatus());
+					fs.fillFileData(fileinfo);
+					if (fileinfo.name().toUpperCase().endsWith(".INI")){
+						//Use internal editor for INI files
+						ShowTextEditorDialog(fileinfo);
+					} else {
+						//Use viewer for all other files
+						Path tempDir = Files.createTempDirectory("deviation");
+						file = new File(tempDir.resolve(fileinfo.baseName()).toUri());
+						if (!file.exists()) {
+							file.createNewFile();
+						}
+						FileOutputStream fop = new FileOutputStream(file);
+						fop.write(fileinfo.data());
+						fop.flush();
+						fop.close();
+						Desktop.getDesktop().open(file);
+					}
+				} catch (Exception e1) { e1.printStackTrace(); }
+				fs.close();
+			}
 		}
 	}
 }
