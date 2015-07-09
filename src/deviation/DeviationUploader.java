@@ -11,10 +11,8 @@ import de.waldheinz.fs.*;
 import deviation.DfuMemory.SegmentParser;
 import deviation.filesystem.FSUtils;
 import deviation.filesystem.FileDisk2;
-import deviation.filesystem.TxInterface;
 import deviation.filesystem.DevoFS.DevoFSFileSystem;
 import deviation.gui.DeviationUploadGUI;
-import deviation.gui.DnDFrame;
 
 import org.apache.commons.cli.*;
 public class DeviationUploader
@@ -98,7 +96,7 @@ public class DeviationUploader
             throw new RuntimeException(e);
         }
         if (invert) {
-        	data = TxInterface.invert(data);
+        	data = FSUtils.invert(data);
         }
         if (iface != null) {
     		dev.SelectInterface(dev.Interfaces().get(1));        	
@@ -146,7 +144,7 @@ public class DeviationUploader
         byte [] data = Dfu.fetchFromDevice(dev, address, length);
         dev.close();
         if (invert) {
-        	data = TxInterface.invert(data);
+        	data = FSUtils.invert(data);
         }
         try{
             File f = new File(fname);

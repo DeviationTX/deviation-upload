@@ -5,7 +5,6 @@ import java.awt.Font;
 import java.awt.event.*;
 
 import javax.swing.*;
-import javax.swing.UIManager.LookAndFeelInfo;
 import javax.swing.text.BadLocationException;
 
 import org.fife.rsta.ui.CollapsibleSectionPanel;
@@ -14,7 +13,6 @@ import org.fife.rsta.ui.GoToDialog;
 import org.fife.rsta.ui.SizeGripIcon;
 import org.fife.rsta.ui.search.FindDialog;
 import org.fife.rsta.ui.search.ReplaceDialog;
-import org.fife.rsta.ui.search.ReplaceToolBar;
 import org.fife.rsta.ui.search.SearchEvent;
 import org.fife.rsta.ui.search.SearchListener;
 import org.fife.rsta.ui.search.FindToolBar;
@@ -40,6 +38,7 @@ import deviation.FileInfo;
  */
 public class TextEditor extends JDialog implements SearchListener {
 
+	private static final long serialVersionUID = 1L;
 	private CollapsibleSectionPanel csp;
 	private RSyntaxTextArea textArea;
 	private FindDialog findDialog;
@@ -116,13 +115,6 @@ public class TextEditor extends JDialog implements SearchListener {
 
 	public FileInfo getFileInfo() { return fileinfo; }
 	public boolean changed() { return changed; }
-	
-	private void addItem(Action a, ButtonGroup bg, JMenu menu) {
-		JRadioButtonMenuItem item = new JRadioButtonMenuItem(a);
-		bg.add(item);
-		menu.add(item);
-	}
-
 
 	private JMenuBar createMenuBar() {
 
@@ -263,6 +255,8 @@ public class TextEditor extends JDialog implements SearchListener {
 
 	private class GoToLineAction extends AbstractAction {
 
+		private static final long serialVersionUID = 1L;
+
 		public GoToLineAction() {
 			super("Go To Line...");
 			int c = getToolkit().getMenuShortcutKeyMask();
@@ -294,7 +288,8 @@ public class TextEditor extends JDialog implements SearchListener {
 
 
     private class FileSaveAction extends AbstractAction {
-    	public FileSaveAction() {
+		private static final long serialVersionUID = 1L;
+		public FileSaveAction() {
     		super("Save");
 			int c = getToolkit().getMenuShortcutKeyMask();
 			putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_S, c));    		
@@ -308,7 +303,8 @@ public class TextEditor extends JDialog implements SearchListener {
     }
 
     private class FileRevertAction extends AbstractAction {
-    	public FileRevertAction() {
+		private static final long serialVersionUID = 1L;
+		public FileRevertAction() {
     		super("Revert");
     	}
 		public void actionPerformed(ActionEvent e) {
@@ -317,7 +313,8 @@ public class TextEditor extends JDialog implements SearchListener {
     }
     
     private class FileCloseAction extends AbstractAction {
-    	public FileCloseAction() {
+		private static final long serialVersionUID = 1L;
+		public FileCloseAction() {
     		super("Exit");
     	}
 		public void actionPerformed(ActionEvent e) {
@@ -328,7 +325,8 @@ public class TextEditor extends JDialog implements SearchListener {
     }
 
 	private class ShowFindDialogAction extends AbstractAction {
-		
+		private static final long serialVersionUID = 1L;
+
 		public ShowFindDialogAction() {
 			super("Find...");
 			int c = getToolkit().getMenuShortcutKeyMask();
@@ -346,7 +344,8 @@ public class TextEditor extends JDialog implements SearchListener {
 
 
 	private class ShowReplaceDialogAction extends AbstractAction {
-		
+		private static final long serialVersionUID = 3787250518357123525L;
+
 		public ShowReplaceDialogAction() {
 			super("Replace...");
 			int c = getToolkit().getMenuShortcutKeyMask();
@@ -364,7 +363,7 @@ public class TextEditor extends JDialog implements SearchListener {
 
 
 	private static class StatusBar extends JPanel {
-
+		private static final long serialVersionUID = 1L;
 		private JLabel label;
 
 		public StatusBar() {

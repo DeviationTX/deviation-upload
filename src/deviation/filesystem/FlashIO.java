@@ -1,7 +1,7 @@
 package deviation.filesystem;
 
-import java.io.File;
-import java.io.FileOutputStream;
+//import java.io.File;
+//import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -30,6 +30,8 @@ public class FlashIO implements BlockDevice
     private final boolean invert;
     private final int fsSectorSize;
     private Progress progress;
+    private long totalBytes = 0;
+    private long totalTime = 0;
 
 
     public FlashIO(DfuDevice dev, long start_address, boolean invert, int fs_sector_size, Progress progress)
@@ -75,7 +77,7 @@ public class FlashIO implements BlockDevice
             	}
             	//dump(Long.toHexString(range.start()), data);
                 if (invert) {
-                    data = TxInterface.invert(data);
+                    data = FSUtils.invert(data);
                 }
                 Dfu.sendToDevice(dev,  range.start(), data, progress);
                 chksum[sector_num] = newchksum;
@@ -93,6 +95,7 @@ public class FlashIO implements BlockDevice
     		cached[i] = true;
     	}
     }
+    /*
     private void dump(String name, byte data[]) {
         try{
             File f = new File(name);
@@ -108,13 +111,19 @@ public class FlashIO implements BlockDevice
             e.printStackTrace();
         }
     }
+    */
     private void cache(int sector_num) throws IOException {
     	Range range = sectorMap.get(sector_num);
         System.out.format(("Cache of 0x%08x : %d%n"), range.start(), cached[sector_num] ? 1 : 0);
         if (! cached[sector_num]) {
+        	final long startTime = System.currentTimeMillis();
             byte[] data = Dfu.fetchFromDevice(dev, range.start(), (int)range.size());
+            final long endTime = System.currentTimeMillis();
+            totalBytes += range.size();
+            totalTime += endTime - startTime;
+            System.out.format("Bytes/sec: %.6f Avg: %.6f\n", 1000.0 *range.size()/(endTime - startTime), 1000.0*totalBytes/totalTime);    
             if (invert) {
-                data = TxInterface.invert(data);
+                data = FSUtils.invert(data);
             }
             System.arraycopy(data, 0, ram, (int)(range.start() - memAddress), data.length);
             cached[sector_num] = true;

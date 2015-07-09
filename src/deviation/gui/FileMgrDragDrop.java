@@ -18,13 +18,11 @@ import javax.swing.DropMode;
 import javax.swing.JComponent;
 import javax.swing.JTree;
 import javax.swing.TransferHandler;
-import javax.swing.table.TableModel;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 
 import org.jdesktop.swingx.JXTreeTable;
-import org.jdesktop.swingx.treetable.TreeTableModel;
 
 import deviation.FileInfo;
 import deviation.IOUtil;
@@ -193,9 +191,9 @@ public class FileMgrDragDrop {
 
 			Transferable transferable = support.getTransferable();
 
-			List transferData;
+			List<?> transferData;
 			try {
-				transferData = (List)transferable.getTransferData(
+				transferData = (List<?>)transferable.getTransferData(
 						DataFlavor.javaFileListFlavor);
 			} catch (IOException e) {
 				e.printStackTrace();

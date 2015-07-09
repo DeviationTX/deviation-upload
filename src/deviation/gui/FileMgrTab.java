@@ -1,14 +1,10 @@
 package deviation.gui;
 
-import java.awt.BorderLayout;
+import java.awt.Cursor;
 import java.awt.Desktop;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.Image;
 import java.awt.Insets;
-import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.Transferable;
-import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -17,78 +13,46 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
-import javax.swing.ButtonGroup;
-import javax.swing.DropMode;
-import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
-import javax.swing.JComponent;
-import javax.swing.JDialog;
 import javax.swing.JFileChooser;
-import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
-import javax.swing.JTextField;
-import javax.swing.JTree;
-import javax.swing.TransferHandler;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeCellRenderer;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.MutableTreeNode;
-import javax.swing.tree.TreeCellRenderer;
-import javax.swing.tree.TreeNode;
-import javax.swing.tree.TreePath;
 
-import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
-import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
-import org.fife.ui.rtextarea.RTextScrollPane;
 import org.jdesktop.swingx.JXTreeTable;
-import org.jdesktop.swingx.treetable.MutableTreeTableNode;
-import org.jdesktop.swingx.treetable.TreeTableNode;
 
 import deviation.DeviationUploader;
 import deviation.FileInfo;
 import deviation.UploaderPreferences;
 import deviation.filesystem.TxInterface;
-import deviation.gui.treemodel.FileSystemModel2;
 import deviation.gui.treemodel.FilesToSendModel;
 
 public class FileMgrTab extends JPanel {
 	private static final long serialVersionUID = 1L;
     private static final String LIBPATH_DIR = "LibPathDir";
     private static final String SHOWSYNC = "ShowSyncDlg";
-    private static final String LIBBTN_STR  = "From Lib";
-    private static final String DIRBTN_STR  = "From Dir";
     private static enum FileBtn {DELETE, COPY};
 
 	private DeviationUploadGUI gui;
-	private JTextField libpathTxt;
-	private JButton libpathBtn;
 	private JButton deleteBtn;
 	private JButton copyBtn;
 	private JButton syncBtn;
 	private JXTreeTable txTree;
-	private JXTreeTable pcTree;
 	private FilesToSendModel txModel;
-	private FilesToSendModel f2sModel;
-	private FileSystemModel2 dirModel;
+	
+	private boolean needsUpdate;
 	public FileMgrTab(DeviationUploadGUI gui)
 	{
 		this.gui = gui;
+		needsUpdate = false;
 		
 		JPanel FMPanel = this;
         GridBagLayout gbl_FMPanel = new GridBagLayout();
@@ -103,6 +67,7 @@ public class FileMgrTab extends JPanel {
        ImageIcon trashIcon = new ImageIcon(imageStr);
        deleteBtn = new JButton(new ImageIcon(trashIcon.getImage().getScaledInstance(32, 32, java.awt.Image.SCALE_SMOOTH)));
        deleteBtn.addActionListener(new FileTreeButtonListener(FileBtn.DELETE));
+       deleteBtn.setToolTipText("Delete selected files from Tx");
        GridBagConstraints gbc_Trash = new GridBagConstraints();
        gbc_Trash.insets = new Insets(0, 0, 5, 5);
        gbc_Trash.anchor = GridBagConstraints.WEST;
@@ -117,6 +82,7 @@ public class FileMgrTab extends JPanel {
        ImageIcon copyIcon = new ImageIcon(imageStr);
        copyBtn = new JButton(new ImageIcon(copyIcon.getImage().getScaledInstance(32, 32, java.awt.Image.SCALE_SMOOTH)));
        copyBtn.addActionListener(new FileTreeButtonListener(FileBtn.COPY));
+       deleteBtn.setToolTipText("Copy selected files to PC");
        GridBagConstraints gbc_Copy = new GridBagConstraints();
        gbc_Copy.insets = new Insets(0, 0, 5, 5);
        gbc_Copy.anchor = GridBagConstraints.WEST;
@@ -132,6 +98,7 @@ public class FileMgrTab extends JPanel {
        syncBtn = new JButton(new ImageIcon(syncIcon.getImage().getScaledInstance(32, 32, java.awt.Image.SCALE_SMOOTH)));
        syncBtn.addActionListener(new SyncButtonListener());
        syncBtn.setEnabled(false);
+       deleteBtn.setToolTipText("Save changes to Tx");
        GridBagConstraints gbc_Sync = new GridBagConstraints();
        gbc_Sync.insets = new Insets(0, 0, 5, 5);
        gbc_Sync.anchor = GridBagConstraints.EAST;
@@ -161,10 +128,12 @@ public class FileMgrTab extends JPanel {
         
 	}
 	private List <FileInfo> getFilesFromTx() {
+		needsUpdate = false;
 		TxInterface fs =gui.getTxInterface();
 		if (fs == null) {
 			return new ArrayList<FileInfo>();
 		}
+		setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 		fs.open();
 		try {
 			if (gui.getFSStatus().isFormatted()) {
@@ -179,16 +148,24 @@ public class FileMgrTab extends JPanel {
 		for (FileInfo file: files) {
 			System.out.println("FILE: " + file.name());
 		}
+		setCursor(Cursor.getDefaultCursor());
 		return files;
 	}
 	public void updateFileList() {
+		if (needsUpdate) {
+			txModel.update(getFilesFromTx());
+		}
 		//getFilesFromTx();
 	}
 	public void updateTx() {
 		if (gui.getTxInterface() == null) {
 			txModel.update(null);
 		} else {
-			txModel.update(getFilesFromTx());
+			if (gui.isTabShown(DeviationUploadGUI.FILEMGR_TAB)) {
+				txModel.update(getFilesFromTx());
+			} else {
+				needsUpdate = true;
+			}
 		}
 	}
 	private class FileTreeButtonListener implements ActionListener {
@@ -244,7 +221,6 @@ public class FileMgrTab extends JPanel {
                 }
         	} else if (buttonType == FileBtn.DELETE) {
         		//Delete files here
-        		List <FileInfo> txFiles = txModel.getFiles();
         		for (FileInfo file: files) {
         			file.setDeleted();
         		}
