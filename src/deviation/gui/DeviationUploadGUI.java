@@ -37,11 +37,15 @@ import javax.swing.JTextArea;
 
 
 public class DeviationUploadGUI {
-	private final boolean useEmulator = true;
+	private final boolean useEmulator = false;
 	
 	public static final int INSTALL_TAB = 0;
 	public static final int DFU_TAB     = 1;
 	public static final int FILEMGR_TAB = 2;
+	
+	//This defines the STM32 DFU device
+	private static final int vendorId = 0x0483;
+	private static final int productId = 0xdf11;
 	
     private JFrame frame;
     private JTextField txtTransmitter;
@@ -102,7 +106,7 @@ public class DeviationUploadGUI {
          */
     	txInterface = null;
         txInfo = new TxInfo();
-        monitor = new MonitorUSB(this, 5000);
+        monitor = new MonitorUSB(this, 5000, vendorId, productId);
         
         //redirectSystemStreams();
         initialize();

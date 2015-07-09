@@ -2,6 +2,7 @@ package deviation.gui;
 
 import java.util.List;
 
+import javax.swing.JOptionPane;
 import javax.swing.JProgressBar;
 import javax.swing.SwingWorker;
 
@@ -76,6 +77,13 @@ class FileInstaller extends SwingWorker<Boolean, Integer> implements Progress {
 		if (cancelled()) {
 			throw new InterruptedException("Canceled");
 		}
+	}
+	public void done() {
+		try {
+			if (get()) {
+				JOptionPane.showMessageDialog(gui.getFrame(), "Copy Complete");
+			}
+		} catch (Exception e) { e.printStackTrace(); }
 	}
 	@Override
 	protected Boolean doInBackground() throws Exception {

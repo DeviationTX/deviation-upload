@@ -18,12 +18,16 @@ public class MonitorUSB extends SwingWorker<String, DfuDevice> {
     DfuDevice dfuDev;
     DeviationUploadGUI gui;
     int pollTime;
+    private int vendorId;
+    private int productId;
 
-    public MonitorUSB(DeviationUploadGUI gui, int pollTime){
+    public MonitorUSB(DeviationUploadGUI gui, int pollTime, int vid, int pid){
         devices = null;
         dfuDev = null;
         this.gui = gui;
     	this.pollTime = pollTime;
+    	vendorId = vid;
+    	productId = pid;
     }
 
     public void process(List<DfuDevice> dfuDevs) {
@@ -40,7 +44,14 @@ public class MonitorUSB extends SwingWorker<String, DfuDevice> {
     			try {
     				DeviceList devices = new DeviceList();
     				LibUsb.getDeviceList(null, devices);
-    				DfuDevice dev = Dfu.findFirstDevice(devices);
+    				List<DfuDevice> devs = Dfu.findDevices(devices);
+    				DfuDevice dev = null;
+    				for(DfuDevice dev1: devs) {
+    					if (dev1.idVendor() == vendorId && dev1.idProduct() == productId) {
+    						dev = dev1;
+    						break;
+    					}
+    				}
     				if (dev == null) {
     					if (dfuDev != null) {
     						LibUsb.freeDeviceList(this.devices, true);
