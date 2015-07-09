@@ -47,6 +47,7 @@ public final class FileDisk2 implements BlockDevice {
     private final RandomAccessFile raf;
     private final FileChannel fc;
     private final boolean readOnly;
+    private final double bytesPerSec;
     private boolean closed;
 
     /**
@@ -59,7 +60,7 @@ public final class FileDisk2 implements BlockDevice {
      * @throws FileNotFoundException if the specified file does not exist
      * @see #isReadOnly() 
      */
-    public FileDisk2(File file, boolean readOnly, int bytesPerSector) throws FileNotFoundException {
+    public FileDisk2(File file, boolean readOnly, int bytesPerSector, double bytesPerSec) throws FileNotFoundException {
     	BYTES_PER_SECTOR = bytesPerSector;
         if (!file.exists()) throw new FileNotFoundException();
 
@@ -68,17 +69,25 @@ public final class FileDisk2 implements BlockDevice {
         final String modeString = readOnly ? "r" : "rw"; //NOI18N
         this.raf = new RandomAccessFile(file, modeString);
         this.fc = raf.getChannel();
+        this.bytesPerSec = bytesPerSec;
+    }
+    public FileDisk2(File file, boolean readOnly, int bytesPerSector) throws FileNotFoundException {
+    	this(file,  readOnly,  bytesPerSector, 0.0);
     }
 
-    private FileDisk2(RandomAccessFile raf, boolean readOnly, int bytesPerSector) {
+    private FileDisk2(RandomAccessFile raf, boolean readOnly, int bytesPerSector, double bytesPerSec) {
     	BYTES_PER_SECTOR = bytesPerSector;
         this.closed = false;
         this.raf = raf;
         this.fc = raf.getChannel();
         this.readOnly = readOnly;
+        this.bytesPerSec = bytesPerSec;
+    }
+    private FileDisk2(RandomAccessFile raf, boolean readOnly, int bytesPerSector) {
+    	this(raf, readOnly, bytesPerSector, 0.0);
     }
 
-    /**
+	/**
      * Creates a new {@code FileDisk} of the specified size. The
      * {@code FileDisk} returned by this method will be writable.
      *
@@ -116,6 +125,9 @@ public final class FileDisk2 implements BlockDevice {
         checkClosed();
 
         int toRead = dest.remaining();
+        try {
+        	Thread.sleep((int)(1000 * toRead / bytesPerSec));
+        } catch (Exception e) {e.printStackTrace(); }
         if ((devOffset + toRead) > getSize()) throw new IOException(
                 "reading past end of device");
 

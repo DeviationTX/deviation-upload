@@ -16,41 +16,55 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
-import javax.swing.Timer;
 import javax.swing.UIManager;
 import javax.swing.JProgressBar;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableModel;
 
 import de.ailis.usb4java.libusb.LibUsb;
 import deviation.*;
 import deviation.filesystem.TxInterface;
-import deviation.filesystem.TxInterface.FSStatus;
+import deviation.filesystem.TxInterfaceEmulator;
+import deviation.filesystem.TxInterfaceUSB;
+import deviation.filesystem.FSStatus;
 
 import javax.swing.JTextArea;
 
 
 public class DeviationUploadGUI {
-
+	private final boolean useEmulator = false;
+	
+	public static final int INSTALL_TAB = 0;
+	public static final int DFU_TAB     = 1;
+	public static final int FILEMGR_TAB = 2;
+	
+	//This defines the STM32 DFU device
+	private static final int vendorId = 0x0483;
+	private static final int productId = 0xdf11;
+	
     private JFrame frame;
     private JTextField txtTransmitter;
     private JTable table;
-
+    
+    private JTabbedPane tabbedPane;
     private JTextArea msgTextArea;
     private JProgressBar progressBar;
     //private final Action action = new SwingAction();
 
     private TxInfo txInfo;
     private MonitorUSB monitor;
-    private TxInterface.FSStatus fsStatus;
+    private FSStatus fsStatus;
     private List<DfuMemory> devMemory;
     private TxInterface txInterface;
 
     private DfuSendTab DfuSendPanel;
     private InstallTab InstallPanel;
+    private FileMgrTab FileMgrPanel;
 
 /**
      * Launch the application.
@@ -92,15 +106,13 @@ public class DeviationUploadGUI {
          */
     	txInterface = null;
         txInfo = new TxInfo();
-        monitor = new MonitorUSB(this);
+        monitor = new MonitorUSB(this, 5000, vendorId, productId);
         
         //redirectSystemStreams();
         initialize();
         RefreshDevices(null);
         LibUsb.init(null);
-        Timer timer1 = new Timer(5000, monitor);
-        timer1.setInitialDelay(0);
-        timer1.start();
+        monitor.execute();
     }
 
     /**
@@ -185,7 +197,7 @@ public class DeviationUploadGUI {
         gbc_table.gridy = 1;
         panel.add(tblScroll, gbc_table);
 
-        JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
+        tabbedPane = new JTabbedPane(JTabbedPane.TOP);
         GridBagConstraints gbc_tabbedPane = new GridBagConstraints();
         gbc_tabbedPane.insets = new Insets(0, 0, 5, 0);
         gbc_tabbedPane.fill = GridBagConstraints.BOTH;
@@ -219,27 +231,53 @@ public class DeviationUploadGUI {
         tabbedPane.addTab("DFU", null, DfuSendPanel, null);
         tabbedPane.setEnabledAt(1, true);
 
+        FileMgrPanel = new FileMgrTab(this);
+        tabbedPane.addTab("File Manager", null, FileMgrPanel, null);
+        tabbedPane.setEnabledAt(2, true); 
+        
         JPanel BinSendPanel = new JPanel();
         tabbedPane.addTab("Bin-Send", null, BinSendPanel, null);
-        tabbedPane.setEnabledAt(2, false);
+        tabbedPane.setEnabledAt(3, false);
+        
         
         //JPanel BinFetchPanel = new JPanel();
         //tabbedPane.addTab("Bin-Fetch", null, BinFetchPanel, null);
         //tabbedPane.setEnabledAt(2, false);
+        tabbedPane.addChangeListener(new ChangeListener() {
+        	public void stateChanged(ChangeEvent e) {
+        		int index = tabbedPane.getSelectedIndex();
+        		System.out.println("Tab: " + index);
+        		if (index == FILEMGR_TAB) {
+        			FileMgrPanel.updateFileList();
+        		}
+        	}
+        });
 
         msgTextArea = new JTextArea();
         msgTextArea.setRows(8);
         msgTextArea.setEditable(false);
 
     }
+    
+    public boolean isTabShown(int tab) {
+    	return (tabbedPane.getSelectedIndex() == tab);
+    }
+    
     public void RefreshDevices(DfuDevice dev) {
         //Update USB Device list entries
         if (dev == null) {
-            txInfo = new TxInfo();
-            devMemory = new ArrayList<DfuMemory>();
-            fsStatus = FSStatus.NO_FS;
+    		devMemory = new ArrayList<DfuMemory>();
+        	if (useEmulator) {
+        		txInterface = new TxInterfaceEmulator();
+        		txInfo  = TxInterfaceEmulator.getTxInfo();
+        		fsStatus = txInterface.getFSStatus();        		
+        	} else {
+        		txInfo = new TxInfo();
+        		fsStatus = FSStatus.unformatted();
+        		txInterface = null;
+        	}
         } else {
-        	txInterface = new TxInterface(dev);
+        	txInterface = new TxInterfaceUSB(dev);
             txInfo = dev.getTxInfo();
             fsStatus = txInterface.getFSStatus();
             devMemory = new ArrayList<DfuMemory>();
@@ -252,6 +290,7 @@ public class DeviationUploadGUI {
         tableModel.fireTableDataChanged();
         DfuSendPanel.refresh();
         InstallPanel.refresh();
+        FileMgrPanel.updateTx();
     }
     /*
 	private class SwingAction extends AbstractAction {
@@ -300,7 +339,10 @@ public class DeviationUploadGUI {
     public MonitorUSB getMonitor() { return monitor; }
     public JProgressBar getProgressBar() { return progressBar; }
     public TxInfo getTxInfo() {return txInfo;}
-    public FSStatus getFSType() { return fsStatus; }
+    public FSStatus getFSStatus() { return fsStatus; }
     public TxInterface getTxInterface() { return txInterface; }
+    public InstallTab getInstallTab() { return InstallPanel; }
+    public FileMgrTab getFileMgrTab() { return FileMgrPanel; }
+    public JFrame getFrame() { return frame; }
     
 }
