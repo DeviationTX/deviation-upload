@@ -39,6 +39,11 @@ public class TxInfo {
         id2 = (0xff & data[0x2a]) | ((0xff & data[0x2c]) << 8) | ((0xff & data[0x2e]) << 16) | ((long)(0xff & data[0x30]) << 24);
         id3 = (0xff & data[0x32]) | ((0xff & data[0x34]) << 8) | ((0xff & data[0x36]) << 16) | ((long)(0xff & data[0x38]) << 24);
     }
+    public TxInfo(Transmitter tx) {
+    	this();
+    	model = "Emulator of " + tx.name();
+    	this.type = tx;
+    }
     public String model() { return model;}
     public long id1() { return id1;}
     public long id2() { return id2;}

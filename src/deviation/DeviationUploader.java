@@ -11,7 +11,6 @@ import de.waldheinz.fs.*;
 import deviation.DfuMemory.SegmentParser;
 import deviation.filesystem.FSUtils;
 import deviation.filesystem.FileDisk2;
-import deviation.filesystem.TxInterface;
 import deviation.filesystem.DevoFS.DevoFSFileSystem;
 import deviation.gui.DeviationUploadGUI;
 
@@ -97,7 +96,7 @@ public class DeviationUploader
             throw new RuntimeException(e);
         }
         if (invert) {
-        	data = TxInterface.invert(data);
+        	data = FSUtils.invert(data);
         }
         if (iface != null) {
     		dev.SelectInterface(dev.Interfaces().get(1));        	
@@ -133,7 +132,7 @@ public class DeviationUploader
     		}
     	}
         if (length == 0) {
-            length = dev.Memory().contiguousSize(address);
+            length = (int)dev.Memory().contiguousSize(address);
         }
         if (dev.open() != 0) {
             System.out.println("Error: Unable to open device");
@@ -145,7 +144,7 @@ public class DeviationUploader
         byte [] data = Dfu.fetchFromDevice(dev, address, length);
         dev.close();
         if (invert) {
-        	data = TxInterface.invert(data);
+        	data = FSUtils.invert(data);
         }
         try{
             File f = new File(fname);
@@ -418,6 +417,7 @@ public class DeviationUploader
     public static void main(String[] args)
     {
         if (args.length == 0) {
+        	//DnDFrame.main(null);
             DeviationUploadGUI.main(null);
             while(true) {}
         }
