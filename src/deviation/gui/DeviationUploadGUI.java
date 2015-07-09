@@ -16,7 +16,6 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
-import javax.swing.Timer;
 import javax.swing.UIManager;
 import javax.swing.JProgressBar;
 import javax.swing.JPanel;
@@ -38,7 +37,8 @@ import javax.swing.JTextArea;
 
 
 public class DeviationUploadGUI {
-
+	private final boolean useEmulator = true;
+	
 	public static final int INSTALL_TAB = 0;
 	public static final int DFU_TAB     = 1;
 	public static final int FILEMGR_TAB = 2;
@@ -102,15 +102,13 @@ public class DeviationUploadGUI {
          */
     	txInterface = null;
         txInfo = new TxInfo();
-        monitor = new MonitorUSB(this);
+        monitor = new MonitorUSB(this, 5000);
         
         //redirectSystemStreams();
         initialize();
         RefreshDevices(null);
         LibUsb.init(null);
-        Timer timer1 = new Timer(5000, monitor);
-        timer1.setInitialDelay(0);
-        timer1.start();
+        monitor.execute();
     }
 
     /**
@@ -265,14 +263,14 @@ public class DeviationUploadGUI {
         //Update USB Device list entries
         if (dev == null) {
     		devMemory = new ArrayList<DfuMemory>();
-        	if (false) {
-        		txInfo = new TxInfo();
-        		fsStatus = FSStatus.unformatted();
-        		txInterface = null;
-        	} else {
+        	if (useEmulator) {
         		txInterface = new TxInterfaceEmulator();
         		txInfo  = TxInterfaceEmulator.getTxInfo();
         		fsStatus = txInterface.getFSStatus();        		
+        	} else {
+        		txInfo = new TxInfo();
+        		fsStatus = FSStatus.unformatted();
+        		txInterface = null;
         	}
         } else {
         	txInterface = new TxInterfaceUSB(dev);

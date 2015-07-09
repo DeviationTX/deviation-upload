@@ -26,6 +26,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.SwingWorker;
 
 import org.jdesktop.swingx.JXTreeTable;
 
@@ -127,33 +128,41 @@ public class FileMgrTab extends JPanel {
         FMPanel.add(scrollpane, gbc_FM_txTree);
         
 	}
-	private List <FileInfo> getFilesFromTx() {
-		needsUpdate = false;
-		TxInterface fs =gui.getTxInterface();
-		if (fs == null) {
-			return new ArrayList<FileInfo>();
-		}
-		setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-		fs.open();
-		try {
-			if (gui.getFSStatus().isFormatted()) {
-				fs.Init(gui.getFSStatus());
-			} else {
-				fs.Init(gui.getFSStatus());
-			}
-		} catch (Exception e) { e.printStackTrace(); }
-		List <FileInfo> files = fs.readAllDirs();
-		fs.close();
-		System.out.format("Count: %d\n", files.size());
-		for (FileInfo file: files) {
-			System.out.println("FILE: " + file.name());
-		}
-		setCursor(Cursor.getDefaultCursor());
-		return files;
-	}
 	public void updateFileList() {
 		if (needsUpdate) {
-			txModel.update(getFilesFromTx());
+			needsUpdate = false;
+			SwingWorker<List<FileInfo>, Object> process;
+			process = new SwingWorker<List<FileInfo>, Object>() {
+				protected void done() {
+					try {
+						txModel.update(get());
+					} catch (Exception e) { e.printStackTrace(); }
+					setCursor(Cursor.getDefaultCursor());
+				}
+				public List<FileInfo> doInBackground() {
+					TxInterface fs =gui.getTxInterface();
+					if (fs == null) {
+						return new ArrayList<FileInfo>();
+					}
+					fs.open();
+					try {
+						if (gui.getFSStatus().isFormatted()) {
+							fs.Init(gui.getFSStatus());
+						} else {
+							fs.Init(gui.getFSStatus());
+						}
+					} catch (Exception e) { e.printStackTrace(); }
+					List <FileInfo> files = fs.readAllDirs();
+					fs.close();
+					System.out.format("Count: %d\n", files.size());
+					for (FileInfo file: files) {
+						System.out.println("FILE: " + file.name());
+					}
+					return files;
+				}
+			};
+			setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+			process.execute();
 		}
 		//getFilesFromTx();
 	}
@@ -162,7 +171,7 @@ public class FileMgrTab extends JPanel {
 			txModel.update(null);
 		} else {
 			if (gui.isTabShown(DeviationUploadGUI.FILEMGR_TAB)) {
-				txModel.update(getFilesFromTx());
+				updateFileList();
 			} else {
 				needsUpdate = true;
 			}
