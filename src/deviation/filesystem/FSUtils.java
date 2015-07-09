@@ -13,7 +13,7 @@ import deviation.FileInfo;
 public class FSUtils {
 	public static FsDirectory getFileDirectory(FileSystem fs, FileInfo file, boolean create) {
 		String[]filepath = file.name().toUpperCase().split("/");
-		String filename = filepath[filepath.length-1];
+		//String filename = filepath[filepath.length-1];
 		
 		String[]filedir;
 		if (filepath.length > 1) {
@@ -133,6 +133,14 @@ public class FSUtils {
     		return true;
     	}
     	return false;
+    }
+    public static byte[] invert(byte[] data) {
+        int i;
+        for(i = 0; i < data.length; i++) {
+            int j = ~data[i]; 
+            data[i] = (byte)(j&0xff);
+        }
+        return data;
     }
 
 }

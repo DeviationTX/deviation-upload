@@ -3,8 +3,6 @@ package deviation;
 import java.util.Arrays;
 import java.util.zip.ZipEntry;
 
-import org.apache.commons.lang3.StringUtils;
-
 public class FileInfo {
     private int size;
     private String name;

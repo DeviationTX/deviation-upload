@@ -30,6 +30,8 @@ import javax.swing.table.TableModel;
 import de.ailis.usb4java.libusb.LibUsb;
 import deviation.*;
 import deviation.filesystem.TxInterface;
+import deviation.filesystem.TxInterfaceEmulator;
+import deviation.filesystem.TxInterfaceUSB;
 import deviation.filesystem.FSStatus;
 
 import javax.swing.JTextArea;
@@ -37,10 +39,15 @@ import javax.swing.JTextArea;
 
 public class DeviationUploadGUI {
 
+	public static final int INSTALL_TAB = 0;
+	public static final int DFU_TAB     = 1;
+	public static final int FILEMGR_TAB = 2;
+	
     private JFrame frame;
     private JTextField txtTransmitter;
     private JTable table;
-
+    
+    private JTabbedPane tabbedPane;
     private JTextArea msgTextArea;
     private JProgressBar progressBar;
     //private final Action action = new SwingAction();
@@ -188,7 +195,7 @@ public class DeviationUploadGUI {
         gbc_table.gridy = 1;
         panel.add(tblScroll, gbc_table);
 
-        final JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
+        tabbedPane = new JTabbedPane(JTabbedPane.TOP);
         GridBagConstraints gbc_tabbedPane = new GridBagConstraints();
         gbc_tabbedPane.insets = new Insets(0, 0, 5, 0);
         gbc_tabbedPane.fill = GridBagConstraints.BOTH;
@@ -238,7 +245,7 @@ public class DeviationUploadGUI {
         	public void stateChanged(ChangeEvent e) {
         		int index = tabbedPane.getSelectedIndex();
         		System.out.println("Tab: " + index);
-        		if (index == 2) {
+        		if (index == FILEMGR_TAB) {
         			FileMgrPanel.updateFileList();
         		}
         	}
@@ -249,15 +256,26 @@ public class DeviationUploadGUI {
         msgTextArea.setEditable(false);
 
     }
+    
+    public boolean isTabShown(int tab) {
+    	return (tabbedPane.getSelectedIndex() == tab);
+    }
+    
     public void RefreshDevices(DfuDevice dev) {
         //Update USB Device list entries
         if (dev == null) {
-            txInfo = new TxInfo();
-            devMemory = new ArrayList<DfuMemory>();
-            fsStatus = FSStatus.unformatted();
-            txInterface = null;
+    		devMemory = new ArrayList<DfuMemory>();
+        	if (false) {
+        		txInfo = new TxInfo();
+        		fsStatus = FSStatus.unformatted();
+        		txInterface = null;
+        	} else {
+        		txInterface = new TxInterfaceEmulator();
+        		txInfo  = TxInterfaceEmulator.getTxInfo();
+        		fsStatus = txInterface.getFSStatus();        		
+        	}
         } else {
-        	txInterface = new TxInterface(dev);
+        	txInterface = new TxInterfaceUSB(dev);
             txInfo = dev.getTxInfo();
             fsStatus = txInterface.getFSStatus();
             devMemory = new ArrayList<DfuMemory>();

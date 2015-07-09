@@ -5,12 +5,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import javax.swing.event.TreeModelListener;
-import javax.swing.tree.TreePath;
 
 import org.jdesktop.swingx.treetable.AbstractTreeTableModel;
-import org.jdesktop.swingx.treetable.MutableTreeTableNode;
-import org.jdesktop.swingx.treetable.TreeTableNode;
 
 import deviation.FileInfo;
 import deviation.gui.FilesToSend;
