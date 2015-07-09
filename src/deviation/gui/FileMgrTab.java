@@ -310,33 +310,54 @@ public class FileMgrTab extends JPanel {
 
 			final Object obj = txTree.getPathForRow(rowIndex).getLastPathComponent();
 			if (obj instanceof FileInfo) {
-				FileInfo fileinfo = (FileInfo)obj;
-				File file = null;
+				final FileInfo fileinfo = (FileInfo)obj;
 				System.out.format("Double click on: %s\n", fileinfo.name());
-				fileinfo = new FileInfo(fileinfo);
-				TxInterface fs =gui.getTxInterface();
-				fs.open();
-				try {
-					fs.Init(gui.getFSStatus());
-					fs.fillFileData(fileinfo);
-					if (fileinfo.name().toUpperCase().endsWith(".INI")){
-						//Use internal editor for INI files
-						ShowTextEditorDialog(fileinfo);
-					} else {
-						//Use viewer for all other files
-						Path tempDir = Files.createTempDirectory("deviation");
-						file = new File(tempDir.resolve(fileinfo.baseName()).toUri());
-						if (!file.exists()) {
-							file.createNewFile();
-						}
-						FileOutputStream fop = new FileOutputStream(file);
-						fop.write(fileinfo.data());
-						fop.flush();
-						fop.close();
-						Desktop.getDesktop().open(file);
+				SwingWorker<FileInfo, Object> process;
+				process = new SwingWorker<FileInfo, Object>() {
+					protected void done() {
+						try {
+							FileInfo fileinfo = get();
+							if (fileinfo == null) {
+								return;
+							}
+							if (fileinfo.name().toUpperCase().endsWith(".INI")){
+								//Use internal editor for INI files
+								ShowTextEditorDialog(fileinfo);
+							} else {
+								File file = null;
+								//Use viewer for all other files
+								Path tempDir = Files.createTempDirectory("deviation");
+								file = new File(tempDir.resolve(fileinfo.baseName()).toUri());
+								if (!file.exists()) {
+									file.createNewFile();
+								}
+								FileOutputStream fop = new FileOutputStream(file);
+								fop.write(fileinfo.data());
+								fop.flush();
+								fop.close();
+								Desktop.getDesktop().open(file);
+							}
+						} catch (Exception e) { e.printStackTrace(); }
+						setCursor(Cursor.getDefaultCursor());
 					}
-				} catch (Exception e1) { e1.printStackTrace(); }
-				fs.close();
+					public FileInfo doInBackground() {
+						TxInterface fs =gui.getTxInterface();
+						if (fs == null) {
+							return null;
+						}
+						fs.open();
+						FileInfo fi = new FileInfo(fileinfo);
+						try {
+							fs.Init(gui.getFSStatus());
+							fs.fillFileData(fi);
+						} catch (Exception e1) { e1.printStackTrace(); }
+						fs.close();
+						return fi;
+					}
+				};
+				setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+				process.execute();
+
 			}
 		}
 	}
