@@ -165,7 +165,7 @@ public class DeviationUploader
     	System.out.format("Device\t%9s %8s   %8s %7s   %s\n", "Interface", "Start", "End", "Size", "Count");
     	for (DfuDevice dev: devs) {
     		int i = 0;
-    		System.out.format("%s\n", dev.getTxInfo().type().name());
+    		System.out.format("%s\n", dev.getTxInfo().type().getName());
     		for (DfuInterface iface: dev.Interfaces()) {
     			for (SegmentParser segment: iface.Memory().segments()) {
     				for (Sector sector: segment.sectors()) {

@@ -37,7 +37,7 @@ import javax.swing.JTextArea;
 
 
 public class DeviationUploadGUI {
-	private final boolean useEmulator = false;
+	private final boolean useEmulator = true;
 	
 	public static final int INSTALL_TAB = 0;
 	public static final int DFU_TAB     = 1;
@@ -104,6 +104,7 @@ public class DeviationUploadGUI {
 	            };
 	    txInfo = new TxInfo(b);
          */
+        TransmitterList.init();
     	txInterface = null;
         txInfo = new TxInfo();
         monitor = new MonitorUSB(this, 5000, vendorId, productId);

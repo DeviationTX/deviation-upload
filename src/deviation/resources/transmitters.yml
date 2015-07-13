@@ -1,0 +1,179 @@
+name:        Devo 12
+id:          DEVO-12
+numChannels: 12
+root:
+    sectorOffset: 0
+    sectorCount:  512
+    fsType:       FAT
+    inverted:     true
+media:
+    sectorOffset: 0x64080
+    sectorCount:  4096
+    inverted:     false
+    fsType:       FAT
+matchRules:
+    - "DEVO-12.*"
+    - ".*devo12.*"
+    - "12"
+overrideSectors:
+    - iface: 1
+      remove: true
+      add:
+        - start:    0
+          end:      0x1FFFFF
+          size:     0x1000
+          count:    0x200
+---
+name:        Devo 12E
+id:          DEVO-12E
+numChannels: 12
+root:
+    sectorOffset: 54
+    sectorCount:  1024
+    fsType:       FAT
+    inverted:     true
+matchRules:
+    - "DEVO-12E.*"
+    - ".*devo12e.*"
+    - "12e"
+---
+name:        Devo F12E
+id:          FPV-12E
+numChannels: 12
+root:
+    sectorOffset: 0
+    sectorCount:  64
+    fsType:       DEVOFS
+    inverted:     true
+matchRules:
+    - "DEVO-F12E.*"
+    - ".*devof12e.*"
+    - "f12e"
+overrideSectors:
+    - iface: 2
+      remove: true
+    - iface: 1
+      remove: true
+      add:
+        - start:    0
+          end:      0xFFFF
+          size:     0x1000
+          count:    16
+---
+name:        Devo 10
+id:          DEVO-10
+numChannels: 10
+root:
+    sectorOffset: 54
+    sectorCount:  1024
+    fsType:       FAT
+    inverted:     true
+matchRules:
+    - "DEVO-10.*"
+    - ".*devo10.*"
+    - "10"
+---
+name:        Devo 8
+id:          DEVO-08
+numChannels: 8
+root:
+    sectorOffset: 54
+    sectorCount:  1024
+    fsType:       FAT
+    inverted:     true
+matchRules:
+    - "DEVO-8.*"
+    - ".*devo8.*"
+    - "8"
+---
+name:        Devo 7e
+id:          DEVO-7E
+numChannels: 7
+root:
+    sectorOffset: 0
+    sectorCount:  512
+    fsType:       FAT
+    inverted:     true
+matchRules:
+    - "DEVO-7E.*"
+    - ".*devo7e.*"
+    - "7e"
+overrideSectors:
+    - iface: 2
+      remove: true
+    - iface: 1
+      remove: true
+      add:
+        - start:    0
+          end:      0x1FFFF
+          size:     0x1000
+          count:    32
+        - start:    0x20000
+          end:      0x1FFFFF
+          size:     0x10000
+          count:    30
+---
+name:        Devo 6
+id:          DEVO-06
+numChannels: 6
+root:
+    sectorOffset: 54
+    sectorCount:  1024
+    fsType:       FAT
+    inverted:     true
+matchRules:
+    - "DEVO-6.*"
+    - ".*devo6.*"
+    - "6"
+---
+name:        Devo F7
+id:          DEVO-F7
+numChannels: 7
+root:
+    sectorOffset: 0
+    sectorCount:  64
+    fsType:       DEVOFS
+    inverted:     true
+matchRules:
+    - "DEVO-F7.*"
+    - ".*devof7.*"
+    - "f7"
+#---
+#name:        Devo F7S
+#id:          DEVO-F7S
+#numChannels: 7
+#root:
+#    sectorOffset: 0
+#    sectorCount:  64
+#    fsType:       DEVOFS
+#    inverted:     true
+#matchRules:
+#    - "DEVO-F7S.*"
+#    - ".*devof7S.*"
+#    - "f7s"
+#---
+#name:        Devo F4
+#id:          DEVO-F4
+#numChannels: 4
+#root:
+#    sectorOffset: 0
+#    sectorCount:  64
+#    fsType:       DEVOFS
+#    inverted:     true
+#matchRules:
+#    - "DEVO-F4.*"
+#    - ".*devof4.*"
+#    - "f4"
+#---
+#name:        Devo F12
+#id:          DEVO-F12
+#numChannels: 12
+#root:
+#    sectorOffset: 0
+#    sectorCount:  64
+#    fsType:       DEVOFS
+#    inverted:     true
+#matchRules:
+#    - "DEVO-F12.*"
+#    - ".*devof12.*"
+#    - "f12"

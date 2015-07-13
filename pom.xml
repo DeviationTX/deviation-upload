@@ -57,6 +57,11 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
     	<artifactId>rstaui</artifactId>
     	<version>2.5.7</version>
     </dependency>
+    <dependency>
+    	<groupId>com.esotericsoftware.yamlbeans</groupId>
+    	<artifactId>yamlbeans</artifactId>
+    	<version>1.09</version>
+    </dependency>
   </dependencies>
   <build>
     <sourceDirectory>src</sourceDirectory>
@@ -72,8 +77,8 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
         <artifactId>maven-compiler-plugin</artifactId>
         <version>2.5.1</version>
         <configuration>
-          <source>1.5</source>
-          <target>1.5</target>
+          <source>1.8</source>
+          <target>1.8</target>
         </configuration>
       </plugin>
 <!--

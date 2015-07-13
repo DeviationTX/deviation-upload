@@ -16,14 +16,14 @@ public class DevoDetect {
     private void init() {
         firmware = Firmware.UNKNOWN;
         type = Type.UNKNOWN;
-        model = Transmitter.DEVO_UNKNOWN;
+        model = TransmitterList.UNKNOWN();
         version = null;
     }
     public void update(DevoDetect item)
     {
     	if (firmware == Firmware.UNKNOWN)
     		firmware = item.firmware;
-    	if (model == Transmitter.DEVO_UNKNOWN)
+    	if (model.isUnknown())
     		model = item.model;
     	if (version == null)
     		version = item.version;

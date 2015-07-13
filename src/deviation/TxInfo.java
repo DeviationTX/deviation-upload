@@ -12,7 +12,7 @@ public class TxInfo {
     private final byte identifier[];
     public TxInfo() {
         model = null;
-        type = Transmitter.DEVO_UNKNOWN;
+        type = TransmitterList.UNKNOWN();
         id1 = 0;
         id2 = 0;
         id3 = 0;
@@ -22,9 +22,9 @@ public class TxInfo {
     {
     	identifier = data;
         model = new String(Arrays.copyOfRange(data, 0, 32));
-        type = Transmitter.DEVO_UNKNOWN;
+        type = TransmitterList.UNKNOWN();
         txloop:
-        for (Transmitter tx : Transmitter.values()) {
+        for (Transmitter tx : TransmitterList.values()) {
         	byte [] match = tx.getId().getBytes();
         	if (match.length == 0)
         		continue;
@@ -41,7 +41,7 @@ public class TxInfo {
     }
     public TxInfo(Transmitter tx) {
     	this();
-    	model = "Emulator of " + tx.name();
+    	model = "Emulator of " + tx.getName();
     	this.type = tx;
     }
     public String model() { return model;}
@@ -53,18 +53,18 @@ public class TxInfo {
     public byte [] getIdentifier() { return identifier; }
     public boolean matchModel(Transmitter t)
     {
-        if (type == Transmitter.DEVO_UNKNOWN || type != t) {
+        if (type.isUnknown() || type != t) {
             return false;
         }
         return true;
     }
     public static Transmitter getModelFromString(String str) {
-    	for (Transmitter tx : Transmitter.values()) {
+    	for (Transmitter tx : TransmitterList.values()) {
     		if (tx.modelMatch(str)) {
     			return tx;
     		}
     	}
-        return Transmitter.DEVO_UNKNOWN;
+        return TransmitterList.UNKNOWN();
     }
     public static String typeToString(Transmitter type)
     {
