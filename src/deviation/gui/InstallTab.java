@@ -321,7 +321,7 @@ public class InstallTab extends JPanel {
     	for (Checkbox c : Checkbox.values()) {
     		c.disable();
     	}
-        if (gui.getTxInfo().type() == Transmitter.DEVO_UNKNOWN || (fw != null && fw.type().firmware() != Firmware.DEVIATION)) {
+        if (gui.getTxInfo().type().isUnknown() || (fw != null && fw.type().firmware() != Firmware.DEVIATION)) {
             return;
         }
         boolean chkboxval = (! gui.getFSStatus().isFormatted());

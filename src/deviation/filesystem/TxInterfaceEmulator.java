@@ -13,6 +13,7 @@ import deviation.DfuDevice;
 import deviation.FileInfo;
 import deviation.Progress;
 import deviation.Transmitter;
+import deviation.TransmitterList;
 import deviation.TxInfo;
 
 public class TxInterfaceEmulator extends TxInterfaceCommon implements TxInterface {
@@ -56,7 +57,7 @@ public class TxInterfaceEmulator extends TxInterfaceCommon implements TxInterfac
     	return new FSStatus(tx, true, false);
     }
     static public TxInfo getTxInfo() {
-    	return new TxInfo(Transmitter.DEVO7e);
+    	return new TxInfo(TransmitterList.get("Devo 7e"));
     }
 
 }

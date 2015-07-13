@@ -115,7 +115,7 @@ public class DfuSendTab extends JPanel {
                 try {
                     boolean first = true;
                     dfuFile = new DfuFile(fname);
-                    Transmitter type = Transmitter.DEVO_UNKNOWN;
+                    Transmitter type = TransmitterList.UNKNOWN();
                     int size = 0;
                     for (DfuFile.ImageElement elem : dfuFile.imageElements()) {
                     	size += elem.data().length;

@@ -37,7 +37,7 @@ public class TxInterfaceUSB extends TxInterfaceCommon implements TxInterface  {
 		TxInfo txInfo = dev.getTxInfo();
 		Transmitter tx = txInfo.type();
         this.model = tx;
-    	if (tx == Transmitter.DEVO_UNKNOWN)
+    	if (tx.isUnknown())
     		return;
         if (tx.hasMediaFS()) {
     		mediaIface = dev.SelectInterfaceByAddr(tx.getMediaSectorOffset() * SECTOR_SIZE);
@@ -198,7 +198,7 @@ public class TxInterfaceUSB extends TxInterfaceCommon implements TxInterface  {
     public FSStatus getFSStatus() {
         boolean has_root = false;
         boolean has_media = false;
-        if (model == Transmitter.DEVO_UNKNOWN) {
+        if (model.isUnknown()) {
     		return FSStatus.unformatted();
         }
     
