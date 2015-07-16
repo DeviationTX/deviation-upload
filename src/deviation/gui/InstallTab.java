@@ -11,11 +11,14 @@ import java.awt.event.ItemListener;
 import java.io.File;
 import java.util.List;
 
+import javax.swing.Box;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
@@ -36,37 +39,16 @@ public class InstallTab extends JPanel {
     //private JTextField txtFwUsed;
     private JTextField txtLibVersion;
     private JTextField txtLibSize;
+    private JComboBox<String> x;
     //private JTextField txtLibUsed;
-    private enum Checkbox {
-    	FORMAT ("Format"),
-    	INSTALLPROTO ("Install Protocols"),
-    	INSTALLLIB ("Install Library"),
-    	REPLACETX ("Replace tx.ini"),
-    	REPLACEHW ("Replace hardware.ini"),
-    	REPLACEMODEL ("Replace models");
-    	
-    	private final JCheckBox chkbx;
-    	private Checkbox(String str) {
-    		chkbx = new JCheckBox(str);
-    	}
-    	public void disable() {
-    		chkbx.setEnabled(false);
-    		chkbx.setSelected(false);
-    	}
-    	public void set(boolean val) {
-    		chkbx.setEnabled(true);
-    		chkbx.setSelected(val);
-    	}
-    	public JCheckBox get() { return chkbx; }
-    	//public int idx() { return ordinal(); }
-    };
     
     private JButton btnInstall;
     private JButton filesystemBtn;
 
-    private FileGroup zipFiles;
+    private final FileGroup zipFiles;
     private final DeviationUploadGUI gui;
     private final FilesToSend fileList;
+    private final InstallTabOptList opts;
 
     DfuFile fw;
     List<DfuFile> libs;
@@ -81,7 +63,7 @@ public class InstallTab extends JPanel {
         gbl_BinSendPanel.columnWidths = new int[]{0, 45, 0, 0, 0};
         gbl_BinSendPanel.rowHeights = new int[]{0, 0, 0, 0, 0, 0, 0, 0};
         gbl_BinSendPanel.columnWeights = new double[]{0.0, 0.0, 1.0, 0.0, Double.MIN_VALUE};
-        gbl_BinSendPanel.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
+        gbl_BinSendPanel.rowWeights = new double[]{0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
         setLayout(gbl_BinSendPanel);
         
         JLabel lblFirmware = new JLabel("Firmware");
@@ -215,7 +197,6 @@ public class InstallTab extends JPanel {
         panel_1.add(txtFwUsed, gbc_textField_3);
         txtFwUsed.setColumns(10);
         */
-        
         JLabel lblLibrary_1 = new JLabel("Library");
         GridBagConstraints gbc_lblFilesystem_1 = new GridBagConstraints();
         gbc_lblFilesystem_1.anchor = GridBagConstraints.EAST;
@@ -264,6 +245,38 @@ public class InstallTab extends JPanel {
             }
         });
 
+        x = new JComboBox<String>();
+        x.addItem("Automatic");
+        x.addItem("DFU Only");
+        x.addItem("Incremental");
+        x.addItem("Full Install");
+        x.addItem("Advanced");
+        x.addActionListener(new ActionListener() {
+        	public void actionPerformed(ActionEvent e) {
+        		System.out.println(x.getSelectedItem());
+        	}
+        });
+    	GridBagConstraints gbc_x = new GridBagConstraints();
+    	gbc_x.anchor = GridBagConstraints.WEST;
+    	gbc_x.gridwidth = 2;
+    	gbc_x.gridheight = 1;
+    	gbc_x.insets = new Insets(0, 0, 5, 5);
+    	gbc_x.gridx = 0;
+    	gbc_x.gridy = 2;
+    	gbc_x.fill = GridBagConstraints.HORIZONTAL;
+    	add(x, gbc_x);
+
+    	GridBagConstraints gbc_chckbx = new GridBagConstraints();
+    	gbc_chckbx.anchor = GridBagConstraints.WEST;
+    	gbc_chckbx.gridwidth = 4;
+    	gbc_chckbx.gridheight = 3;
+    	gbc_chckbx.insets = new Insets(0, 0, 5, 5);
+    	gbc_chckbx.gridx = 0;
+    	gbc_chckbx.gridy = 5;
+    	gbc_chckbx.fill = GridBagConstraints.BOTH;
+    	opts = new InstallTabOptList(gui, zipFiles);    	
+    	add(opts, gbc_chckbx);
+    	/*
         int row = 2;
         for (Checkbox box : Checkbox.values()) {
         	JCheckBox chkbx = box.get();
@@ -276,30 +289,24 @@ public class InstallTab extends JPanel {
         	gbc_chckbx.gridy = row++;
         	add(chkbx, gbc_chckbx);
         }
-        
+        */
+         
         GridBagConstraints gbc_btnInstall = new GridBagConstraints();
         gbc_btnInstall.gridwidth = 4;
         gbc_btnInstall.gridx = 0;
-        gbc_btnInstall.gridy = row;
+        gbc_btnInstall.gridy = 10;
         add(btnInstall, gbc_btnInstall);
         
-        reset_checkboxes();
+        opts.reset_checkboxes();
     }
     public FilesToSend getFilesToSend(){ return fileList; }
     public void refresh() {
-    	reset_checkboxes();
-    }
-    private void checkboxSetCallback(JCheckBox chkbx) {
-    	chkbx.addItemListener(new ItemListener() {
-    	    public void itemStateChanged(ItemEvent e) {
-    	    	update_checkboxes();
-    	    }
-    	});
+    	opts.reset_checkboxes();
     }
     public void parseZipFiles() {
         fw = zipFiles.GetFirmwareDfu();
         libs = zipFiles.GetLibraryDfus();
-        reset_checkboxes();
+        opts.reset_checkboxes();
         update_filechooser();
     }
     private void update_filechooser() {
@@ -316,34 +323,6 @@ public class InstallTab extends JPanel {
         	libraryTxt.setEnabled(true);
     	}
     	libraryTxt.setText(libFile);
-    }
-    private void reset_checkboxes() {
-    	for (Checkbox c : Checkbox.values()) {
-    		c.disable();
-    	}
-        if (gui.getTxInfo().type().isUnknown() || (fw != null && fw.type().firmware() != Firmware.DEVIATION)) {
-            return;
-        }
-        boolean chkboxval = (! gui.getFSStatus().isFormatted());
-        Checkbox.FORMAT.set(chkboxval);
-        Checkbox.REPLACETX.set(chkboxval);
-        Checkbox.REPLACEHW.set(chkboxval);
-        Checkbox.REPLACEMODEL.set(chkboxval);
-        if (zipFiles.hasLibrary()) {
-        	Checkbox.INSTALLLIB.set(true);
-        }
-        if (zipFiles.hasProtocol()) {
-        	Checkbox.INSTALLPROTO.set(true);
-        }
-        update_checkboxes();
-    }
-    private void update_checkboxes() {
-    	if (Checkbox.FORMAT.get().isSelected()) {
-    		Checkbox.REPLACETX.set(true);
-    		Checkbox.REPLACEHW.set(true);
-    		Checkbox.REPLACEMODEL.set(true);
-    	}
-    	update_files_to_install();
     }
     private void update_install_button() {
         boolean enabled = true;
@@ -362,7 +341,7 @@ public class InstallTab extends JPanel {
         }
         btnInstall.setEnabled(enabled);
     }
-    private void update_files_to_install() {
+    public void update_files_to_install() {
         txtFwVersion.setText("");
         txtFwSize.setText("");
         txtLibVersion.setText("");
@@ -381,8 +360,8 @@ public class InstallTab extends JPanel {
             txtFwSize.setText(String.valueOf(size / 1024) + " kb");
             totalSize += size;
         }
-        boolean libInstall = Checkbox.INSTALLLIB.get().isSelected() && zipFiles.hasLibrary();
-        boolean protoInstall = Checkbox.INSTALLPROTO.get().isSelected() && zipFiles.hasLibrary();
+        boolean libInstall = opts.INSTALLLIB.get() && zipFiles.hasLibrary();
+        boolean protoInstall = opts.INSTALLPROTO.get() && zipFiles.hasLibrary();
         if (libInstall || protoInstall) {
         	if (libs.size() > 0) {
         		txtLibVersion.setText(libs.get(0).type().version());
@@ -403,11 +382,11 @@ public class InstallTab extends JPanel {
             	}
             }
             for (FileInfo file : zipFiles.GetFilesystemFiles()) {
-                if (! Checkbox.REPLACETX.get().isSelected() && file.name().equalsIgnoreCase("tx.ini"))
+                if (! opts.REPLACETX.get() && file.name().equalsIgnoreCase("tx.ini"))
                    	continue;
-                if (! Checkbox.REPLACEHW.get().isSelected() && file.name().equalsIgnoreCase("hardware.ini"))
+                if (! opts.REPLACEHW.get() && file.name().equalsIgnoreCase("hardware.ini"))
                   	continue;
-                if (! Checkbox.REPLACEMODEL.get().isSelected() && file.name().matches("(?i:models/.*)"))
+                if (! opts.REPLACEMODEL.get() && file.name().matches("(?i:models/.*)"))
                 	continue;
                 if (! protoInstall && file.name().matches("(?i:protocol/.*)"))
                 	continue;
@@ -419,7 +398,7 @@ public class InstallTab extends JPanel {
             txtLibSize.setText(String.valueOf(size / 1024) + " kb");
             totalSize += size;
         }
-        fileList.format(Checkbox.FORMAT.get().isSelected());
+        fileList.format(opts.FORMAT.get());
         fileList.setTotalBytes(totalSize);
         update_install_button();
     }
