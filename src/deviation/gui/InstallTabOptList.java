@@ -63,6 +63,11 @@ public class InstallTabOptList extends JScrollPane {
     public final Options REPLACEMODEL = new Options(
     		"Replace models", "1", "2");
     public final Options AllOpts[] = new Options[] {FORMAT, INSTALLPROTO, INSTALLLIB, REPLACETX, REPLACEHW, REPLACEMODEL};
+    public final int AUTOMATIC    = 0;
+    public final int DFU_ONLY     = 1;
+    public final int INCREMENTAL  = 2;
+    public final int FULL_INSTALL = 3;
+    public final int ADVANCED     = 4;
 	private final Box box;
 	private final DeviationUploadGUI gui;
     private final FileGroup zipFiles;
@@ -85,8 +90,7 @@ public class InstallTabOptList extends JScrollPane {
         combobox.addItem("Advanced");
         combobox.addActionListener(new ActionListener() {
         	public void actionPerformed(ActionEvent e) {
-        		System.out.println(combobox.getSelectedItem());
-        		reset_checkboxes();
+        		updateMode();
         	}
         });
 	}
@@ -158,14 +162,8 @@ public class InstallTabOptList extends JScrollPane {
 	private boolean isFormatted() {
 		return gui.getFSStatus().isFormatted();
 	}
-    public void reset_checkboxes() {
+/*  private void reset_checkboxes() {
 		//box.removeAll();
-    	for (Options c : AllOpts) {
-    		c.disable();
-    	}
-    	if (! showOptions()) {
-    		return;
-    	}
         boolean chkboxval = (! gui.getFSStatus().isFormatted());
         FORMAT.set(chkboxval);
         REPLACETX.set(chkboxval);
@@ -177,8 +175,9 @@ public class InstallTabOptList extends JScrollPane {
         if (gui.getTxInfo().type().needsFsProtocols() != Transmitter.ProtoFiles.NONE && zipFiles.hasProtocol()) {
         	INSTALLPROTO.set(true);
         }
-        update_checkboxes();
+        //update_checkboxes();
     }
+*/
     private void update_checkboxes() {
     	if (FORMAT.get()) {
     		REPLACETX.set(true);
@@ -193,5 +192,40 @@ public class InstallTabOptList extends JScrollPane {
     		ShowAdvanced();
     	}
     	gui.getInstallTab().update_files_to_install();
+    }
+    public void recompute_checkboxes() {
+    	updateMode();
+    }
+    private void updateMode() {
+    	for (Options c : AllOpts) {
+    		c.disable();
+    	}
+    	if (! showOptions()) {
+    		return;
+    	}
+        boolean needFormat = (! gui.getFSStatus().isFormatted());
+    	if (needFormat) {
+    		if (combobox.getSelectedIndex() == AUTOMATIC ||
+    			combobox.getSelectedIndex() == INCREMENTAL) {
+    			combobox.setSelectedIndex(FULL_INSTALL);
+    		}
+    	} else if (combobox.getSelectedIndex() == AUTOMATIC) {
+    		combobox.setSelectedIndex(INCREMENTAL);
+    	}
+		if (combobox.getSelectedIndex() == FULL_INSTALL) {
+			FORMAT.set(true);
+		}
+        if ((FORMAT.get() || isFormatted()) && gui.getTxInfo().type().needsFsProtocols() != Transmitter.ProtoFiles.NONE && zipFiles.hasProtocol()) {
+        	INSTALLPROTO.set(true);
+        }
+    	if (combobox.getSelectedIndex() != DFU_ONLY) {
+            REPLACETX.set(needFormat);
+            REPLACEHW.set(needFormat);
+            REPLACEMODEL.set(needFormat);
+            if (zipFiles.hasLibrary()) {
+            	INSTALLLIB.set(true);
+            }
+    		update_checkboxes();
+    	}
     }
 }
