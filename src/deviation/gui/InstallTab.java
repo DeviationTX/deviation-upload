@@ -39,7 +39,6 @@ public class InstallTab extends JPanel {
     //private JTextField txtFwUsed;
     private JTextField txtLibVersion;
     private JTextField txtLibSize;
-    private JComboBox<String> x;
     //private JTextField txtLibUsed;
     
     private JButton btnInstall;
@@ -245,26 +244,18 @@ public class InstallTab extends JPanel {
             }
         });
 
-        x = new JComboBox<String>();
-        x.addItem("Automatic");
-        x.addItem("DFU Only");
-        x.addItem("Incremental");
-        x.addItem("Full Install");
-        x.addItem("Advanced");
-        x.addActionListener(new ActionListener() {
-        	public void actionPerformed(ActionEvent e) {
-        		System.out.println(x.getSelectedItem());
-        	}
-        });
-    	GridBagConstraints gbc_x = new GridBagConstraints();
-    	gbc_x.anchor = GridBagConstraints.WEST;
-    	gbc_x.gridwidth = 2;
-    	gbc_x.gridheight = 1;
-    	gbc_x.insets = new Insets(0, 0, 5, 5);
-    	gbc_x.gridx = 0;
-    	gbc_x.gridy = 2;
-    	gbc_x.fill = GridBagConstraints.HORIZONTAL;
-    	add(x, gbc_x);
+        
+    	opts = new InstallTabOptList(gui, zipFiles);
+
+    	GridBagConstraints gbc_mode = new GridBagConstraints();
+    	gbc_mode.anchor = GridBagConstraints.WEST;
+    	gbc_mode.gridwidth = 2;
+    	gbc_mode.gridheight = 1;
+    	gbc_mode.insets = new Insets(0, 0, 5, 5);
+    	gbc_mode.gridx = 0;
+    	gbc_mode.gridy = 2;
+    	gbc_mode.fill = GridBagConstraints.HORIZONTAL;
+    	add(opts.getModeBox(), gbc_mode);
 
     	GridBagConstraints gbc_chckbx = new GridBagConstraints();
     	gbc_chckbx.anchor = GridBagConstraints.WEST;
@@ -274,7 +265,6 @@ public class InstallTab extends JPanel {
     	gbc_chckbx.gridx = 0;
     	gbc_chckbx.gridy = 5;
     	gbc_chckbx.fill = GridBagConstraints.BOTH;
-    	opts = new InstallTabOptList(gui, zipFiles);    	
     	add(opts, gbc_chckbx);
     	/*
         int row = 2;
