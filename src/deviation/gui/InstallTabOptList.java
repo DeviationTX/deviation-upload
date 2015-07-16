@@ -1,11 +1,14 @@
 package deviation.gui;
 
 import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 
 import javax.swing.Box;
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 
@@ -63,6 +66,7 @@ public class InstallTabOptList extends JScrollPane {
 	private final Box box;
 	private final DeviationUploadGUI gui;
     private final FileGroup zipFiles;
+    private final JComboBox<String> combobox;
 
 
 	InstallTabOptList(DeviationUploadGUI gui, FileGroup zipFiles) {
@@ -73,8 +77,53 @@ public class InstallTabOptList extends JScrollPane {
         setViewportView(box);
     	setPreferredSize(new Dimension(140, 100));
 
+        combobox = new JComboBox<String>();
+        combobox.addItem("Automatic");
+        combobox.addItem("DFU Only");
+        combobox.addItem("Incremental");
+        combobox.addItem("Full Install");
+        combobox.addItem("Advanced");
+        combobox.addActionListener(new ActionListener() {
+        	public void actionPerformed(ActionEvent e) {
+        		System.out.println(combobox.getSelectedItem());
+        		reset_checkboxes();
+        	}
+        });
 	}
-	public void ShowIncremental() {		
+	public JComboBox<String> getModeBox() {
+		return combobox;
+	}
+	public void ShowAutomatic() {		
+		box.removeAll();
+		if (! showOptions()) {
+			return;
+		}
+		if (zipFiles.GetFirmwareDfu() != null) {
+			box.add(new JLabel("Installing firmware"));
+		}
+		if (FORMAT.get()) {
+			box.add(new JLabel (isFormatted() ?
+					"Re-formatting filesystem" :
+					"Formatting un-formatted filesystem"));
+		}
+		if (INSTALLPROTO.get()) {
+			box.add(new JLabel(gui.getTxInfo().type().needsFsProtocols() == Transmitter.ProtoFiles.ALL ?
+					"Replacing all protocol files" :
+					"Replacing existing protocol files"));
+		}
+		if (INSTALLLIB.get()) {
+			box.add(new JLabel("Installing images and translations"));
+		}
+		if (REPLACEMODEL.get()) {
+			box.add(new JLabel("Installing model files (this will overwrite any existing files)"));
+		}
+		if (REPLACEHW.get()) {
+			box.add(new JLabel("Installing hardware.ini (this will overwrite any existing file)"));
+		}
+		if (REPLACETX.get()) {
+			box.add(new JLabel("Installing tx.ini (this will overwrite any existing file)"));
+		}
+		gui.getFrame().repaint();
 	}
 	public void ShowAdvanced() {
 		box.removeAll();
@@ -82,11 +131,19 @@ public class InstallTabOptList extends JScrollPane {
 			return;
 		}
         box.add(new JLabel("Options:"));
-        for (Options opt : AllOpts) {
-        	JCheckBox chkbx = opt.getCheckbox();
-        	box.add(chkbx);
+        box.add(FORMAT.getCheckbox());
+        if (FORMAT.get() || isFormatted()) {
+        	if (showProtocol()) {
+        		box.add(INSTALLPROTO.getCheckbox());
+        	}
+        	if (zipFiles.hasLibrary()) {
+        		box.add(INSTALLLIB.getCheckbox());
+        	}
+        	box.add(REPLACETX.getCheckbox());
+        	box.add(REPLACEHW.getCheckbox());
+        	box.add(REPLACEMODEL.getCheckbox());
         }
-
+		gui.getFrame().repaint();
 	}
 	private boolean showOptions() {
     	DfuFile fw = zipFiles.GetFirmwareDfu();
@@ -95,15 +152,20 @@ public class InstallTabOptList extends JScrollPane {
         }
         return true;
 	}
+	private boolean showProtocol() {
+		return gui.getTxInfo().type().needsFsProtocols() != Transmitter.ProtoFiles.NONE && zipFiles.hasProtocol();
+	}
+	private boolean isFormatted() {
+		return gui.getFSStatus().isFormatted();
+	}
     public void reset_checkboxes() {
-		box.removeAll();
+		//box.removeAll();
     	for (Options c : AllOpts) {
     		c.disable();
     	}
     	if (! showOptions()) {
     		return;
     	}
-    	ShowAdvanced();
         boolean chkboxval = (! gui.getFSStatus().isFormatted());
         FORMAT.set(chkboxval);
         REPLACETX.set(chkboxval);
@@ -122,6 +184,13 @@ public class InstallTabOptList extends JScrollPane {
     		REPLACETX.set(true);
     		REPLACEHW.set(true);
     		REPLACEMODEL.set(true);
+    	}
+//    	ShowAdvanced();
+    	if (combobox.getSelectedIndex() != 4) {
+    		System.out.println("Here");
+    		ShowAutomatic();
+    	} else {
+    		ShowAdvanced();
     	}
     	gui.getInstallTab().update_files_to_install();
     }
