@@ -89,6 +89,7 @@ matchRules:
 name:        Devo 7e
 id:          DEVO-7E
 numChannels: 7
+fsProtocols: ALL
 root:
     sectorOffset: 0
     sectorCount:  512
@@ -129,6 +130,7 @@ matchRules:
 name:        Devo F7
 id:          DEVO-F7
 numChannels: 7
+fsProtocols: KEEP
 root:
     sectorOffset: 0
     sectorCount:  64

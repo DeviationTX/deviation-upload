@@ -66,6 +66,18 @@ public class DeviationUploadGUI {
     private InstallTab InstallPanel;
     private FileMgrTab FileMgrPanel;
 
+    enum GridRow {
+    	TXINFO(0, 0.0),
+    	TAB   (1, 1.0),
+    	COUNT (2, 0.0);
+    	
+    	public int row;
+    	public double weight;
+    	GridRow(int row, double weight) {
+    		this.row = row;
+    		this.weight = weight;
+    	}
+    }
 /**
      * Launch the application.
      */
@@ -127,93 +139,37 @@ public class DeviationUploadGUI {
         frame.setTitle(ver.name() + " - " + ver.version());
         GridBagLayout gridBagLayout = new GridBagLayout();
         gridBagLayout.columnWidths = new int[]{0, 0};
-        gridBagLayout.rowHeights = new int[]{0, 0, 0, 0, 0};
-        gridBagLayout.columnWeights = new double[]{1.0, Double.MIN_VALUE};
-        gridBagLayout.rowWeights = new double[]{1.0, 1.0, 1.0, 0.0, Double.MIN_VALUE};
+        gridBagLayout.rowHeights = new int[GridRow.COUNT.row];
+        gridBagLayout.columnWeights = new double[]{1.0};
+        gridBagLayout.rowWeights = new double[GridRow.COUNT.row];
         frame.getContentPane().setLayout(gridBagLayout);
 
-        JPanel panel = new JPanel();
         GridBagConstraints gbc_panel = new GridBagConstraints();
         gbc_panel.insets = new Insets(0, 0, 5, 0);
         gbc_panel.fill = GridBagConstraints.BOTH;
+        gbc_panel.anchor = GridBagConstraints.NORTHWEST;
         gbc_panel.gridx = 0;
-        gbc_panel.gridy = 0;
-        frame.getContentPane().add(panel, gbc_panel);
-        GridBagLayout gbl_panel = new GridBagLayout();
-        gbl_panel.columnWidths = new int[]{99, 100, 0};
-        gbl_panel.rowHeights = new int[]{15, 43, 0};
-        gbl_panel.columnWeights = new double[]{0.0, 1.0, Double.MIN_VALUE};
-        gbl_panel.rowWeights = new double[]{0.0, 1.0, Double.MIN_VALUE};
-        panel.setLayout(gbl_panel);
-
-        JLabel lblTransmitter = new JLabel("Transmitter");
-        GridBagConstraints gbc_lblTransmitter = new GridBagConstraints();
-        gbc_lblTransmitter.insets = new Insets(0, 0, 5, 5);
-        gbc_lblTransmitter.anchor = GridBagConstraints.WEST;
-        gbc_lblTransmitter.gridx = 0;
-        gbc_lblTransmitter.gridy = 0;
-        panel.add(lblTransmitter, gbc_lblTransmitter);
-
-        txtTransmitter = new JTextField();
-        txtTransmitter.setEditable(false);
-        GridBagConstraints gbc_txtTransmitter = new GridBagConstraints();
-        gbc_txtTransmitter.insets = new Insets(0, 0, 5, 0);
-        gbc_txtTransmitter.fill = GridBagConstraints.HORIZONTAL;
-        gbc_txtTransmitter.gridx = 1;
-        gbc_txtTransmitter.gridy = 0;
-        panel.add(txtTransmitter, gbc_txtTransmitter);
-        txtTransmitter.setColumns(10);
-
-        TableModel dataModel = new AbstractTableModel() {
-            private static final long serialVersionUID = 1L;
-            private String[] columnNames = {"Name", "Start Address", "Size", "# Sectors", "Sector Size"};
-            public String getColumnName(int col) {
-                return columnNames[col];
-            }
-            public int getColumnCount() { return columnNames.length; }
-            public int getRowCount() { return devMemory.size();}
-            public boolean isCellEditable(int row, int col) { return false; }
-            public Object getValueAt(int row, int col) {
-                DfuMemory mem = devMemory.get(row);
-                Sector sector = mem.find((int)mem.findStartingAddress());
-                switch(col) {
-                case 0: return mem.name();
-                case 1: return String.format("0x%08x", sector.start());
-                case 2: return String.valueOf(sector.size() * sector.count() / 1024) + " kb";
-                case 3: return sector.count();
-                case 4: return String.valueOf(sector.size() / 1024) + " kb";
-                default: return "";
-                }
-            }
-        };
-        table = new JTable(dataModel);
-        table.setRowSelectionAllowed(false);
-
-        JScrollPane tblScroll = new JScrollPane(table);
-        GridBagConstraints gbc_table = new GridBagConstraints();
-        gbc_table.gridwidth = 2;
-        gbc_table.insets = new Insets(0, 0, 0, 5);
-        gbc_table.fill = GridBagConstraints.BOTH;
-        gbc_table.gridx = 0;
-        gbc_table.gridy = 1;
-        panel.add(tblScroll, gbc_table);
+        gbc_panel.gridy = GridRow.TXINFO.row;
+        gridBagLayout.rowWeights[GridRow.TXINFO.row] =  GridRow.TXINFO.weight;
+        frame.getContentPane().add(new TxInfoPanel(), gbc_panel);
 
         tabbedPane = new JTabbedPane(JTabbedPane.TOP);
         GridBagConstraints gbc_tabbedPane = new GridBagConstraints();
         gbc_tabbedPane.insets = new Insets(0, 0, 5, 0);
         gbc_tabbedPane.fill = GridBagConstraints.BOTH;
         gbc_tabbedPane.gridx = 0;
-        gbc_tabbedPane.gridy = 1;
+        gbc_tabbedPane.gridy = GridRow.TAB.row;
+        gridBagLayout.rowWeights[GridRow.TAB.row] =  GridRow.TAB.weight;
         frame.getContentPane().add(tabbedPane, gbc_tabbedPane);
         
-        JScrollPane txtScroll = new JScrollPane(msgTextArea);
+/*      JScrollPane txtScroll = new JScrollPane(msgTextArea);
         GridBagConstraints gbc_msgTextArea = new GridBagConstraints();
         gbc_msgTextArea.insets = new Insets(0, 0, 5, 0);
         gbc_msgTextArea.fill = GridBagConstraints.BOTH;
         gbc_msgTextArea.gridx = 0;
         gbc_msgTextArea.gridy = 2;
         frame.getContentPane().add(txtScroll, gbc_msgTextArea);
-
+*/
         progressBar = new JProgressBar();
         progressBar.setMinimum( 0 );
         progressBar.setMaximum( 100 );
@@ -234,7 +190,7 @@ public class DeviationUploadGUI {
 
         FileMgrPanel = new FileMgrTab(this);
         tabbedPane.addTab("File Manager", null, FileMgrPanel, null);
-        tabbedPane.setEnabledAt(2, true); 
+        tabbedPane.setEnabledAt(2, false); 
         
         JPanel BinSendPanel = new JPanel();
         tabbedPane.addTab("Bin-Send", null, BinSendPanel, null);
@@ -258,6 +214,70 @@ public class DeviationUploadGUI {
         msgTextArea.setRows(8);
         msgTextArea.setEditable(false);
 
+    }
+    
+    class TxInfoPanel extends JPanel {
+    	TxInfoPanel() {
+    		super();
+            GridBagLayout gbl_panel = new GridBagLayout();
+            gbl_panel.columnWidths = new int[]{99, 100};
+            gbl_panel.rowHeights = new int[]{15, 43};
+            gbl_panel.columnWeights = new double[]{0.0, 1.0};
+            gbl_panel.rowWeights = new double[]{0.0, 1.0};
+            this.setLayout(gbl_panel);
+
+            JLabel lblTransmitter = new JLabel("Transmitter");
+            GridBagConstraints gbc_lblTransmitter = new GridBagConstraints();
+            gbc_lblTransmitter.insets = new Insets(0, 0, 5, 5);
+            gbc_lblTransmitter.anchor = GridBagConstraints.NORTHWEST;
+            gbc_lblTransmitter.gridx = 0;
+            gbc_lblTransmitter.gridy = 0;
+            this.add(lblTransmitter, gbc_lblTransmitter);
+
+            txtTransmitter = new JTextField();
+            txtTransmitter.setEditable(false);
+            GridBagConstraints gbc_txtTransmitter = new GridBagConstraints();
+            gbc_txtTransmitter.insets = new Insets(0, 0, 5, 0);
+            gbc_txtTransmitter.fill = GridBagConstraints.HORIZONTAL;
+            gbc_txtTransmitter.gridx = 1;
+            gbc_txtTransmitter.gridy = 0;
+            this.add(txtTransmitter, gbc_txtTransmitter);
+            txtTransmitter.setColumns(10);
+
+            TableModel dataModel = new AbstractTableModel() {
+                private static final long serialVersionUID = 1L;
+                private String[] columnNames = {"Name", "Start Address", "Size", "# Sectors", "Sector Size"};
+                public String getColumnName(int col) {
+                    return columnNames[col];
+                }
+                public int getColumnCount() { return columnNames.length; }
+                public int getRowCount() { return devMemory.size();}
+                public boolean isCellEditable(int row, int col) { return false; }
+                public Object getValueAt(int row, int col) {
+                    DfuMemory mem = devMemory.get(row);
+                    Sector sector = mem.find((int)mem.findStartingAddress());
+                    switch(col) {
+                    case 0: return mem.name();
+                    case 1: return String.format("0x%08x", sector.start());
+                    case 2: return String.valueOf(sector.size() * sector.count() / 1024) + " kb";
+                    case 3: return sector.count();
+                    case 4: return String.valueOf(sector.size() / 1024) + " kb";
+                    default: return "";
+                    }
+                }
+            };
+            table = new JTable(dataModel);
+            table.setRowSelectionAllowed(false);
+
+            JScrollPane tblScroll = new JScrollPane(table);
+            GridBagConstraints gbc_table = new GridBagConstraints();
+            gbc_table.gridwidth = 2;
+            gbc_table.insets = new Insets(0, 0, 0, 5);
+            gbc_table.fill = GridBagConstraints.BOTH;
+            gbc_table.gridx = 0;
+            gbc_table.gridy = 1;
+            this.add(tblScroll, gbc_table);
+    	}
     }
     
     public boolean isTabShown(int tab) {
@@ -291,7 +311,13 @@ public class DeviationUploadGUI {
         tableModel.fireTableDataChanged();
         DfuSendPanel.refresh();
         InstallPanel.refresh();
-        FileMgrPanel.updateTx();
+        if (fsStatus.isFormatted()) {
+        	tabbedPane.setEnabledAt(FILEMGR_TAB, true);
+            FileMgrPanel.updateTx();
+        } else if (isTabShown(FILEMGR_TAB)) {
+        	tabbedPane.setSelectedIndex(INSTALL_TAB);
+        	tabbedPane.setEnabledAt(FILEMGR_TAB, false);
+        }
     }
     /*
 	private class SwingAction extends AbstractAction {

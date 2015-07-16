@@ -21,9 +21,11 @@ public class TxInterfaceEmulator extends TxInterfaceCommon implements TxInterfac
 	private FileSystem fs;
 	private FileDisk2 blockDev;
 	private Transmitter tx;
+	private static final String emulatedTx = "Devo 7e";
 	public TxInterfaceEmulator() {
 		try {
 			blockDev = new FileDisk2(new File("test.fat"), false, 4096, 5000);
+			tx = TransmitterList.get(emulatedTx);
 		} catch (Exception e) { e.printStackTrace(); }
 	}
     public void setProgress(Progress progress) { /*this.progress = progress; */}
@@ -57,7 +59,7 @@ public class TxInterfaceEmulator extends TxInterfaceCommon implements TxInterfac
     	return new FSStatus(tx, true, false);
     }
     static public TxInfo getTxInfo() {
-    	return new TxInfo(TransmitterList.get("Devo 7e"));
+    	return new TxInfo(TransmitterList.get(emulatedTx));
     }
 
 }

@@ -6,6 +6,7 @@ import deviation.filesystem.FSType;
 import deviation.misc.Crc;
 
 public class Transmitter {
+	public static enum ProtoFiles {NONE, KEEP, ALL};
 	public String name;
 	public String id;
 	public int numChannels;
@@ -13,9 +14,11 @@ public class Transmitter {
 	public FlashInfo media;
 	public List<String> matchRules;
 	public List<SectorOverride> overrideSectors;
+	public ProtoFiles fsProtocols;
 	public Transmitter() {
 		root = FlashInfo.empty;
 		media = FlashInfo.empty;
+		fsProtocols = ProtoFiles.NONE;
 	}
 	public Transmitter(String name,
 			String id,
@@ -44,6 +47,7 @@ public class Transmitter {
     public int getMediaSectorCount()  { return media.sectorCount; }
     public FSType getMediaFSType()    { return media.fsType; }
     public boolean isMediaInverted()  { return media.inverted; }
+    public ProtoFiles needsFsProtocols() { return fsProtocols; }
 
     public void overrideSector(List<DfuInterface> interfaces) {
     	if (overrideSectors == null) {
