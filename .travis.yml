@@ -5,4 +5,5 @@ jdk: openjdk8
 script: mvn package
 
 cache:
-  apt: true
+  directories:
+  - $HOME/.m2
