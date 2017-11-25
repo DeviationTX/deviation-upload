@@ -99,6 +99,7 @@ matchRules:
     - "DEVO-7E.*"
     - ".*devo7e.*"
     - "7e"
+    - "t8sg"
 overrideSectors:
     - iface: 2
       remove: true
