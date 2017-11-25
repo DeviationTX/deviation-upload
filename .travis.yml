@@ -2,7 +2,7 @@ sudo: false
 
 jdk: openjdk8 
 
-script: mvn package
+script: mvn package && echo "deviation-uploader sucessfully built"
 
 cache:
   directories:
