@@ -421,6 +421,7 @@ public class DeviationUploader
             DeviationUploadGUI.main(null);
             while(true) {}
         }
+        TransmitterList.init();
         CommandLine cl = handleCmdline(args);
         Integer vendorId = null;
         Integer productId = null;
