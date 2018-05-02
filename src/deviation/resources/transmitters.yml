@@ -99,6 +99,12 @@ matchRules:
     - "DEVO-7E.*"
     - ".*devo7e.*"
     - "7e"
+    - ".*t8sg.*"
+    - "t8sg"
+    - ".*t8sg_v2.*"
+    - "t8sg_v2"
+    - ".*t8sg_v2_plus.*"
+    - "t8sg_v2_plus"
 overrideSectors:
     - iface: 2
       remove: true
@@ -127,6 +133,19 @@ matchRules:
     - ".*devo6.*"
     - "6"
 ---
+name:        Devo F4
+id:          DEVO-F4
+numChannels: 4
+root:
+    sectorOffset: 0
+    sectorCount:  64
+    fsType:       DEVOFS
+    inverted:     true
+matchRules:
+    - "DEVO-F4.*"
+    - ".*devof4.*"
+    - "f4"
+---
 name:        Devo F7
 id:          DEVO-F7
 numChannels: 7
@@ -153,19 +172,6 @@ matchRules:
 #    - "DEVO-F7S.*"
 #    - ".*devof7S.*"
 #    - "f7s"
-#---
-#name:        Devo F4
-#id:          DEVO-F4
-#numChannels: 4
-#root:
-#    sectorOffset: 0
-#    sectorCount:  64
-#    fsType:       DEVOFS
-#    inverted:     true
-#matchRules:
-#    - "DEVO-F4.*"
-#    - ".*devof4.*"
-#    - "f4"
 #---
 #name:        Devo F12
 #id:          DEVO-F12

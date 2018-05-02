@@ -25,6 +25,10 @@ public class DfuMemory {
                     } else if (m.group(3).equals("M")) {
                         size = size * 1024 * 1024;
                     }
+                    if (count == 244) {
+                        count = 122;
+                        size = size * 2;
+                    }
                     boolean readable = false;
                     boolean erasable = false;
                     boolean writable = false;
