@@ -105,6 +105,8 @@ matchRules:
     - "t8sg_v2"
     - ".*t8sg_v2_plus.*"
     - "t8sg_v2_plus"
+    - ".*ir8m.*"
+    - "ir8m"
 overrideSectors:
     - iface: 2
       remove: true
