@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.logging.Logger;
 
 
 import org.jdesktop.swingx.treetable.AbstractTreeTableModel;
@@ -12,6 +13,9 @@ import deviation.FileInfo;
 import deviation.gui.FilesToSend;
 
 public class FilesToSendModel extends AbstractTreeTableModel {
+
+	private final static Logger LOG = Logger.getLogger(FilesToSendModel.class.getName());
+
 	private final static String[] COLUMN_NAMES = {"Name", "Size"};
 	List<FileInfo> files;
 	
@@ -26,7 +30,7 @@ public class FilesToSendModel extends AbstractTreeTableModel {
 	}
 	public List <FileInfo> getFiles() { return files; }
 	public void refresh() {
-		System.out.println("Firing Root");
+		LOG.finest("Firing Root");
 		super.modelSupport.fireNewRoot();
 	}
 	public void update(List<FileInfo> files) {
@@ -101,7 +105,6 @@ public class FilesToSendModel extends AbstractTreeTableModel {
     public int getChildCount(Object parent) {
     	String dir = (parent instanceof String) ? (String)parent : "";
     	List<Object> entries = getDirList(dir);
-    	//System.out.format("getChildCount for '%s' returned %d\n", dir, entries.size());
     	return entries.size();
     }
 

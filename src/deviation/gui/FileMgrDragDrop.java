@@ -158,7 +158,6 @@ public class FileMgrDragDrop {
 							files.add(f);
 						} catch (Exception e) {e.printStackTrace(); }
 					}
-					//System.out.println(node.getClass().getName() + " " + node);
 				}
 				return new FileTransferable(files);
 			}

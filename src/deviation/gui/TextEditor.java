@@ -3,12 +3,12 @@ package deviation.gui;
 import java.awt.BorderLayout;
 import java.awt.Font;
 import java.awt.event.*;
+import java.util.logging.Logger;
 
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
 
 import org.fife.rsta.ui.CollapsibleSectionPanel;
-//import org.fife.rsta.ui.DocumentMap;
 import org.fife.rsta.ui.GoToDialog;
 import org.fife.rsta.ui.SizeGripIcon;
 import org.fife.rsta.ui.search.FindDialog;
@@ -37,6 +37,8 @@ import deviation.FileInfo;
  * @version 1.0
  */
 public class TextEditor extends JDialog implements SearchListener {
+
+	private static final Logger LOG = Logger.getLogger(TextEditor.class.getName());
 
 	private static final long serialVersionUID = 1L;
 	private CollapsibleSectionPanel csp;
@@ -71,7 +73,7 @@ public class TextEditor extends JDialog implements SearchListener {
 		textArea.setMarkOccurrences(true);
 		textArea.append(finalData);
 		Font f = textArea.getFont();
-		System.out.format("Font: %d", f.getSize());
+		LOG.info(String.format("Font: %d", f.getSize()));
 		f = new Font(f.getFamily(), f.getStyle(), f.getSize()+5);
 		textArea.setFont(f);
 		RTextScrollPane sp = new RTextScrollPane(textArea);

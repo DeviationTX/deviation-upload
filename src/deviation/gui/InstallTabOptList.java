@@ -186,7 +186,6 @@ public class InstallTabOptList extends JScrollPane {
     	}
 //    	ShowAdvanced();
     	if (combobox.getSelectedIndex() != 4) {
-    		System.out.println("Here");
     		ShowAutomatic();
     	} else {
     		ShowAdvanced();

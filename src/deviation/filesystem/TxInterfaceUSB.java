@@ -3,6 +3,7 @@ package deviation.filesystem;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 import de.waldheinz.fs.FileSystem;
 import de.waldheinz.fs.FsDirectory;
@@ -18,6 +19,9 @@ import deviation.TxInfo;
 import deviation.filesystem.DevoFS.DevoFSFileSystem;
 
 public class TxInterfaceUSB extends TxInterfaceCommon implements TxInterface  {
+
+	  private static final Logger LOG = Logger.getLogger(TxInterfaceUSB.class.getName());
+
     DfuDevice dev;
     FlashIO rootBlockDev;
     FlashIO mediaBlockDev;
@@ -46,7 +50,7 @@ public class TxInterfaceUSB extends TxInterfaceCommon implements TxInterface  {
         }
 		rootIface = dev.SelectInterfaceByAddr(tx.getRootSectorOffset() * SECTOR_SIZE);
 		if (rootIface == null) {
-			System.out.println("Could not identify any memory region for rootFS");
+			LOG.info("Could not identify any memory region for rootFS");
 		}
         rootBlockDev = new FlashIO(dev, tx.getRootSectorOffset() * SECTOR_SIZE, tx.isRootInverted(), SECTOR_SIZE, null);
     	
@@ -146,7 +150,7 @@ public class TxInterfaceUSB extends TxInterfaceCommon implements TxInterface  {
     }
     public void open() {
 		if (dev.open() != 0) {
-			System.out.println("Error: Unable to open device");
+			LOG.severe("Error: Unable to open device");
 			return;
 		}
 		dev.claim_and_set();    	
@@ -206,14 +210,14 @@ public class TxInterfaceUSB extends TxInterfaceCommon implements TxInterface  {
         	try {
         		has_media = DetectFS(FSStatus.MEDIA_FS);
         	} catch (Exception e){
-        		System.out.println("Error: Unable to open media device");
+        		LOG.severe("Error: Unable to open media device");
         		return FSStatus.unformatted();
         	}
         }
        	try {
        		has_root = DetectFS(FSStatus.ROOT_FS);
        	} catch (Exception e){
-       		System.out.println("Error: Unable to open root device");
+					LOG.severe("Error: Unable to open root device");
     		return FSStatus.unformatted();
        	}
         //IOUtil.writeFile("fatroot", fatRootBytes);

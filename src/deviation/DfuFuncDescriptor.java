@@ -1,12 +1,16 @@
 package deviation;
 
 import java.util.*;
+import java.util.logging.Logger;
 
 import de.ailis.usb4java.libusb.*;
 
 /* Note: This class is not functioning properly because usb4java does not properly return extra() */
 public class DfuFuncDescriptor
     {
+
+        private static final Logger LOG = Logger.getLogger(DfuFuncDescriptor.class.getName());
+
         public static final byte USB_DT_DFU =  0x21;
         public static byte [] find_descriptor(byte [] desc_list, int desc_type, int desc_index)
         {
@@ -18,7 +22,7 @@ public class DfuFuncDescriptor
     
                 desclen = 0xff & (int)desc_list[p];
                 if (desclen == 0) {
-                            System.out.println("Error: Invalid descriptor list\n");
+                            LOG.severe("Error: Invalid descriptor list");
                             return null;
                     }
                     if (desc_list[p + 1] == desc_type && hit++ == desc_index) {
@@ -51,9 +55,8 @@ public class DfuFuncDescriptor
                 //byte resbuf[] = find_descriptor(extra, USB_DT_DFU, 0);
                 if(extra != null) {
                     for (int i = 0; i < extra.length; i++) {
-                        System.out.format("%02x ", extra[i]);
+                        LOG.finest(String.format("%02x ", extra[i]));
                     }
-                    System.out.format("%n");
                 }
             }
             LibUsb.freeConfigDescriptor(cfg);

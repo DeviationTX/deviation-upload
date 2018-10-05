@@ -1,9 +1,11 @@
 package deviation.filesystem;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 import de.waldheinz.fs.FileSystem;
 import de.waldheinz.fs.FsDirectory;
@@ -17,6 +19,10 @@ import deviation.TransmitterList;
 import deviation.TxInfo;
 
 public class TxInterfaceEmulator extends TxInterfaceCommon implements TxInterface {
+
+	private static final Logger LOG = Logger.getLogger(TxInterfaceEmulator.class.getName());
+	private static final String TEST_FAT_FILE = "test.fat";
+
 	//private Progress progress;
 	private FileSystem fs;
 	private FileDisk2 blockDev;
@@ -24,9 +30,11 @@ public class TxInterfaceEmulator extends TxInterfaceCommon implements TxInterfac
 	private static final String emulatedTx = "Devo 7e";
 	public TxInterfaceEmulator() {
 		try {
-			blockDev = new FileDisk2(new File("test.fat"), false, 4096, 5000);
+			blockDev = new FileDisk2(new File(TEST_FAT_FILE), false, 4096, 5000);
 			tx = TransmitterList.get(emulatedTx);
-		} catch (Exception e) { e.printStackTrace(); }
+		} catch (FileNotFoundException e) {
+			LOG.fine(TEST_FAT_FILE + " file not found. Continue without.");
+		}
 	}
     public void setProgress(Progress progress) { /*this.progress = progress; */}
     public DfuDevice getDevice() { return null; }

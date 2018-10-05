@@ -8,6 +8,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
+import java.util.logging.Logger;
 
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
@@ -20,9 +21,9 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import deviation.*;
 
 public class DfuSendTab extends JPanel {
-    /**
-     * 
-     */
+
+    private static final Logger LOG = Logger.getLogger(DfuSendTab.class.getName());
+
     private static final long serialVersionUID = 1L;
     private static final String DEFAULT_DIR = "DefaultDir";
     private JTextField DFU_txtFile;
@@ -137,9 +138,9 @@ public class DfuSendTab extends JPanel {
                         fileList.setTotalBytes(size);
                     } else{
                         DFU_btnSend.setEnabled(false);
-                        System.out.format("Error: Dfu Tx type '%s' does not match transmitter type '%s'%n",
+                        LOG.severe(String.format("Error: Dfu Tx type '%s' does not match transmitter type '%s'",
                                 TxInfo.typeToString(type),
-                                TxInfo.typeToString(gui.getTxInfo().type()));
+                                TxInfo.typeToString(gui.getTxInfo().type())));
                     }
                 } catch (IOException ex) {
                     ex.printStackTrace();

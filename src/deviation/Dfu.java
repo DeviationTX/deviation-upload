@@ -3,11 +3,17 @@ package deviation;
 import java.io.*;
 import java.util.*;
 import java.nio.ByteBuffer;
+import java.util.logging.Logger;
 
 import de.ailis.usb4java.libusb.*;
 
+import static java.util.logging.Level.FINEST;
+
 public final class Dfu
 {
+
+    private static final Logger LOG = Logger.getLogger(Dfu.class.getName());
+
     public static final byte DFU_DETACH    = 0;
     public static final byte DFU_DNLOAD    = 1;
     public static final byte DFU_UPLOAD    = 2;
@@ -42,15 +48,15 @@ public final class Dfu
             DfuDevice dev = new DfuDevice(device);
             for (Interface uif : cfg.iface()) {
                 for (InterfaceDescriptor intf : uif.altsetting()) {
-                    /*
-                    System.out.format("%04x:%04x -> %02x/%02x %02x/%02x%n",
-                                      desc.idVendor() & 0xffff,
-                                      desc.idProduct() & 0xffff,
-                                      intf.bInterfaceNumber(),
-                                      intf.bAlternateSetting(),
-                                      intf.bInterfaceClass(),
-                                      intf.bInterfaceSubClass());
-                    */
+                    if (LOG.isLoggable(FINEST)) {
+                        LOG.finest(String.format("%04x:%04x -> %02x/%02x %02x/%02x",
+                                          desc.idVendor() & 0xffff,
+                                          desc.idProduct() & 0xffff,
+                                          intf.bInterfaceNumber(),
+                                          intf.bAlternateSetting(),
+                                          intf.bInterfaceClass(),
+                                          intf.bInterfaceSubClass()));
+                    }
                     if (intf.bInterfaceClass() == (byte)0xfe && intf.bInterfaceSubClass() == 0x01) {
                        dev.AddInterface(intf, cfg);
                     }
@@ -99,18 +105,18 @@ public final class Dfu
         if (command == DFUSE_ERASE_PAGE) {
             Sector sector = dev.Memory().find(address);
             if (sector == null || ! sector.erasable()) {
-                System.out.format("Error: Page at 0x%x can not be erased%n", address);
+                LOG.severe(String.format("Error: Page at 0x%x can not be erased", address));
                 return -1;
             }
-            System.out.format("Erasing page size %d at address 0x%x, page "
-                           + "starting at 0x%x%n", sector.size(), address,
-                           address & ~(sector.size() - 1));
+            LOG.severe(String.format("Erasing page size %d at address 0x%x, page "
+                           + "starting at 0x%x", sector.size(), address,
+                           address & ~(sector.size() - 1)));
             buf[0] = 0x41;  // Erase command
         } else if (command == DFUSE_SET_ADDRESS) {
-            System.out.format("  Setting address pointer to 0x%x%n", address);
+            LOG.info(String.format("Setting address pointer to 0x%x", address));
             buf[0] = 0x21;  /* Set Address Pointer command */
         } else {
-            System.out.format("Error: Non-supported special command %d%n", command);
+            LOG.severe(String.format("Error: Non-supported special command %d", command));
             return -1;
         }
         buf[1] = (byte)(address & 0xff);
@@ -120,27 +126,27 @@ public final class Dfu
 
         ret = dfuseDownload(dev, buf, 0);
         if (ret < 0) {
-            System.out.println("Error during special command download");
+            LOG.severe("Error during special command download");
             return -1;
         }
         // 1st getStatus
         status = getStatus(dev);
         if (status.bState != DfuStatus.STATE_DFU_DOWNLOAD_BUSY) {
-            System.out.println("Error: Wrong state after command download");
+            LOG.severe("Error: Wrong state after command download");
             return -1;
         }
         // wait while command is executed
-        System.out.format("   Poll timeout %d ms%n", status.bwPollTimeout);
+        LOG.fine(String.format("Poll timeout %d ms", status.bwPollTimeout));
         try {
             Thread.sleep(status.bwPollTimeout);
         } catch (InterruptedException e) {} //Don't care if we're interrupted
         // 2nd getStatus
         status = getStatus(dev);
         if (status.bStatus != DfuStatus.DFU_STATUS_OK) {
-            System.out.format("Error during second get_status%n"
-                   + "state(%d) = %s, status(%d) = %s%n",
+            LOG.severe(String.format("Error during second get_status"
+                   + " -- state(%d) = %s, status(%d) = %s",
                    status.bState, status.stateToString(),
-                   status.bStatus, status.statusToString());
+                   status.bStatus, status.statusToString()));
             return -1;
         }
         try {
@@ -149,14 +155,14 @@ public final class Dfu
 
         ret = abort(dev);
         if (ret < 0) {
-            System.out.println("Error sending dfu abort request");
+            LOG.severe("Error sending dfu abort request");
             return -1;
         }
 
         // 3rd getStatus
         status =getStatus(dev);
         if (status.bState != DfuStatus.STATE_DFU_IDLE) {
-                System.out.println("Error: Failed to enter idle state on abort%n");
+                LOG.severe("Error: Failed to enter idle state on abort");
                 return -1;
         }
         try {
@@ -179,7 +185,7 @@ public final class Dfu
                                          DFU_TIMEOUT);
         buffer.get(data);
         if (bytes_received < 0) {
-            System.out.format("dfuseUpload: libusb_control_msg returned %d\n", bytes_received);
+            LOG.info(String.format("dfuseUpload: libusb_control_msg returned %d", bytes_received));
         }               
         return bytes_received;
     }
@@ -199,7 +205,7 @@ public final class Dfu
                  /* Data          */     buffer,
                                          DFU_TIMEOUT);
         if (bytes_sent < 0) {
-            System.out.format("dfuseDownload: libusb_control_msg returned %d\n", bytes_sent);
+            LOG.info(String.format("dfuseDownload: libusb_control_msg returned %d", bytes_sent));
             return bytes_sent;
         }
         return bytes_sent;
@@ -219,13 +225,13 @@ public final class Dfu
                  status.bState != DfuStatus.STATE_DFU_MANIFEST);
 
         if (status.bState == DfuStatus.STATE_DFU_MANIFEST) {
-            System.out.println("Transitioning to dfuMANIFEST state");
+            LOG.info("Transitioning to dfuMANIFEST state");
         }
 
         if (status.bStatus != DfuStatus.DFU_STATUS_OK) {
-                System.out.format("Error: state(%d) = %s, status(%d) = %s%n",
+                LOG.severe(String.format("Error: state(%d) = %s, status(%d) = %s",
                     status.bState, status.stateToString(),
-                    status.bStatus, status.statusToString());
+                    status.bStatus, status.statusToString()));
                 return -1;
         }
 
@@ -298,43 +304,42 @@ public final class Dfu
         DfuStatus status = new DfuStatus(null);
         while (! done) {
             status = getStatus(dev);
-            System.out.format("Determining device status: statue=%s status=%d%n",
-                          status.stateToString(), status.bStatus);
+            LOG.fine(String.format("Determining device status: statue=%s status=%d",
+                          status.stateToString(), status.bStatus));
 
             switch (status.bState) {
                 case DfuStatus.STATE_APP_IDLE:
                 case DfuStatus.STATE_APP_DETACH:
-                    System.out.println("Device still in Runtime Mode!");
+                    LOG.severe("Device still in Runtime Mode!");
                     return -1;
                 case DfuStatus.STATE_DFU_ERROR:
-                    System.out.println("dfuERROR, clearing status");
+                    LOG.fine("dfuERROR, clearing status");
                     if (clearStatus(dev) < 0) {
-                        System.out.println("error clear_status");
+                        LOG.severe("error clear_status");
                         return -1;
                     }
                     break;
                 case DfuStatus.STATE_DFU_DOWNLOAD_IDLE:
                 case DfuStatus.STATE_DFU_UPLOAD_IDLE:
-                    System.out.println("aborting previous incomplete transfer");
+                    LOG.fine("aborting previous incomplete transfer");
                     if (abort(dev) < 0) {
-                        System.out.println("can't send DFU_ABORT");
+                        LOG.severe("can't send DFU_ABORT");
                         return -1;
                     }
                     break;
                 case DfuStatus.STATE_DFU_IDLE:
-                    System.out.println("dfuIDLE, continuing");
+                    LOG.fine("dfuIDLE, continuing");
                     done = true;
                     break;
             }
         }
         if (DfuStatus.DFU_STATUS_OK != status.bStatus ) {
-            System.out.format("WARNING: DFU Status: '%s'%n",
-                    status.statusToString());
+            LOG.warning(String.format("DFU Status: '%s'", status.statusToString()));
             // Clear our status & try again.
             clearStatus(dev);
             getStatus(dev);
             if (DfuStatus.DFU_STATUS_OK != status.bStatus) {
-                System.out.format("Error: %d\n", status.bStatus);
+                LOG.severe(String.format("Error: %d", status.bStatus));
                 return -1;
             }
         }
@@ -353,8 +358,8 @@ public final class Dfu
         /* Boot loader decides the start address, unknown to us */
         /* Use a short length to lower risk of running out of bounds */
 
-        System.out.format("bytes_per_hash=%d\n", xfer_size);
-        System.out.println("Starting device read");
+        LOG.fine(String.format("bytes_per_hash=%d", xfer_size));
+        LOG.info("Starting device read");
 
         ByteArrayOutputStream data = new ByteArrayOutputStream();
         while (true) {
@@ -388,9 +393,9 @@ public final class Dfu
         setIdle(dev);
         while (true) {
             Sector sector = dev.Memory().find(sector_address);
-            System.out.format("%d: %d (%d)\n", sector_address, sector == null ? -1 : sector.end(), address + data.length);
+            LOG.info(String.format("%d: %d (%d)", sector_address, sector == null ? -1 : sector.end(), address + data.length));
             if (sector == null || ! sector.writable()) {
-                System.out.format("Error: No sector found that can be written at address 0x%08x%n", sector_address);
+                LOG.severe(String.format("Error: No sector found that can be written at address 0x%08x", sector_address));
                 return -1;
             }
             if (sector.end() + 1>= address + data.length) {
@@ -403,7 +408,7 @@ public final class Dfu
         sector_address = address;
         int transaction = 2;
         if (dfuseSpecialCommand(dev, sector_address, DFUSE_SET_ADDRESS) != 0) {
-            System.out.format("Error: Write failed to set address: 0x%x%n", sector_address);
+            LOG.severe(String.format("Error: Write failed to set address: 0x%x", sector_address));
             return -1;
         }
         while (true) {
@@ -414,19 +419,19 @@ public final class Dfu
             if (progress != null) {
                 progress.update((int)(data.length > sector_size ? sector_size : data.length));
                 if (progress.cancelled()) {
-                    System.out.format("Cancelled at address 0x%x%n", sector_address);
+                    LOG.severe(String.format("Cancelled at address 0x%x", sector_address));
                     return -1;
                 }
             }
             if (sector.erasable()) {
-                System.out.format("Erasing page: 0x%x%n", sector_address);
+                LOG.info(String.format("Erasing page: 0x%x", sector_address));
                 if (dfuseSpecialCommand(dev, sector_address, DFUSE_ERASE_PAGE) != 0) {
-                    System.out.format("Error: Write failed to erase address: 0x%x%n", sector_address);
+                    LOG.severe(String.format("Error: Write failed to erase address: 0x%x", sector_address));
                     return -1;
                 }
             }
             if (dfuseSpecialCommand(dev, sector_address, DFUSE_SET_ADDRESS) != 0) {
-                System.out.format("Error: Write failed to set address: 0x%x%n", sector_address);
+                LOG.severe(String.format("Error: Write failed to set address: 0x%x", sector_address));
                 return -1;
             }
             transaction = 2;
@@ -441,22 +446,22 @@ public final class Dfu
                     //Need to transfer less than the xfer_size
                     xfer  = (int)(sector_start + sector_size - sector_address);
                     if (dfuseSpecialCommand(dev, sector_address, DFUSE_SET_ADDRESS) != 0) {
-                        System.out.format("Error: Write failed to set address: 0x%x%n", sector_address);
+                        LOG.severe(String.format("Error: Write failed to set address: 0x%x", sector_address));
                         return -1;
                     }
                     transaction = 2;
                 }
                 int offset = (int)(sector_address - address);
-                //System.out.format("Writing array at 0x%x (length: %d) dest: %x%n", sector_address, xfer, (transaction-2)*xfer + address);
+                //LOG.info(String.format("Writing array at 0x%x (length: %d) dest: %x", sector_address, xfer, (transaction-2)*xfer + address));
                 byte[] buf = Arrays.copyOfRange(data, offset, offset + xfer);
                 
                 if (progress != null && progress.cancelled()) {
-                    System.out.format("Cancelled at address 0x%x%n", sector_address);
+                    LOG.severe(String.format("Cancelled at address 0x%x", sector_address));
                     return -1;
                 }
                 //address will be ((wBlockNum – 2) × wTransferSize) + Addres_Pointer
                 if (dfuseDownloadChunk(dev, buf, transaction) <= 0) {
-                    System.out.format("Error: Write failed to write address : 0x%x%n", sector_address);
+                    LOG.severe(String.format("Error: Write failed to write address : 0x%x", sector_address));
                     return -1;
                 }
                 sector_address += xfer;
@@ -466,33 +471,33 @@ public final class Dfu
                 return 0;
             }
             if (xfer != xfer_size) {
-                System.out.format("Error: xfer_size %d is not a multiple of the sector size: %d%n",
-                                  xfer_size, sector.size());
+                LOG.severe(String.format("Error: xfer_size %d is not a multiple of the sector size: %d",
+                                  xfer_size, sector.size()));
                 return -1;
             }
         }
     }
     public static int resetSTM32(DfuDevice dev) {
     	DfuStatus status = new DfuStatus(null);
-    	System.out.format("Resetting STM32, starting firmware at address 0x08000000...\n");
+      LOG.info("Resetting STM32, starting firmware at address 0x08000000...");
     	int set_ret = dfuseSpecialCommand(dev, 0x08000000, DFUSE_SET_ADDRESS);
     	if( set_ret < 0 ) {
-    		System.out.format("Error: Unable to set start address for reseting\n");
+          LOG.severe("Error: Unable to set start address for resetting");
     		return -1;
     	}
 
     	int dret = dfuseDownload(dev, new byte[0], 2);
 
     	if( dret < 0 ) {
-    		System.out.format("Error: Unable to initiate zero-length download\n");
+          LOG.severe(String.format("Error: Unable to initiate zero-length download"));
     		return -1;
     	}
     	status = getStatus(dev);
 
     	if( status.bState != DfuStatus.STATE_DFU_MANIFEST) {
-    		System.out.format("Error: Expected STM32 to be in dfuMANIFEST state after get-status command!\n");
+        LOG.severe("Error: Expected STM32 to be in dfuMANIFEST state after get-status command!");
     	} else {
-    		System.out.format("Successfully reset STM32\n");
+          LOG.info("Successfully reset STM32");
     	}
     	return 0;
     }

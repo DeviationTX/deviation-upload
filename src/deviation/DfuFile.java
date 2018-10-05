@@ -105,7 +105,6 @@ public class DfuFile {
             for (i = 0; i < arr.length && arr[i] != 0; i++) {}
             targetName = new String(arr, 0, i);
         }
-        //System.out.println("Name: '" + targetName + "'");
         //long targetSize = ((long)(0xff & data[offset+269]) << 24)
         //                      | ((0xff & data[offset+268]) << 16)
         //                      | ((0xff & data[offset+267]) <<  8)
@@ -124,7 +123,6 @@ public class DfuFile {
                         | ((0xff & data[start+6]) << 16)
                         | ((0xff & data[start+5]) <<  8)
                         | ((0xff & data[start+4]) <<  0);
-            //System.out.format("size: %d count: %d 0x%x %d\n", targetSize, numElements, address, length);
             start += 8;
             imageElements.add(new ImageElement(targetName, bAltSetting, address, Arrays.copyOfRange(data, start, start+length)));
             start += length;

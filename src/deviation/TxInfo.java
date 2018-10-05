@@ -1,9 +1,13 @@
 package deviation;
 
 import java.util.*;
+import java.util.logging.Logger;
 
 
 public class TxInfo {
+
+    private static final Logger LOG = Logger.getLogger(TxInfo.class.getName());
+
     private String model;
     private long id1;
     private long id2;
@@ -74,7 +78,7 @@ public class TxInfo {
     {
         dev.SelectInterface(dev.Interfaces().get(0));
         if (dev.open() != 0) {
-            System.out.println("Error: Unable to open device");
+            LOG.warning("Error: Unable to open device");
             return new TxInfo();
         }
         dev.claim_and_set();
