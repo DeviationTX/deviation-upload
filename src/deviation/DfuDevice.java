@@ -74,11 +74,17 @@ public class DfuDevice
             if (selected_interface == null) {
                 return -1;
             }
+            System.out.format("Claiming interface %d Alt: %d\n", 
+            		selected_interface.bInterfaceNumber(),
+            		selected_interface.bAlternateSetting());
             int ret = LibUsb.claimInterface(handle, selected_interface.bInterfaceNumber());
+            System.out.format("Claiming interface returned: %d\n", ret);
             if (ret < 0) {
                 return ret;
             }
-            return LibUsb.setInterfaceAltSetting(handle, selected_interface.bInterfaceNumber(), selected_interface.bAlternateSetting());
+            ret = LibUsb.setInterfaceAltSetting(handle, selected_interface.bInterfaceNumber(), selected_interface.bAlternateSetting());
+            System.out.format("Setting Alt returned: %d\n", ret);
+            return ret;
         }
         public boolean SelectInterface(DfuInterface iface)
         {

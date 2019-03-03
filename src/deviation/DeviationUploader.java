@@ -24,9 +24,11 @@ public class DeviationUploader
         if (address < 0x08005000L && address + data.length > 0x08005000L) {
             int offset = (int)(0x08005000L - address);
             byte[] txcode = info.encodeId();
-            System.out.println("Encrypting txid for " + TxInfo.typeToString(info.type()));
-            for (byte b : txcode) {
-                data[offset++] = b;
+            if (txcode != null) {
+                System.out.println("Encrypting txid for " + TxInfo.typeToString(info.type()));
+                for (byte b : txcode) {
+                    data[offset++] = b;
+                }
             }
         }
         return data;

@@ -9,7 +9,7 @@ public class Transmitter {
 	public static enum ProtoFiles {NONE, KEEP, ALL};
 	public String name;
 	public String id;
-	public int numChannels;
+	public int encryption;
 	public FlashInfo root;
 	public FlashInfo media;
 	public List<String> matchRules;
@@ -22,14 +22,14 @@ public class Transmitter {
 	}
 	public Transmitter(String name,
 			String id,
-			int numChannels,
+			int encryption,
 			FlashInfo root,
 			FlashInfo media,
 			List<String> matchRules,
 			List<SectorOverride> overrideSectors) {
 		this.name = name;
 		this.id = id;
-		this.numChannels = numChannels;
+		this.encryption = encryption;
 		this.root = root;
 		this.media = media;
 		this.matchRules = matchRules;
@@ -84,7 +84,7 @@ public class Transmitter {
     }
     
 	public byte[] encode(long id1, long id2, long id3) {
-		switch(numChannels) {
+		switch(encryption) {
 		case 12: return encode_12(id1, id2, id3);
 		case 10: return encode_10(id1, id2, id3);
 		case 8:  return encode_6_8(id1, id2, id3);

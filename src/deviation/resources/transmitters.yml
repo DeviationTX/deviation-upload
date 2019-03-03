@@ -1,6 +1,6 @@
 name:        Devo 12
-id:          DEVO-12
-numChannels: 12
+id:          Walkera DEVO-12
+encryption: 12
 root:
     sectorOffset: 0
     sectorCount:  512
@@ -25,8 +25,8 @@ overrideSectors:
           count:    0x200
 ---
 name:        Devo 12E
-id:          DEVO-12E
-numChannels: 12
+id:          Walkera DEVO-12E
+encryption: 12
 root:
     sectorOffset: 54
     sectorCount:  1024
@@ -38,8 +38,8 @@ matchRules:
     - "12e"
 ---
 name:        Devo F12E
-id:          FPV-12E
-numChannels: 12
+id:          Walkera FPV-12E
+encryption: 12
 root:
     sectorOffset: 0
     sectorCount:  64
@@ -61,8 +61,8 @@ overrideSectors:
           count:    16
 ---
 name:        Devo 10
-id:          DEVO-10
-numChannels: 10
+id:          Walkera DEVO-10
+encryption: 10
 root:
     sectorOffset: 54
     sectorCount:  1024
@@ -74,8 +74,8 @@ matchRules:
     - "10"
 ---
 name:        Devo 8
-id:          DEVO-08
-numChannels: 8
+id:          Walkera DEVO-08
+encryption: 8
 root:
     sectorOffset: 54
     sectorCount:  1024
@@ -87,8 +87,8 @@ matchRules:
     - "8"
 ---
 name:        Devo 7e
-id:          DEVO-7E
-numChannels: 7
+id:          Walkera DEVO-7E
+encryption: 7
 fsProtocols: ALL
 root:
     sectorOffset: 0
@@ -97,14 +97,11 @@ root:
     inverted:     true
 matchRules:
     - "DEVO-7E.*"
-    - ".*devo7e.*"
+    - '.*devo7e-\S+ Firmware.*'
     - "7e"
-    - ".*t8sg.*"
-    - "t8sg"
-    - ".*t8sg_v2.*"
-    - "t8sg_v2"
-    - ".*t8sg_v2_plus.*"
-    - "t8sg_v2_plus"
+    - '.*t8sg-\S+ Firmware.*'
+    - '.*t8sg_v2-\S+ Firmware.*'
+    - '.*t8sg_v2_plus-\S+ Firmware.*'
     - ".*ir8m.*"
     - "ir8m"
 overrideSectors:
@@ -122,9 +119,22 @@ overrideSectors:
           size:     0x10000
           count:    30
 ---
+name:        Jumper T8SG
+id:          T8SGV
+encryption: 0
+fsProtocols: ALL
+root:
+    sectorOffset: 0
+    sectorCount:  512
+    fsType:       FAT
+    inverted:     true
+matchRules:
+    - '.*t8sg-\S+ Unified Firmware.*'
+    - "t8sg"
+---
 name:        Devo 6
-id:          DEVO-06
-numChannels: 6
+id:          Walkera DEVO-06
+encryption: 8
 root:
     sectorOffset: 54
     sectorCount:  1024
@@ -136,8 +146,8 @@ matchRules:
     - "6"
 ---
 name:        Devo F4
-id:          DEVO-F4
-numChannels: 4
+id:          Walkera DEVO-F4
+encryption: 4
 root:
     sectorOffset: 0
     sectorCount:  64
@@ -149,8 +159,8 @@ matchRules:
     - "f4"
 ---
 name:        Devo F7
-id:          DEVO-F7
-numChannels: 7
+id:          Walkera DEVO-F7
+encryption: 7
 fsProtocols: KEEP
 root:
     sectorOffset: 0
@@ -163,8 +173,8 @@ matchRules:
     - "f7"
 #---
 #name:        Devo F7S
-#id:          DEVO-F7S
-#numChannels: 7
+#id:          Walkera DEVO-F7S
+#encryption: 7
 #root:
 #    sectorOffset: 0
 #    sectorCount:  64
@@ -177,7 +187,7 @@ matchRules:
 #---
 #name:        Devo F12
 #id:          DEVO-F12
-#numChannels: 12
+#encryption: 12
 #root:
 #    sectorOffset: 0
 #    sectorCount:  64

@@ -179,8 +179,8 @@ public final class Dfu
                                          DFU_TIMEOUT);
         buffer.get(data);
         if (bytes_received < 0) {
-            System.out.format("dfuseUpload: libusb_control_msg returned %d\n", bytes_received);
-        }               
+            System.out.format("dfuseUpload: libusb_control_transfer returned %d\n", bytes_received);
+        }
         return bytes_received;
     }
 
@@ -199,7 +199,7 @@ public final class Dfu
                  /* Data          */     buffer,
                                          DFU_TIMEOUT);
         if (bytes_sent < 0) {
-            System.out.format("dfuseDownload: libusb_control_msg returned %d\n", bytes_sent);
+            System.out.format("dfuseDownload: libusb_control_transfer returned %d\n", bytes_sent);
             return bytes_sent;
         }
         return bytes_sent;
@@ -298,7 +298,7 @@ public final class Dfu
         DfuStatus status = new DfuStatus(null);
         while (! done) {
             status = getStatus(dev);
-            System.out.format("Determining device status: statue=%s status=%d%n",
+            System.out.format("Determining device status: state=%s status=%d%n",
                           status.stateToString(), status.bStatus);
 
             switch (status.bState) {

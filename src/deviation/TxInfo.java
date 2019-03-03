@@ -21,7 +21,10 @@ public class TxInfo {
     public TxInfo(byte [] data)
     {
     	identifier = data;
-        model = new String(Arrays.copyOfRange(data, 0, 32));
+        int j;
+        for (j = 0; j < 32 && data[j] != 0; j++) { }
+        model = new String(Arrays.copyOfRange(data, 0, j));
+        System.out.println(model);
         type = TransmitterList.UNKNOWN();
         txloop:
         for (Transmitter tx : TransmitterList.values()) {
@@ -29,7 +32,7 @@ public class TxInfo {
         	if (match.length == 0)
         		continue;
         	for (int i = 0; i < match.length; i++) {
-        		if (match[i] != data[8+i]) {
+        		if (match[i] != data[i]) {
         			continue txloop;
         		}
         	}
@@ -78,7 +81,7 @@ public class TxInfo {
             return new TxInfo();
         }
         dev.claim_and_set();
-        Dfu.setIdle(dev);
+        // Dfu.setIdle(dev);
         byte [] txInfoBytes = Dfu.fetchFromDevice(dev, 0x08000400, 0x40);
         TxInfo txInfo = new TxInfo(txInfoBytes);
         dev.close();
