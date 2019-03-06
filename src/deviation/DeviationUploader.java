@@ -1,22 +1,17 @@
 package deviation;
 
-import java.io.*;
-import java.nio.ByteBuffer;
-import java.util.*;
-
-import de.ailis.usb4java.libusb.*;
-import de.waldheinz.fs.fat.FatFileSystem;
-import de.waldheinz.fs.util.*;
-import de.waldheinz.fs.*;
+import de.ailis.usb4java.libusb.DeviceList;
+import de.ailis.usb4java.libusb.LibUsb;
 import deviation.DfuMemory.SegmentParser;
 import deviation.commandline.CliOptions;
 import deviation.commandline.CommandLineHandler;
 import deviation.filesystem.FSUtils;
-import deviation.filesystem.FileDisk2;
-import deviation.filesystem.DevoFS.DevoFSFileSystem;
 import deviation.gui.DeviationUploadGUI;
 
-import org.apache.commons.cli.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.List;
 public class DeviationUploader
 {
     public static byte[] applyEncryption(DfuFile.ImageElement elem, TxInfo info)
@@ -193,35 +188,6 @@ public class DeviationUploader
     		dev.close();
     	}
     }
-
-    public static void test() {
-        try {
-            BlockDevice bd = new FileDisk(new File("test.fat"), false);
-            FileSystem fs = FatFileSystem.read(bd, false);
-            FileGroup zips = new FileGroup();
-            zips.AddFile("test.zip");
-            for (FileInfo file: zips.GetFilesystemFiles()) {
-            	FSUtils.copyFile(fs, file);
-            }
-            fs.close();
-            bd.close();
-            /*
-            String[]dirs = "/media/".split("/");
-            FsDirectory dir = fs.getRoot();
-            for (String subdir : dirs) {
-                if (subdir.equals("")) {
-                   continue;
-                }
-                dir = dir.getEntry(subdir).getDirectory();
-            }
-            Iterator<FsDirectoryEntry> itr = dir.iterator();
-            while(itr.hasNext()) {
-                FsDirectoryEntry entry = itr.next();
-                System.out.println(entry.getName());
-            }
-            */
-        } catch (Exception e) { e.printStackTrace();  }
-        System.exit(0);
 
     public static void main(String[] args)
     {
