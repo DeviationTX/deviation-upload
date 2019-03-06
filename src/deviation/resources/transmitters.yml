@@ -97,13 +97,12 @@ root:
     inverted:     true
 matchRules:
     - "DEVO-7E.*"
-    - '.*devo7e-\S+ Firmware.*'
+    - '.*devo7e(-\S+)?\s+(?!Unified).*'
     - "7e"
-    - '.*t8sg-\S+ Firmware.*'
-    - '.*t8sg_v2-\S+ Firmware.*'
-    - '.*t8sg_v2_plus-\S+ Firmware.*'
+    - '.*t8sg-\S+\s+(?!Unified).*'
+    - '.*t8sg(_v\d(\_plus)?)?(-\S+)?\s+(?!Unified).*'
+    - '.*t8sgv\d\+?(-\S+)?\s+(?!Unified).*'
     - ".*ir8m.*"
-    - "ir8m"
 overrideSectors:
     - iface: 2
       remove: true
@@ -129,8 +128,7 @@ root:
     fsType:       FAT
     inverted:     true
 matchRules:
-    - '.*t8sg-\S+ Unified Firmware.*'
-    - "t8sg"
+    - '.*t8sg.*Unified.*'
 ---
 name:        Devo 6
 id:          Walkera DEVO-06
