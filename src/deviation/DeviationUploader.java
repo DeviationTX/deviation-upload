@@ -9,6 +9,8 @@ import de.waldheinz.fs.fat.FatFileSystem;
 import de.waldheinz.fs.util.*;
 import de.waldheinz.fs.*;
 import deviation.DfuMemory.SegmentParser;
+import deviation.commandline.CliOptions;
+import deviation.commandline.CommandLineHandler;
 import deviation.filesystem.FSUtils;
 import deviation.filesystem.FileDisk2;
 import deviation.filesystem.DevoFS.DevoFSFileSystem;
@@ -192,202 +194,70 @@ public class DeviationUploader
     	}
     }
 
-    public static CommandLine handleCmdline(String[] args)
-    {
-        DeviationVersion ver = new DeviationVersion();
-        Options optionsHelp = new Options();
-        Options options = new Options();
-        OptionGroup groupCmd = new OptionGroup();
-        OptionGroup groupFile = new OptionGroup();
-        optionsHelp.addOption(Option.builder("h")
-        		                           .longOpt("help")
-                                           .desc("Show help message")
-                                           .build());
-        optionsHelp.addOption(Option.builder("V")
-        		                           .longOpt("version")
-                                           .desc("Show help message")
-                                           .build());
-
-        groupCmd.addOption(Option.builder("s")
-        		                        .longOpt("send")
-                                        .desc("send file to transmitter")
-                                        .build());
-        groupCmd.addOption(Option.builder("f")
-        		                        .longOpt("fetch")
-                                        .desc("fetch file from transmitter")
-                                        .build());
-        groupCmd.addOption(Option.builder("l")
-        		                        .longOpt("list")
-                                        .desc("list transmitter interfaces")
-                                        .build());
-        //groupCmd.setRequired(true);
-        options.addOptionGroup(groupCmd);
-        groupFile.addOption(Option.builder("d")
-        		                .longOpt("dfu")
-                                .argName( "file" )
-                                .hasArg()
-                                .desc(  "specify Dfu file to send" )
-                                .build());
-        groupFile.addOption(Option.builder("b")
-        		                .longOpt("bin")
-                                .argName( "file" )
-                                .hasArg()
-                                .desc(  "specify bin file to send/receive" )
-                                .build());
-        options.addOptionGroup(groupFile);
-        options.addOption(Option.builder("a")
-        		                .longOpt("address")
-                                .argName( "address" )
-                                .hasArg()
-                                .desc(  "specify address to send/receive from" )
-                                .build());
-        options.addOption(Option.builder()
-        		                .longOpt("overwrite")
-                                .desc(  "overwrite local files (only relevant with -fetch")
-                                .build());
-        options.addOption(Option.builder()
-        		                .longOpt("length")
-                                .argName( "bytes" )
-                                .hasArg()
-                                .desc(  "specify number of bytes to transfer" )
-                                .build());
-        options.addOption(Option.builder()
-        		                .longOpt("txid")
-                                .argName( "id" )
-                                .hasArg()
-                                .desc(  "specify the tx id as vendorid:productid" )
-                                .build());
-        options.addOption(Option.builder()
-        		                .longOpt("alt-setting")
-                                .argName( "id" )
-                                .hasArg()
-                                .desc(  "specify the alt-setting for this transfer" )
-                                .build());
-        options.addOption(Option.builder()
-        						.longOpt("interface")
-        						.argName( "interface" )
-        						.hasArg()
-        						.desc(  "manuallyoverride interface detection" )
-        						.build());
-        options.addOption(Option.builder()
-        		                .longOpt("force-txtype")
-                                .argName( "txType" )
-                                .hasArg()
-                                .desc(  "force the encryption to be to a specific transmitter type (very risky)" )
-                                .build());
-        options.addOption(Option.builder()
-        		                .longOpt("ignore-dfu-check")
-                                .desc(  "ignore Tx model checks")
-                                .build());
-        options.addOption(Option.builder()
-        						.longOpt("invert")
-        						.desc(   "invert data during bin read/write")
-        						.build());
-        options.addOption(Option.builder("h")
-        		                .longOpt("help")
-                                .desc("Show help message")
-                                .build());
-        options.addOption(Option.builder("V")
-        		                .longOpt("version")
-                                .desc("Show help message")
-                                .build());
-        options.addOption(Option.builder("r")
-                .longOpt("reset")
-                .desc("Reset after any other options have been perfomed")
-                .build());
-
+    public static void test() {
         try {
-            //Handle help and version info here
-            CommandLine cl = new DefaultParser().parse(optionsHelp, args, true);
-            if (cl.getOptions().length != 0) {
-                if (cl.hasOption("help")) {
-                    HelpFormatter formatter = new HelpFormatter();
-                    formatter.printHelp(ver.name(), options);
-                }
-                if (cl.hasOption("version")) {
-                    System.out.println(ver.name() + ": " + ver.version());
-                }
-                System.exit(0);
+            BlockDevice bd = new FileDisk(new File("test.fat"), false);
+            FileSystem fs = FatFileSystem.read(bd, false);
+            FileGroup zips = new FileGroup();
+            zips.AddFile("test.zip");
+            for (FileInfo file: zips.GetFilesystemFiles()) {
+            	FSUtils.copyFile(fs, file);
             }
-            //No handle all other options
-            cl = new DefaultParser().parse(options, args);
-            if (groupCmd.getSelected() == null && ! cl.hasOption("reset")) {
-            	System.err.println("Must specify at leats one of: -s -f -l -r -h");
-            	System.exit(1);
-            }
-            String file = null;
-            if (cl.hasOption("dfu")) {
-                file = cl.getOptionValue("dfu");
-            } else if (cl.hasOption("bin")) {
-                file = cl.getOptionValue("bin");
-            }
-            if (file != null) {
-                if (cl.hasOption("fetch") && ! cl.hasOption("overwrite") && new File(file).isFile()) {
-                    System.err.println("File '" + file + "' already exists.");
-                    System.exit(1);
+            fs.close();
+            bd.close();
+            /*
+            String[]dirs = "/media/".split("/");
+            FsDirectory dir = fs.getRoot();
+            for (String subdir : dirs) {
+                if (subdir.equals("")) {
+                   continue;
                 }
-                if (cl.hasOption("send") && ! new File(file).isFile()) {
-                    System.err.println("File '" + file + "' does not exist.");
-                    System.exit(1);
-                }
-                if (! cl.hasOption("address")) {
-                    if ((cl.hasOption("send") && cl.hasOption("bin")) || cl.hasOption("fetch")) {
-                        System.err.println("Must specify -address");
-                        System.exit(1);
-                    }
-                }
-            } else if(cl.hasOption("send") || cl.hasOption("fetch")) {
-                System.err.println("No file specified");
-                System.exit(1);
+                dir = dir.getEntry(subdir).getDirectory();
             }
-            for (String opt : new String[] {"address", "length"}) {
-                if (cl.hasOption(opt)) {
-                    try {
-                        Long.decode(cl.getOptionValue(opt));
-                    } catch (NumberFormatException ex) {
-                        System.err.println("Must specify a valid numerical value to -" + opt);
-                        System.exit(1);
-                    }
-                }
+            Iterator<FsDirectoryEntry> itr = dir.iterator();
+            while(itr.hasNext()) {
+                FsDirectoryEntry entry = itr.next();
+                System.out.println(entry.getName());
             }
-       
-            return cl;
-        } catch (ParseException ex) {
-            System.err.println(ex.getMessage());
-            System.exit(1);
-        }
-        return null;
-    }
+            */
+        } catch (Exception e) { e.printStackTrace();  }
+        System.exit(0);
 
     public static void main(String[] args)
     {
-        if (args.length == 0) {
-        	//DnDFrame.main(null);
+        CommandLineHandler cliHandler = new CommandLineHandler();
+        CliOptions cliOptions = cliHandler.handleCmdLine(args);
+
+        if (!cliOptions.hasProgramOptions()) {
             DeviationUploadGUI.main(null);
             while(true) {}
         }
+
         TransmitterList.init();
-        CommandLine cl = handleCmdline(args);
+
         Integer vendorId = null;
         Integer productId = null;
-        Integer altSetting = null;
-        if (cl.hasOption("txid")) {
-            String[] id = cl.getOptionValue("txid").split(":");
+        if (cliOptions.hasTxId()) {
+            String[] id = cliOptions.getTxIdValue().split(":");
             vendorId = Integer.parseInt(id[0], 16);
             productId = Integer.parseInt(id[1], 16);
         }
-        if (cl.hasOption("alt-setting")) {
-            altSetting = Integer.parseInt(cl.getOptionValue("alt-setting"));
+
+        Integer altSetting = null;
+        if (cliOptions.hasAltSettings()) {
+            altSetting = Integer.parseInt(cliOptions.getAltSettingsValue());
         }
 
         DeviceList devices = new DeviceList();
         LibUsb.init(null);
         LibUsb.getDeviceList(null, devices);
         List<DfuDevice> devs = Dfu.findDevices(devices);
+
         Integer iface = null;
-        if (cl.hasOption("interface")) {
-        	iface = Integer.parseInt(cl.getOptionValue("interface"));
+        if (cliOptions.hasInterface()) {
+        	iface = Integer.parseInt(cliOptions.getInterfaceValue());
         }
+
         for(DfuDevice dev : devs) {
         	DfuMemory mem = dev.Memory();
         	
@@ -402,27 +272,32 @@ public class DeviationUploader
             //DfuFuncDescriptor desc = new DfuFuncDescriptor(dev);
         	dev.setTxInfo(TxInfo.getTxInfo(dev));
         }
-        if (cl.hasOption("list")) {
+
+        if (cliOptions.hasList()) {
         	listDevices(devs);
         }
-        if (cl.hasOption("send")) {
-            if (cl.hasOption("dfu")) {
-                sendDfuToDevice(devs.get(0), cl.getOptionValue("dfu"), null);
+
+        if (cliOptions.hasSend()) {
+            if (cliOptions.hasDfu()) {
+                sendDfuToDevice(devs.get(0), cliOptions.getDfuValue(), null);
             } else {
-                int address = Long.decode(cl.getOptionValue("address")).intValue();
-                sendBinToDevice(devs.get(0), cl.getOptionValue("bin"), address, vendorId, productId, altSetting, iface, cl.hasOption("invert"));
+                int address = Long.decode(cliOptions.getAddressValue()).intValue();
+                sendBinToDevice(devs.get(0), cliOptions.getBinValue(), address, vendorId, productId, altSetting, iface, cliOptions.hasInvert());
             }
         }
-        if (cl.hasOption("fetch")) {
-        	String addrStr = cl.getOptionValue("address");
+
+        if (cliOptions.hasFetch()) {
+        	String addrStr = cliOptions.getAddressValue();
             int address = addrStr == null ? 0 : Long.decode(addrStr).intValue();
-        	String lenStr = cl.getOptionValue("length");
+        	String lenStr = cliOptions.getLengthValue();
             int length = lenStr == null ? 0 : Integer.decode(lenStr);
-            readBinFromDevice(devs.get(0), cl.getOptionValue("bin"), address, length, vendorId, productId, altSetting, iface, cl.hasOption("invert"));
+            readBinFromDevice(devs.get(0), cliOptions.getBinValue(), address, length, vendorId, productId, altSetting, iface, cliOptions.hasInvert());
         }
-        if (cl.hasOption("reset")) {
+
+        if (cliOptions.hasReset()) {
         	resetDevices(devs);
         }
+
         LibUsb.freeDeviceList(devices, true);
         LibUsb.exit(null);
     }
