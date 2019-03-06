@@ -1,11 +1,15 @@
 package deviation;
 
 import java.util.List;
+import java.util.logging.Logger;
 
 import deviation.filesystem.FSType;
 import deviation.misc.Crc;
 
 public class Transmitter {
+
+	private static final Logger LOG = Logger.getLogger(Transmitter.class.getName());
+
 	public static enum ProtoFiles {NONE, KEEP, ALL};
 	public String name;
 	public String id;
@@ -108,7 +112,7 @@ public class Transmitter {
         for (int i = 0; i < count; i++) {
             crc = Crc.Dfu32(data, crc);
         }
-        //System.out.format("Crc: 0x%x%n", crc);
+        LOG.finest(String.format("Crc: 0x%x", crc));
         return crc;
     }
 

@@ -203,7 +203,6 @@ public class DeviationUploadGUI {
         tabbedPane.addChangeListener(new ChangeListener() {
         	public void stateChanged(ChangeEvent e) {
         		int index = tabbedPane.getSelectedIndex();
-        		System.out.println("Tab: " + index);
         		if (index == FILEMGR_TAB) {
         			FileMgrPanel.updateFileList();
         		}

@@ -7,14 +7,19 @@ import deviation.commandline.CliOptions;
 import deviation.commandline.CommandLineHandler;
 import deviation.filesystem.FSUtils;
 import deviation.gui.DeviationUploadGUI;
+import deviation.logging.LoggerConfiguration;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.logging.Logger;
+
 public class DeviationUploader
 {
-    public static byte[] applyEncryption(DfuFile.ImageElement elem, TxInfo info)
+    private static final Logger LOG = Logger.getLogger(DeviationUploader.class.getName());
+
+    private static byte[] applyEncryption(DfuFile.ImageElement elem, TxInfo info)
     {
         long address = elem.address();
         byte[] data = elem.data();
@@ -22,7 +27,7 @@ public class DeviationUploader
             int offset = (int)(0x08005000L - address);
             byte[] txcode = info.encodeId();
             if (txcode != null) {
-                System.out.println("Encrypting txid for " + TxInfo.typeToString(info.type()));
+                LOG.info("Encrypting txid for " + TxInfo.typeToString(info.type()));
                 for (byte b : txcode) {
                     data[offset++] = b;
                 }
@@ -30,7 +35,7 @@ public class DeviationUploader
         }
         return data;
     }
-    public static boolean findDeviceByAddress(DfuDevice dev, int address, Integer vid, Integer pid, Integer alt)
+    private static boolean findDeviceByAddress(DfuDevice dev, int address, Integer vid, Integer pid, Integer alt)
     {
         if ((vid == null || vid == dev.idVendor()) && (pid == null || pid == dev.idProduct())) {
         	if (dev.SelectInterfaceByAddr(address, alt) != null) {
@@ -40,7 +45,7 @@ public class DeviationUploader
         return false;
     }
 
-    public static void sendDfuToDevice(DfuDevice dev, String fname, Progress progress)
+    private static void sendDfuToDevice(DfuDevice dev, String fname, Progress progress)
     {
         DfuFile file;
         try {
@@ -58,23 +63,23 @@ public class DeviationUploader
         		return;
         	}
             if (! findDeviceByAddress(dev, (int)elem.address(), file.idVendor(), file.idProduct(), elem.altSetting())) {
-                System.out.format("Error: Did not find matching device for VID:0x%x PID:0x%x alt:%d%n",
-                    file.idVendor(), file.idProduct(), elem.altSetting());
+                LOG.warning(String.format("Error: Did not find matching device for VID:0x%x PID:0x%x alt:%d",
+                    file.idVendor(), file.idProduct(), elem.altSetting()));
                 continue;
             }
             if (dev.open() != 0) {
-                System.out.println("Error: Unable to open device");
+                LOG.warning("Error: Unable to open device");
                 break;
             }
             dev.claim_and_set();
             Dfu.setIdle(dev);
             TxInfo info = dev.getTxInfo();
             if (! info.matchModel(TxInfo.getModelFromString(elem.name()))) {
-                System.out.format("Error: Dfu Tx type '%s' does not match transmitter type '%s'%n",
+                LOG.warning(String.format("Error: Dfu Tx type '%s' does not match transmitter type '%s'",
                                   TxInfo.typeToString(TxInfo.getModelFromString(elem.name())),
-                                  TxInfo.typeToString(info.type()));
-                if (TxInfo.typeToString(info.type()) == "Unknown") {
-                	System.out.format("\tTransmitter ID: '%s'\n", new String(info.getIdentifier()));
+                                  TxInfo.typeToString(info.type())));
+                if ("Unknown".equals(TxInfo.typeToString(info.type()))) {
+                	LOG.warning(String.format("Transmitter ID: '%s'", new String(info.getIdentifier())));
                 }
                 break;
             }
@@ -85,7 +90,7 @@ public class DeviationUploader
         }
     }
     
-    public static void sendBinToDevice(DfuDevice dev, String fname, int address, Integer vid, Integer pid, Integer alt, Integer iface, boolean invert)
+    private static void sendBinToDevice(DfuDevice dev, String fname, int address, Integer vid, Integer pid, Integer alt, Integer iface, boolean invert)
     {
         byte[] data;
         try {
@@ -101,13 +106,13 @@ public class DeviationUploader
     		dev.SelectInterface(dev.Interfaces().get(1));        	
         } else {
         	if (! findDeviceByAddress(dev, address, vid, pid, alt)) {
-        		System.out.format("Error: Did not find matching device for VID:0x%x PID:0x%x alt:%d%n",
-        				vid, pid, alt);
+        		LOG.warning(String.format("Error: Did not find matching device for VID:0x%x PID:0x%x alt:%d",
+        				vid, pid, alt));
         		return;
         	}
         }
         if (dev.open() != 0) {
-            System.out.println("Error: Unable to open device");
+            LOG.warning("Error: Unable to open device");
             return;
         }
         dev.claim_and_set();
@@ -119,14 +124,14 @@ public class DeviationUploader
         dev.close();
     }
 
-    public static void readBinFromDevice(DfuDevice dev, String fname, int address, Integer length, Integer vid, Integer pid, Integer alt, Integer iface, boolean invert)
+    private static void readBinFromDevice(DfuDevice dev, String fname, int address, Integer length, Integer vid, Integer pid, Integer alt, Integer iface, boolean invert)
     {
     	if (iface != null) {
     		dev.SelectInterface(dev.Interfaces().get(1));
     	} else {
     		if (! findDeviceByAddress(dev, address, vid, pid, alt)) {
-    			System.out.format("Error: Did not find matching device for VID:0x%x PID:0x%x alt:%d%n",
-    					vid, pid, alt);
+    			LOG.warning(String.format("Error: Did not find matching device for VID:0x%x PID:0x%x alt:%d",
+    					vid, pid, alt));
     			return;
     		}
     	}
@@ -134,7 +139,7 @@ public class DeviationUploader
             length = (int)dev.Memory().contiguousSize(address);
         }
         if (dev.open() != 0) {
-            System.out.println("Error: Unable to open device");
+            LOG.warning("Error: Unable to open device");
             return;
         }
         dev.claim_and_set();
@@ -159,27 +164,32 @@ public class DeviationUploader
             e.printStackTrace();
         }
     }
-    public static void listDevices(List <DfuDevice> devs)
+    private static void listDevices(List <DfuDevice> devs)
     {
-    	System.out.format("Device\t%9s %8s   %8s %7s   %s\n", "Interface", "Start", "End", "Size", "Count");
-    	for (DfuDevice dev: devs) {
-    		int i = 0;
-    		System.out.format("%s\n", dev.getTxInfo().type().getName());
-    		for (DfuInterface iface: dev.Interfaces()) {
-    			for (SegmentParser segment: iface.Memory().segments()) {
-    				for (Sector sector: segment.sectors()) {
-    					System.out.format("\t\t%d %08x   %08x %7d   %d\n",i, sector.start(), sector.end(), sector.size(), sector.count());
-    				}
-    			}
-    			i++;
-    		}
-    	}
+      if (devs.size() == 0) {
+        LOG.info("No devices found.");
+      } else {
+        LOG.info(String.format("Device\t%9s %8s   %8s %7s   %s", "Interface", "Start", "End", "Size", "Count"));
+        for (DfuDevice dev: devs) {
+          int i = 0;
+          LOG.info(String.format("%s", dev.getTxInfo().type().getName()));
+          for (DfuInterface iface: dev.Interfaces()) {
+            for (SegmentParser segment: iface.Memory().segments()) {
+              for (Sector sector: segment.sectors()) {
+                LOG.info(String.format("\t\t%d %08x   %08x %7d   %d",i, sector.start(), sector.end(), sector.size(), sector.count()));
+              }
+            }
+            i++;
+          }
+        }
+      }
     }
-    public static void resetDevices(List <DfuDevice> devs)
+
+    private static void resetDevices(List <DfuDevice> devs)
     {
     	for (DfuDevice dev: devs) {
     		if (dev.open() != 0) {
-    			System.out.println("Error: Unable to open device");
+    			LOG.warning("Error: Unable to open device");
     			break;
     		}
     		dev.claim_and_set();
@@ -191,12 +201,19 @@ public class DeviationUploader
 
     public static void main(String[] args)
     {
+        LoggerConfiguration.configureDefaultLogger();
         CommandLineHandler cliHandler = new CommandLineHandler();
         CliOptions cliOptions = cliHandler.handleCmdLine(args);
+        if (cliOptions.isVerbose()) {
+          LoggerConfiguration.configureVerboseLogger();
+        }
+        if (cliOptions.isExtraVerbose()) {
+          LoggerConfiguration.configureExtraVerboseLogger();
+        }
 
         if (!cliOptions.hasProgramOptions()) {
-            DeviationUploadGUI.main(null);
-            while(true) {}
+          DeviationUploadGUI.main(null);
+          while(true) {}
         }
 
         TransmitterList.init();
@@ -204,9 +221,9 @@ public class DeviationUploader
         Integer vendorId = null;
         Integer productId = null;
         if (cliOptions.hasTxId()) {
-            String[] id = cliOptions.getTxIdValue().split(":");
-            vendorId = Integer.parseInt(id[0], 16);
-            productId = Integer.parseInt(id[1], 16);
+          String[] id = cliOptions.getTxIdValue().split(":");
+          vendorId = Integer.parseInt(id[0], 16);
+          productId = Integer.parseInt(id[1], 16);
         }
 
         Integer altSetting = null;
@@ -226,15 +243,14 @@ public class DeviationUploader
 
         for(DfuDevice dev : devs) {
         	DfuMemory mem = dev.Memory();
-        	
-            System.out.format("Found: %s [%05x:%04x] cfg=%d, intf=%d, alt=%d, name='%s'\n",
+            LOG.info(String.format("Found device: %s [%05x:%04x] cfg=%d, intf=%d, alt=%d, name='%s'",
                 dev.DFU_IFF_DFU() ? "DFU" : "Runtime",
                 dev.idVendor(),
                 dev.idProduct(),
                 dev.bConfigurationValue(),
                 dev.bInterfaceNumber(),
                 dev.bAlternateSetting(),
-                mem == null ? dev.GetId() : mem.name());
+                mem == null ? dev.GetId() : mem.name()));
             //DfuFuncDescriptor desc = new DfuFuncDescriptor(dev);
         	dev.setTxInfo(TxInfo.getTxInfo(dev));
         }

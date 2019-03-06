@@ -2,6 +2,7 @@ package deviation.filesystem;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.logging.Logger;
 
 import de.waldheinz.fs.BlockDevice;
 import de.waldheinz.fs.FileSystem;
@@ -11,10 +12,12 @@ import de.waldheinz.fs.FsFile;
 import deviation.FileInfo;
 
 public class FSUtils {
+
+	private static final Logger LOG = Logger.getLogger(FSUtils.class.getName());
+
 	public static FsDirectory getFileDirectory(FileSystem fs, FileInfo file, boolean create) {
 		String[]filepath = file.name().toUpperCase().split("/");
-		//String filename = filepath[filepath.length-1];
-		
+
 		String[]filedir;
 		if (filepath.length > 1) {
 			filedir = Arrays.copyOfRange(filepath, 0, filepath.length-1);
@@ -26,7 +29,7 @@ public class FSUtils {
 		try {
 			fsdir = fs.getRoot();
 		} catch (Exception e) {
-			System.err.println("Couldn't get root dir: " + e.getMessage());
+			LOG.warning("Couldn't get root dir: " + e.getMessage());
 			return null;
 		}
         for (String subdir : filedir) {
@@ -41,7 +44,7 @@ public class FSUtils {
             		}
             		fs_entry = fsdir.addDirectory(subdir);
             		if (fs_entry == null) {
-            			System.err.println("Couldn't create directory '" + subdir);
+            			LOG.warning("Couldn't create directory '" + subdir);
             			return null;
             		}
             		fs_entry.setLastModified(0); //Directories get an epoch date
@@ -72,12 +75,12 @@ public class FSUtils {
 				}
 				fs_entry = fsdir.addFile(filename);
 				if (fs_entry == null) {
-					System.err.println("Failed to create file '" + file.name());
+					LOG.severe("Failed to create file '" + file.name());
 					return;
 				}
 			}
 			if (! fs_entry.isFile()) {
-				System.err.println(file.name() + " exists but is not a file");
+				LOG.severe(file.name() + " exists but is not a file");
 				return;
 			}
 			if (file.deleted()) {

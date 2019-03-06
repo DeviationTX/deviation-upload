@@ -41,6 +41,8 @@ public class CommandLineHandler {
     };
     CommandLine commandLine = handleRegularOptionsOrDie(args);
     CliOptions cliOptions = new CliOptions()
+        .setVerbose(commandLine.hasOption(VERBOSE))
+        .setExtraVerbose(commandLine.hasOption(EXTRA_VERBOSE))
         .setTxId(commandLine.hasOption(TXID))
         .setTxIdValue(commandLine.getOptionValue(TXID))
         .setAltSettings(commandLine.hasOption(ALT_SETTING))

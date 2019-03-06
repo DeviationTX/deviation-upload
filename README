@@ -1,14 +1,39 @@
+About Deviation Uploader
+============================================================================
+
+The Deviation Uploader tools is intended to upload and download firmware
+from/to radio transmitter devices via USB by using DFuSe protocol.
+
 This code is to a large extent a direct port of the 'dfu-util' code to java.
 
 This would have been a much bigger ordeal without the work those folks have
 spent developing dfu and dfuse support.
 
-Note that this code only supports the DFuSe protocol, and onlythe Walkera
+Note that this code only supports the DFuSe protocol, and only the Walkera
 flavor of that.  It is not intended to be a generalized dfu upload/download
-tool, but instead is targetted only at communicating with Walkera transmitters.
+tool, but instead is targeted only at communicating with Walkera transmitters.
 
 
-Upgrading the jar files:
+Recommended usage
+----------------------------------------------------------------------------
+
+Deviation Uploader requires a Java 8 compatible runtime to be installed.
+Once you have downloaded the JAR file (or alternatively build your own),
+you can simply run the user interface (UI) from command line:
+
+$> java -jar DeviationUpload-0.9.0.jar
+
+There are also some command line options available.
+For more help, please run the following command:
+
+$> java -jar DeviationUpload-0.9.0.jar --help
+
+
+Development Notes
+----------------------------------------------------------------------------
+
+### Manual upgrading the jar files (when needed)
+
 download official release from:
 
 http://kayahr.github.io/usb4java/index.html and unzip
@@ -22,3 +47,24 @@ export VERSION=1.0.2; mvn install:install-file -Dfile=usb4java-1.0.0/lib/usb-api
 http://code.google.com/p/fat32-lib/
 fat32-lib:
 EXPORT VERSION=0.6.2; mvn install:install-file -Dfile=fat32-lib-$VERSION.jar -DgroupId=de-waldheinz -DartifactId=fat32-lib -Dversion=$VERSION -Dpackaging=jar -DlocalRepositoryPath=libs -DcreateChecksum=true
+
+
+### A word on application logging
+
+Deviation Uploader uses standard Java logging facilities.
+https://docs.oracle.com/javase/8/docs/api/java/util/logging/package-summary.html
+
+The Java log level are SEVERE (highest value), WARNING, INFO, CONFIG, FINE, FINER, FINEST (lowest value).
+These level should be used, in order to log information according to the users need.
+For convenient reasons, the command line options do allow a user
+to select "default", "verbose" and "extra-verbose" log level.
+The Deviation Uploader defines some mapping between this  (see LoggerConfiguration class).
+"default"       -> "INFO" and above
+"verbose"       -> "FINE" and above
+"extra-verbose" -> "FINEST" and above
+While developing, please consider, which level makes sense to use
+and what information information to show to the user.
+As a rule os thumb, "warning" and "severe" should be used in scenarios where things go wrong.
+Whereas "warning" is when something went wrong but the application can somehow recover or self-heal.
+And "severe" is typically something, which went wrong and the application can't handle
+and need to stop the requested action.
