@@ -112,7 +112,7 @@ public class FlashIO implements BlockDevice
         }
     }
     */
-    private void cache(int sector_num) throws IOException {
+    private void cache(int sector_num) {
     	Range range = sectorMap.get(sector_num);
         System.out.format(("Cache of 0x%08x : %d%n"), range.start(), cached[sector_num] ? 1 : 0);
         if (! cached[sector_num]) {
