@@ -58,10 +58,10 @@ public class DevoDetect {
             version = m.group(2);
             model = TxInfo.getModelFromString(m.group(1));
             thisType = Type.LIBRARY;
-        } else if ((m = Pattern.compile("([^-]+)-(\\S+) Firmware").matcher(id)).matches()) {
+        } else if ((m = Pattern.compile("([^-]+)-(\\S+) (Unified )?Firmware").matcher(id)).matches()) {
             firmware = Firmware.DEVIATION;
             version = m.group(2);
-            model = TxInfo.getModelFromString(m.group(1));
+            model = TxInfo.getModelFromString(id);
             thisType = Type.FIRMWARE;
         } else if ((m = Pattern.compile("([^-]+)-(\\S+) Library").matcher(id)).matches()) {   
             firmware = Firmware.DEVIATION;
