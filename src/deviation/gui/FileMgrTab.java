@@ -18,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -37,6 +38,9 @@ import deviation.filesystem.TxInterface;
 import deviation.gui.treemodel.FilesToSendModel;
 
 public class FileMgrTab extends JPanel {
+
+	private static final Logger LOG = Logger.getLogger(FileMgrTab.class.getName());
+
 	private static final long serialVersionUID = 1L;
     private static final String LIBPATH_DIR = "LibPathDir";
     private static final String SHOWSYNC = "ShowSyncDlg";
@@ -154,9 +158,9 @@ public class FileMgrTab extends JPanel {
 					} catch (Exception e) { e.printStackTrace(); }
 					List <FileInfo> files = fs.readAllDirs();
 					fs.close();
-					System.out.format("Count: %d\n", files.size());
+					LOG.info(String.format("Count: %d", files.size()));
 					for (FileInfo file: files) {
-						System.out.println("FILE: " + file.name());
+						LOG.info("FILE: " + file.name());
 					}
 					return files;
 				}
@@ -311,7 +315,7 @@ public class FileMgrTab extends JPanel {
 			final Object obj = txTree.getPathForRow(rowIndex).getLastPathComponent();
 			if (obj instanceof FileInfo) {
 				final FileInfo fileinfo = (FileInfo)obj;
-				System.out.format("Double click on: %s\n", fileinfo.name());
+				LOG.finest("Double click on: " + fileinfo.name());
 				SwingWorker<FileInfo, Object> process;
 				process = new SwingWorker<FileInfo, Object>() {
 					protected void done() {

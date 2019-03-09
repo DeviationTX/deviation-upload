@@ -5,10 +5,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.logging.Logger;
 
 import de.waldheinz.fs.BlockDevice;
 
 public class DevoFSLayout {
+
+	private static final Logger LOG = Logger.getLogger(DevoFSLayout.class.getName());
+
 	private BlockDevice dev;
 	private DevoFSFileSystem root;
 	private int sectorSize;
@@ -100,7 +104,7 @@ public class DevoFSLayout {
 			buf.position(buf.position() + sectorSize);
 		}
 		if (sectorHeader != START_SECTOR) {
-			System.err.format("Failed to find start sector");
+			LOG.warning("Failed to find start sector");
 			return ByteBuffer.wrap(data);
 		}
 		int start = buf.position()-1;

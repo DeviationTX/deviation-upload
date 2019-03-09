@@ -2,6 +2,8 @@ package deviation.commandline;
 
 public class CliOptions {
 
+  private boolean verbose = false;
+  private boolean extraVerbose = false;
   private boolean programOptions = false;
 
   private boolean txId;
@@ -25,6 +27,14 @@ public class CliOptions {
   private boolean invert;
   private String invertValue;
   private boolean reset;
+
+  public boolean isVerbose() {
+    return verbose;
+  }
+
+  public boolean isExtraVerbose() {
+    return extraVerbose;
+  }
 
   public boolean hasProgramOptions() {
     return programOptions;
@@ -116,6 +126,16 @@ public class CliOptions {
 
   CliOptions setProgramOptions(boolean programOptions) {
     this.programOptions = programOptions;
+    return this;
+  }
+
+  CliOptions setVerbose(boolean verbose) {
+    this.verbose = verbose;
+    return this;
+  }
+
+  CliOptions setExtraVerbose(boolean extraVerbose) {
+    this.extraVerbose = extraVerbose;
     return this;
   }
 

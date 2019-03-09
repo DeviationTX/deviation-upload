@@ -1,13 +1,19 @@
 package deviation;
 
 import java.util.*;
+import java.util.logging.Logger;
 import java.util.regex.*;
+
+import static java.util.logging.Level.FINEST;
 
 //Found DFU: [0483:df11] devnum=0, cfg=1, intf=0, alt=0, name="@Internal Flash  /0x08004000/00*002Ka,120*002Kg"
 //Found DFU: [0483:df11] devnum=0, cfg=1, intf=0, alt=1, name="@SPI Flash: Config/0x00002000/030*04Kg"
 //Found DFU: [0483:df11] devnum=0, cfg=1, intf=0, alt=2, name="@SPI Flash: Library/0x00020000/030*064Kg"
 
 public class DfuMemory {
+
+    private static Logger LOG = Logger.getLogger(DfuMemory.class.getName());
+
     public static class SegmentParser {
         private List<Sector> sectors;
 
@@ -42,9 +48,11 @@ public class DfuMemory {
                         writable = true;
                     }
                     if (size * count > 0) {
-                        //System.out.format("Sector start: 0x%x end: 0x%x size:%d count:%d %s%s%s%n",
-                        //                  address, address + size * count - 1, size, count,
-                        //                  readable ? "r" : "", erasable ? "e" : "", writable ? "w" : "");
+                        if (LOG.isLoggable(FINEST)) {
+                            LOG.finest(String.format("Sector start: 0x%x end: 0x%x size:%d count:%d %s%s%s",
+                                              address, address + size * count - 1, size, count,
+                                              readable ? "r" : "", erasable ? "e" : "", writable ? "w" : ""));
+                        }
                         sectors.add(new Sector(address, address + size * count - 1, size, count, readable, erasable, writable));
                         address += size * count;
                     }
@@ -63,7 +71,7 @@ public class DfuMemory {
         }
         String[] segmentStrings = str.split("/");
         if (segmentStrings.length < 3) {
-            System.out.format("Unexpected string: %s%n", str);
+            LOG.warning(String.format("Unexpected string: %s", str));
             throw new IllegalArgumentException("String not in correct format");
         }
         name = segmentStrings[0];

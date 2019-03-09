@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.logging.Logger;
 
 import de.waldheinz.fs.FileSystem;
 import de.waldheinz.fs.FsDirectory;
@@ -11,6 +12,9 @@ import de.waldheinz.fs.FsDirectoryEntry;
 import deviation.FileInfo;
 
 public class TxInterfaceCommon {
+
+	  private static final Logger LOG = Logger.getLogger(TxInterfaceCommon.class.getName());
+
     protected static List<FileInfo> readDirRecur(String parent, FsDirectory dir) throws IOException {
     	List <FileInfo>files = new ArrayList<FileInfo>();
         Iterator<FsDirectoryEntry> itr = dir.iterator();
@@ -19,11 +23,11 @@ public class TxInterfaceCommon {
     		if (entry.isDirectory()) {
     			if (entry.getName().equals(".") || entry.getName().equals(".."))
     				continue;
-    			System.out.format("DIR: %s\n", entry.getName());
+    			LOG.fine(String.format("DIR: %s", entry.getName()));
     			files.addAll(readDirRecur(parent + entry.getName() + "/", entry.getDirectory()));
     		} else {
     			files.add(new FileInfo(parent + entry.getName(), (int)entry.getFile().getLength()));
-    			System.out.format("FILE: %s (%d)\n", entry.getName(), entry.getFile().getLength());
+					LOG.fine(String.format("FILE: %s (%d)", entry.getName(), entry.getFile().getLength()));
     		}
     	}
     	return files;
@@ -41,7 +45,7 @@ public class TxInterfaceCommon {
         	Iterator<FsDirectoryEntry> itr = dir.iterator();
         	while(itr.hasNext()) {
         		FsDirectoryEntry entry = itr.next();
-        		System.out.println(entry.getName());
+        		LOG.info(entry.getName());
         	}
         } catch (IOException e) { e.printStackTrace(); }
     }

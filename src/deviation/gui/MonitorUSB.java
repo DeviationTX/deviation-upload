@@ -1,6 +1,7 @@
 package deviation.gui;
 
 import java.util.List;
+import java.util.logging.Logger;
 
 import javax.swing.SwingWorker;
 
@@ -12,6 +13,8 @@ import deviation.TxInfo;
 
 //This will execute in the Swing Event thread
 public class MonitorUSB extends SwingWorker<String, DfuDevice> {
+
+	  private static final Logger LOG = Logger.getLogger(MonitorUSB.class.getName());
 
     String strObject;
     DeviceList devices;
@@ -56,7 +59,7 @@ public class MonitorUSB extends SwingWorker<String, DfuDevice> {
     					if (dfuDev != null) {
     						LibUsb.freeDeviceList(this.devices, true);
     						dfuDev = null;
-    						System.out.println("Unplug detected");
+    						LOG.info("Unplug detected");
     						state_changed = true;
     						//Signal disconnect
     					}
@@ -68,7 +71,7 @@ public class MonitorUSB extends SwingWorker<String, DfuDevice> {
     						dfuDev = dev;
     						dfuDev.setTxInfo(TxInfo.getTxInfo(dfuDev));
     						this.devices = devices;
-    						System.out.println("Hotplug detected");
+								LOG.info("Hotplug detected");
     						state_changed = true;
     						//Signal connect/change
     					} else {

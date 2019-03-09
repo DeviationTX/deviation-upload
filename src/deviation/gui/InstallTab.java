@@ -424,10 +424,6 @@ public class InstallTab extends JPanel {
                 zipFiles.AddFile(fname);
                 txtField.setText(fname);
                 parseZipFiles();
-//                } catch (IOException ex) {
-//                    System.err.println("Caught IOException: " + ex.getMessage());
-//                }
-
             }
         }
     }

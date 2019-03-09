@@ -62,7 +62,7 @@ public final class FileDisk2 implements BlockDevice {
      */
     public FileDisk2(File file, boolean readOnly, int bytesPerSector, double bytesPerSec) throws FileNotFoundException {
     	BYTES_PER_SECTOR = bytesPerSector;
-        if (!file.exists()) throw new FileNotFoundException();
+        if (!file.exists()) throw new FileNotFoundException("File '" + file + "' does not exist.");
 
         this.readOnly = readOnly;
         this.closed = false;

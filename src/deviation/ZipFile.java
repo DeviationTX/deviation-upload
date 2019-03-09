@@ -4,10 +4,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 public class ZipFile {
+
+    private static final Logger LOG = Logger.getLogger(ZipFile.class.getName());
+
     String zipFile;
     List<FileInfo> files;
     public ZipFile(String fname) {
@@ -34,7 +38,7 @@ public class ZipFile {
                 }
                 ostream.flush();
                 if (ostream.size() != ze.getSize()) {
-                    System.out.format("Only read %d bytes from %s:%s (expected %d)%n", ostream.size(), zipFile, fname, ze.getSize());
+                    LOG.warning(String.format("Only read %d bytes from %s:%s (expected %d)", ostream.size(), zipFile, fname, ze.getSize()));
                 } else {
                     buffer = ostream.toByteArray();
                 }
@@ -65,7 +69,7 @@ public class ZipFile {
                  }
                  ostream.flush();
                  if (ostream.size() != ze.getSize()) {
-                     System.out.format("Only read %d bytes from %s:%s (expected %d)%n", ostream.size(), zipFile, fname, ze.getSize());
+                     LOG.warning(String.format("Only read %d bytes from %s:%s (expected %d)", ostream.size(), zipFile, fname, ze.getSize()));
                  } else {
                      buffer = ostream.toByteArray();
                  }
