@@ -3,11 +3,14 @@ package deviation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.logging.Logger;
 
 import de.ailis.usb4java.libusb.*;
 
 public class DfuDevice
     {
+
+        private static Logger LOG = Logger.getLogger(DfuMemory.class.getName());
         
         private Device dev;
         private DeviceHandle handle;
@@ -74,16 +77,16 @@ public class DfuDevice
             if (selected_interface == null) {
                 return -1;
             }
-            System.out.format("Claiming interface %d Alt: %d\n", 
+            LOG.fine(String.format("Claiming interface %d Alt: %d\n",
             		selected_interface.bInterfaceNumber(),
-            		selected_interface.bAlternateSetting());
+            		selected_interface.bAlternateSetting()));
             int ret = LibUsb.claimInterface(handle, selected_interface.bInterfaceNumber());
-            System.out.format("Claiming interface returned: %d\n", ret);
+            LOG.fine(String.format("Claiming interface returned: %d\n", ret));
             if (ret < 0) {
                 return ret;
             }
             ret = LibUsb.setInterfaceAltSetting(handle, selected_interface.bInterfaceNumber(), selected_interface.bAlternateSetting());
-            System.out.format("Setting Alt returned: %d\n", ret);
+            LOG.fine(String.format("Setting Alt returned: %d\n", ret));
             return ret;
         }
         public boolean SelectInterface(DfuInterface iface)
