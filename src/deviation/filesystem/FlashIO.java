@@ -72,7 +72,7 @@ public class FlashIO implements BlockDevice
             	Range range = sectorMap.get(sector_num);
             	byte [] data = Arrays.copyOfRange(ram, (int)(range.start() - memAddress),  (int)(1 + range.end() - memAddress));
             	String newchksum = Sha.md5(data);
-            	LOG.info(String.format("0x%08x Read: %s Write: %s", range.start(), chksum[sector_num], newchksum));
+            	LOG.finest(String.format("0x%08x Read: %s Write: %s", range.start(), chksum[sector_num], newchksum));
             	if (chksum[sector_num] != null && chksum[sector_num].equals(newchksum)) {
             		//Data hasn't changed, no need to write it out
             		continue;
@@ -86,7 +86,7 @@ public class FlashIO implements BlockDevice
             }
     	}
     }
-    public void flush() { LOG.info("flush");}
+    public void flush() { LOG.finest("flush");}
     public int getSectorSize() throws IOException { return fsSectorSize; }
     public long getSize() throws IOException { return ram.length - startOffset; }
     public boolean isClosed() { return false; }
@@ -116,14 +116,14 @@ public class FlashIO implements BlockDevice
     */
     private void cache(int sector_num) {
     	Range range = sectorMap.get(sector_num);
-        LOG.info(String.format(("Cache of 0x%08x : %d"), range.start(), cached[sector_num] ? 1 : 0));
+        LOG.finest(String.format(("Cache of 0x%08x : %d"), range.start(), cached[sector_num] ? 1 : 0));
         if (! cached[sector_num]) {
         	final long startTime = System.currentTimeMillis();
             byte[] data = Dfu.fetchFromDevice(dev, range.start(), (int)range.size());
             final long endTime = System.currentTimeMillis();
             totalBytes += range.size();
             totalTime += endTime - startTime;
-            LOG.info(String.format("Bytes/sec: %.6f Avg: %.6f", 1000.0 *range.size()/(endTime - startTime), 1000.0*totalBytes/totalTime));
+            LOG.finest(String.format("Bytes/sec: %.6f Avg: %.6f", 1000.0 *range.size()/(endTime - startTime), 1000.0*totalBytes/totalTime));
             if (invert) {
                 data = FSUtils.invert(data);
             }

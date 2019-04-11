@@ -158,9 +158,9 @@ public class FileMgrTab extends JPanel {
 					} catch (Exception e) { e.printStackTrace(); }
 					List <FileInfo> files = fs.readAllDirs();
 					fs.close();
-					LOG.info(String.format("Count: %d", files.size()));
+					LOG.finest(String.format("Count: %d", files.size()));
 					for (FileInfo file: files) {
-						LOG.info("FILE: " + file.name());
+						LOG.finest("FILE: " + file.name());
 					}
 					return files;
 				}

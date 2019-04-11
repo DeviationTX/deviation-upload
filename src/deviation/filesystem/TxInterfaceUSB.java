@@ -50,7 +50,7 @@ public class TxInterfaceUSB extends TxInterfaceCommon implements TxInterface  {
         }
 		rootIface = dev.SelectInterfaceByAddr(tx.getRootSectorOffset() * SECTOR_SIZE);
 		if (rootIface == null) {
-			LOG.info("Could not identify any memory region for rootFS");
+			LOG.finest("Could not identify any memory region for rootFS");
 		}
         rootBlockDev = new FlashIO(dev, tx.getRootSectorOffset() * SECTOR_SIZE, tx.isRootInverted(), SECTOR_SIZE, null);
     	

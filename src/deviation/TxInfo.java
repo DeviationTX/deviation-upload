@@ -28,7 +28,7 @@ public class TxInfo {
         int j;
         for (j = 0; j < 32 && data[j] != 0; j++) { }
         model = new String(Arrays.copyOfRange(data, 0, j));
-        LOG.info(model);
+        LOG.finest(model);
         type = TransmitterList.UNKNOWN();
         txloop:
         for (Transmitter tx : TransmitterList.values()) {

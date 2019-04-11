@@ -59,7 +59,7 @@ public class MonitorUSB extends SwingWorker<String, DfuDevice> {
     					if (dfuDev != null) {
     						LibUsb.freeDeviceList(this.devices, true);
     						dfuDev = null;
-    						LOG.info("Unplug detected");
+    						LOG.finest("Unplug detected");
     						state_changed = true;
     						//Signal disconnect
     					}
@@ -71,7 +71,7 @@ public class MonitorUSB extends SwingWorker<String, DfuDevice> {
     						dfuDev = dev;
     						dfuDev.setTxInfo(TxInfo.getTxInfo(dfuDev));
     						this.devices = devices;
-								LOG.info("Hotplug detected");
+								LOG.finest("Hotplug detected");
     						state_changed = true;
     						//Signal connect/change
     					} else {
