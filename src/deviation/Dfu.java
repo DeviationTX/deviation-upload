@@ -136,7 +136,7 @@ public final class Dfu
             return -1;
         }
         // wait while command is executed
-        LOG.fine(String.format("Poll timeout %d ms", status.bwPollTimeout));
+        LOG.info(String.format("Poll timeout %d ms", status.bwPollTimeout));
         try {
             Thread.sleep(status.bwPollTimeout);
         } catch (InterruptedException e) {} //Don't care if we're interrupted
@@ -185,7 +185,7 @@ public final class Dfu
                                          DFU_TIMEOUT);
         buffer.get(data);
         if (bytes_received < 0) {
-            LOG.info(String.format("dfuseUpload: libusb_control_transfer returned %d", bytes_received));
+            LOG.finest(String.format("dfuseUpload: libusb_control_transfer returned %d", bytes_received));
         }               
         return bytes_received;
     }
@@ -205,7 +205,7 @@ public final class Dfu
                  /* Data          */     buffer,
                                          DFU_TIMEOUT);
         if (bytes_sent < 0) {
-            LOG.info(String.format("dfuseDownload: libusb_control_transfer returned %d", bytes_sent));
+            LOG.finest(String.format("dfuseDownload: libusb_control_transfer returned %d", bytes_sent));
             return bytes_sent;
         }
         return bytes_sent;
@@ -225,7 +225,7 @@ public final class Dfu
                  status.bState != DfuStatus.STATE_DFU_MANIFEST);
 
         if (status.bState == DfuStatus.STATE_DFU_MANIFEST) {
-            LOG.info("Transitioning to dfuMANIFEST state");
+            LOG.finest("Transitioning to dfuMANIFEST state");
         }
 
         if (status.bStatus != DfuStatus.DFU_STATUS_OK) {
@@ -358,8 +358,8 @@ public final class Dfu
         /* Boot loader decides the start address, unknown to us */
         /* Use a short length to lower risk of running out of bounds */
 
-        LOG.fine(String.format("bytes_per_hash=%d", xfer_size));
-        LOG.info("Starting device read");
+        LOG.finest(String.format("bytes_per_hash=%d", xfer_size));
+        LOG.finest("Starting device read");
 
         ByteArrayOutputStream data = new ByteArrayOutputStream();
         while (true) {
@@ -479,7 +479,7 @@ public final class Dfu
     }
     public static int resetSTM32(DfuDevice dev) {
     	DfuStatus status = new DfuStatus(null);
-      LOG.info("Resetting STM32, starting firmware at address 0x08000000...");
+      LOG.finer("Resetting STM32, starting firmware at address 0x08000000...");
     	int set_ret = dfuseSpecialCommand(dev, 0x08000000, DFUSE_SET_ADDRESS);
     	if( set_ret < 0 ) {
           LOG.severe("Error: Unable to set start address for resetting");
@@ -497,7 +497,7 @@ public final class Dfu
     	if( status.bState != DfuStatus.STATE_DFU_MANIFEST) {
         LOG.severe("Error: Expected STM32 to be in dfuMANIFEST state after get-status command!");
     	} else {
-          LOG.info("Successfully reset STM32");
+          LOG.finer("Successfully reset STM32");
     	}
     	return 0;
     }

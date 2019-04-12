@@ -27,7 +27,7 @@ public class DeviationUploader
             int offset = (int)(0x08005000L - address);
             byte[] txcode = info.encodeId();
             if (txcode != null) {
-                LOG.info("Encrypting txid for " + TxInfo.typeToString(info.type()));
+                LOG.finest("Encrypting txid for " + TxInfo.typeToString(info.type()));
                 for (byte b : txcode) {
                     data[offset++] = b;
                 }
@@ -167,16 +167,16 @@ public class DeviationUploader
     private static void listDevices(List <DfuDevice> devs)
     {
       if (devs.size() == 0) {
-        LOG.info("No devices found.");
+        LOG.finest("No devices found.");
       } else {
-        LOG.info(String.format("Device\t%9s %8s   %8s %7s   %s", "Interface", "Start", "End", "Size", "Count"));
+        LOG.finest(String.format("Device\t%9s %8s   %8s %7s   %s", "Interface", "Start", "End", "Size", "Count"));
         for (DfuDevice dev: devs) {
           int i = 0;
-          LOG.info(String.format("%s", dev.getTxInfo().type().getName()));
+          LOG.finest(String.format("%s", dev.getTxInfo().type().getName()));
           for (DfuInterface iface: dev.Interfaces()) {
             for (SegmentParser segment: iface.Memory().segments()) {
               for (Sector sector: segment.sectors()) {
-                LOG.info(String.format("\t\t%d %08x   %08x %7d   %d",i, sector.start(), sector.end(), sector.size(), sector.count()));
+                LOG.finest(String.format("\t\t%d %08x   %08x %7d   %d",i, sector.start(), sector.end(), sector.size(), sector.count()));
               }
             }
             i++;
