@@ -23,11 +23,11 @@ public class TxInterfaceCommon {
     		if (entry.isDirectory()) {
     			if (entry.getName().equals(".") || entry.getName().equals(".."))
     				continue;
-    			LOG.fine(String.format("DIR: %s", entry.getName()));
+    			LOG.finer(String.format("DIR: %s", entry.getName()));
     			files.addAll(readDirRecur(parent + entry.getName() + "/", entry.getDirectory()));
     		} else {
     			files.add(new FileInfo(parent + entry.getName(), (int)entry.getFile().getLength()));
-					LOG.fine(String.format("FILE: %s (%d)", entry.getName(), entry.getFile().getLength()));
+					LOG.finer(String.format("FILE: %s (%d)", entry.getName(), entry.getFile().getLength()));
     		}
     	}
     	return files;
@@ -45,7 +45,7 @@ public class TxInterfaceCommon {
         	Iterator<FsDirectoryEntry> itr = dir.iterator();
         	while(itr.hasNext()) {
         		FsDirectoryEntry entry = itr.next();
-        		LOG.info(entry.getName());
+        		LOG.finest(entry.getName());
         	}
         } catch (IOException e) { e.printStackTrace(); }
     }

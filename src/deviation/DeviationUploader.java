@@ -167,12 +167,12 @@ public class DeviationUploader
     private static void listDevices(List <DfuDevice> devs)
     {
       if (devs.size() == 0) {
-        LOG.info("No devices found.");
+        LOG.finer("No devices found.");
       } else {
         LOG.info(String.format("Device\t%9s %8s   %8s %7s   %s", "Interface", "Start", "End", "Size", "Count"));
         for (DfuDevice dev: devs) {
           int i = 0;
-          LOG.info(String.format("%s", dev.getTxInfo().type().getName()));
+          LOG.finer(String.format("%s", dev.getTxInfo().type().getName()));
           for (DfuInterface iface: dev.Interfaces()) {
             for (SegmentParser segment: iface.Memory().segments()) {
               for (Sector sector: segment.sectors()) {
