@@ -86,7 +86,7 @@ public class FlashIO implements BlockDevice
             }
     	}
     }
-    public void flush() { LOG.info("flush");}
+    public void flush() { LOG.finer("flush");}
     public int getSectorSize() throws IOException { return fsSectorSize; }
     public long getSize() throws IOException { return ram.length - startOffset; }
     public boolean isClosed() { return false; }

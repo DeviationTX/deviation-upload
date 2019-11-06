@@ -38,7 +38,7 @@ public class ZipFile {
                 }
                 ostream.flush();
                 if (ostream.size() != ze.getSize()) {
-                    LOG.warning(String.format("Only read %d bytes from %s:%s (expected %d)", ostream.size(), zipFile, fname, ze.getSize()));
+                    LOG.info(String.format("Only read %d bytes from %s:%s (expected %d)", ostream.size(), zipFile, fname, ze.getSize()));
                 } else {
                     buffer = ostream.toByteArray();
                 }
@@ -69,7 +69,7 @@ public class ZipFile {
                  }
                  ostream.flush();
                  if (ostream.size() != ze.getSize()) {
-                     LOG.warning(String.format("Only read %d bytes from %s:%s (expected %d)", ostream.size(), zipFile, fname, ze.getSize()));
+                     LOG.info(String.format("Only read %d bytes from %s:%s (expected %d)", ostream.size(), zipFile, fname, ze.getSize()));
                  } else {
                      buffer = ostream.toByteArray();
                  }
