@@ -113,7 +113,7 @@ public final class Dfu
                            address & ~(sector.size() - 1)));
             buf[0] = 0x41;  // Erase command
         } else if (command == DFUSE_SET_ADDRESS) {
-            LOG.info(String.format("Setting address pointer to 0x%x", address));
+            LOG.fine(String.format("Setting address pointer to 0x%x", address));
             buf[0] = 0x21;  /* Set Address Pointer command */
         } else {
             LOG.severe(String.format("Error: Non-supported special command %d", command));
@@ -313,7 +313,7 @@ public final class Dfu
                     LOG.severe("Device still in Runtime Mode!");
                     return -1;
                 case DfuStatus.STATE_DFU_ERROR:
-                    LOG.fine("dfuERROR, clearing status");
+                    LOG.info("dfuERROR, clearing status");
                     if (clearStatus(dev) < 0) {
                         LOG.severe("error clear_status");
                         return -1;
@@ -358,7 +358,7 @@ public final class Dfu
         /* Boot loader decides the start address, unknown to us */
         /* Use a short length to lower risk of running out of bounds */
 
-        LOG.fine(String.format("bytes_per_hash=%d", xfer_size));
+        LOG.finer(String.format("bytes_per_hash=%d", xfer_size));
         LOG.info("Starting device read");
 
         ByteArrayOutputStream data = new ByteArrayOutputStream();
@@ -393,7 +393,7 @@ public final class Dfu
         setIdle(dev);
         while (true) {
             Sector sector = dev.Memory().find(sector_address);
-            LOG.info(String.format("%d: %d (%d)", sector_address, sector == null ? -1 : sector.end(), address + data.length));
+            LOG.fine(String.format("%d: %d (%d)", sector_address, sector == null ? -1 : sector.end(), address + data.length));
             if (sector == null || ! sector.writable()) {
                 LOG.severe(String.format("Error: No sector found that can be written at address 0x%08x", sector_address));
                 return -1;
@@ -497,7 +497,7 @@ public final class Dfu
     	if( status.bState != DfuStatus.STATE_DFU_MANIFEST) {
         LOG.severe("Error: Expected STM32 to be in dfuMANIFEST state after get-status command!");
     	} else {
-          LOG.info("Successfully reset STM32");
+          LOG.fine("Successfully reset STM32");
     	}
     	return 0;
     }

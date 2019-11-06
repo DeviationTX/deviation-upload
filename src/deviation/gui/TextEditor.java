@@ -73,7 +73,7 @@ public class TextEditor extends JDialog implements SearchListener {
 		textArea.setMarkOccurrences(true);
 		textArea.append(finalData);
 		Font f = textArea.getFont();
-		LOG.info(String.format("Font: %d", f.getSize()));
+		LOG.finest(String.format("Font: %d", f.getSize()));
 		f = new Font(f.getFamily(), f.getStyle(), f.getSize()+5);
 		textArea.setFont(f);
 		RTextScrollPane sp = new RTextScrollPane(textArea);
