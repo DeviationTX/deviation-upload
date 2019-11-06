@@ -313,7 +313,7 @@ public final class Dfu
                     LOG.severe("Device still in Runtime Mode!");
                     return -1;
                 case DfuStatus.STATE_DFU_ERROR:
-                    LOG.fine("dfuERROR, clearing status");
+                    LOG.warning("dfuERROR, clearing status");
                     if (clearStatus(dev) < 0) {
                         LOG.severe("error clear_status");
                         return -1;
